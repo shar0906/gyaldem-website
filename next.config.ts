@@ -4,12 +4,8 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
-  experimental: {
-    outputFileTracingExcludes: {
-      "*": [
-        ".next/cache/**",
-      ],
-    },
+  outputFileTracingExcludes: {
+    "*": [".next/cache/**"],
   },
 };
 
