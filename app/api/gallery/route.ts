@@ -4,6 +4,8 @@ import path from "path";
 
 const categories = ["ladies-night", "gyalentines", "community", "cultural-experiences"];
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const gallery: Record<string, string[]> = {};
 
