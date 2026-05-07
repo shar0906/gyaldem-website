@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Gyal Dem Social Club",
-  description: "Miami's social club for women of the Caribbean and Afro-diasporic community.",
+  description: "A culturally-rooted social experience platform for women of the Afro-diasporic community. Based in Miami.",
 };
 
 export default function RootLayout({
@@ -13,7 +13,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body style={{ margin: 0, padding: 0, backgroundColor: "#F5F0E8" }}>
+        {children}
+      </body>
     </html>
   );
 }

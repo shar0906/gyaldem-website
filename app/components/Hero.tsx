@@ -15,7 +15,7 @@ export default function Hero() {
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=1600&q=80')`,
+          backgroundImage: `url('/gyaldem_main_header.jpg')`,
         }}
       />
 
@@ -35,6 +35,11 @@ export default function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
           className="text-white font-serif italic text-6xl md:text-8xl leading-tight mb-6"
+          style={{
+            WebkitTextStroke: "2px white",
+            textShadow: "3px 3px 0px #8B1A1A, -1px -1px 0px #8B1A1A, 1px -1px 0px #8B1A1A, -1px 1px 0px #8B1A1A",
+            color: "white",
+          }}
         >
           for the gyal dem.
         </motion.h1>
