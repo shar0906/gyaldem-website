@@ -1,24 +1,39 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
-
-const categories = ["ladies-night", "gyalentines", "community", "cultural-experiences"];
+import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+const categories = [
+  "ladies-night",
+  "gyalentines",
+  "community",
+  "cultural-experiences",
+];
 
 export async function GET() {
   const gallery: Record<string, string[]> = {};
 
   for (const category of categories) {
-    const dir = path.join(process.cwd(), "public", "gallery", category);
-    try {
-      const files = fs.readdirSync(dir).filter((f) =>
-        [".jpg", ".jpeg", ".png", ".webp"].includes(path.extname(f).toLowerCase())
-      );
-      gallery[category] = files.map((f) => `/gallery/${category}/${f}`);
-    } catch {
+    const { data, error } = await supabase.storage
+      .from("gallery-photos")
+      .list(category, { sortBy: { column: "created_at", order: "desc" } });
+
+    if (error || !data) {
       gallery[category] = [];
+      continue;
     }
+
+    gallery[category] = data
+      .filter((f) => f.name !== ".emptyFolderPlaceholder")
+      .map((f) => supabase.storage
+        .from("gallery-photos")
+        .getPublicUrl(`${category}/${f.name}`).data.publicUrl
+      );
   }
 
   return NextResponse.json(gallery);
