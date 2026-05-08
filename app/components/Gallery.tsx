@@ -9,9 +9,11 @@ const categoryMeta = [
   { id: "cultural-experiences", label: "Cultural Experiences", cover: "/entergate_background.jpg" },
 ];
 
+type Photo = { url: string; caption: string | null };
+
 export default function Gallery() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [photos, setPhotos] = useState<Record<string, string[]>>({});
+  const [photos, setPhotos] = useState<Record<string, Photo[]>>({});
 
   useEffect(() => {
     fetch("/api/gallery")
@@ -33,7 +35,7 @@ export default function Gallery() {
               style={{ position: "relative", cursor: "pointer", overflow: "hidden", aspectRatio: "4/3", backgroundColor: "#d4c9b8" }}
             >
               <img
-                src={photos[cat.id]?.[0] || cat.cover}
+                src={photos[cat.id]?.[0]?.url || cat.cover}
                 alt={cat.label}
                 style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.5s ease" }}
               />
@@ -69,7 +71,12 @@ export default function Gallery() {
               <div style={{ columns: "2 300px", gap: "12px" }}>
                 {photos[activeCategory].map((photo, i) => (
                   <div key={i} style={{ breakInside: "avoid", marginBottom: "12px" }}>
-                    <img src={photo} alt={(active?.label || "") + " " + (i + 1)} style={{ width: "100%", display: "block" }} />
+                    <img src={photo.url} alt={photo.caption || (active?.label + " " + (i + 1))} style={{ width: "100%", display: "block" }} />
+                    {photo.caption && (
+                      <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "11px", fontFamily: "sans-serif", margin: "6px 0 0", fontStyle: "italic" }}>
+                        {photo.caption}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>

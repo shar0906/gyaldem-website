@@ -11,24 +11,21 @@ const categories = [
 ];
 
 export async function GET() {
-  const gallery: Record<string, string[]> = {};
+  const gallery: Record<string, { url: string; caption: string | null }[]> = {};
 
   for (const category of categories) {
-    const { data, error } = await supabase.storage
-      .from("gallery-photos")
-      .list(category, { sortBy: { column: "created_at", order: "desc" } });
+    const { data, error } = await supabase
+      .from("gallery_photos")
+      .select("url, caption")
+      .eq("category", category)
+      .order("created_at", { ascending: false });
 
     if (error || !data) {
       gallery[category] = [];
       continue;
     }
 
-    gallery[category] = data
-      .filter((f) => f.name !== ".emptyFolderPlaceholder")
-      .map((f) => supabase.storage
-        .from("gallery-photos")
-        .getPublicUrl(`${category}/${f.name}`).data.publicUrl
-      );
+    gallery[category] = data;
   }
 
   return NextResponse.json(gallery);
