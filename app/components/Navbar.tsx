@@ -87,7 +87,7 @@ export default function Navbar() {
         <div style={{ backgroundColor: "rgba(10,10,10,0.98)", padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
           <a href="/#who-we-are" onClick={() => setMenuOpen(false)} style={{ color: "rgba(255,255,255,0.8)", fontSize: "12px", letterSpacing: "0.2em", textTransform: "uppercase", textDecoration: "none", fontFamily: "sans-serif" }}>Who We Are</a>
           <a href="/#what-we-do" onClick={() => setMenuOpen(false)} style={{ color: "rgba(255,255,255,0.8)", fontSize: "12px", letterSpacing: "0.2em", textTransform: "uppercase", textDecoration: "none", fontFamily: "sans-serif" }}>What We Do</a>
-          <a href="/gallery" onClick={() => setMenuOpen(false)} style={{ color: "rgba(255,255,255,0.8)", fontSize: "12px", letterSpacing: "0.2em", textTransform: "uppercase", textDecoration: "none", fontFamily: "sans-serif" }}>The Room</a>
+          {/* <a href="/gallery" onClick={() => setMenuOpen(false)} style={{ color: "rgba(255,255,255,0.8)", fontSize: "12px", letterSpacing: "0.2em", textTransform: "uppercase", textDecoration: "none", fontFamily: "sans-serif" }}>The Room</a> */}
           <a href="/events" onClick={() => setMenuOpen(false)} style={{ color: "rgba(255,255,255,0.8)", fontSize: "12px", letterSpacing: "0.2em", textTransform: "uppercase", textDecoration: "none", fontFamily: "sans-serif" }}>Events</a>
           <a href="/#join" onClick={() => setMenuOpen(false)} style={{ border: "1px solid #8B1A1A", color: "white", padding: "12px 20px", fontSize: "12px", letterSpacing: "0.2em", textTransform: "uppercase", textDecoration: "none", textAlign: "center", fontFamily: "sans-serif" }}>Join the Club</a>
         </div>
