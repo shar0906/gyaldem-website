@@ -70,23 +70,25 @@ export default function AdminDashboard() {
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#F5F0E8" }}>
-      <div style={{ backgroundColor: "#0A0A0A", padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+
+      {/* Header */}
+      <div style={{ backgroundColor: "#0A0A0A", padding: "12px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <img src="/gyaldem_red_wl_transparent.png" alt="Gyal Dem" style={{ height: "60px", objectFit: "contain" }} />
-          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "11px", letterSpacing: "0.3em", textTransform: "uppercase", fontFamily: "sans-serif", margin: 0 }}>Admin</p>
+          <p style={{ color: "rgba(255,255,255,0.35)", fontSize: "9px", letterSpacing: "0.3em", textTransform: "uppercase", fontFamily: "sans-serif", margin: 0 }}>Admin</p>
         </div>
-        <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           {view === "events" && (
             <button
               onClick={() => { setEditingEvent(null); setView("add"); }}
-              style={{ backgroundColor: "#8B1A1A", color: "white", border: "none", padding: "10px 20px", fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "sans-serif", cursor: "pointer" }}
+              style={{ backgroundColor: "#8B1A1A", color: "white", border: "none", padding: "8px 14px", fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", cursor: "pointer" }}
             >
               + Add Event
             </button>
           )}
           <button
             onClick={handleLogout}
-            style={{ backgroundColor: "transparent", color: "rgba(255,255,255,0.4)", border: "1px solid rgba(255,255,255,0.1)", padding: "10px 16px", fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "sans-serif", cursor: "pointer" }}
+            style={{ backgroundColor: "transparent", color: "rgba(255,255,255,0.4)", border: "1px solid rgba(255,255,255,0.1)", padding: "8px 12px", fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", cursor: "pointer" }}
           >
             Logout
           </button>
@@ -97,13 +99,13 @@ export default function AdminDashboard() {
       <div style={{ backgroundColor: "white", borderBottom: "0.5px solid rgba(10,10,10,0.15)", display: "flex" }}>
         <button
           onClick={() => setView("events")}
-          style={{ background: "none", border: "none", borderBottom: view === "events" ? "2px solid #8B1A1A" : "2px solid transparent", padding: "16px 24px", fontSize: "12px", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "sans-serif", color: view === "events" ? "#8B1A1A" : "rgba(10,10,10,0.5)", cursor: "pointer" }}
+          style={{ background: "none", border: "none", borderBottom: view === "events" ? "2px solid #8B1A1A" : "2px solid transparent", padding: "14px 20px", fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "sans-serif", color: view === "events" ? "#8B1A1A" : "rgba(10,10,10,0.5)", cursor: "pointer" }}
         >
           Events
         </button>
         <button
           onClick={() => setView("gallery")}
-          style={{ background: "none", border: "none", borderBottom: view === "gallery" ? "2px solid #8B1A1A" : "2px solid transparent", padding: "16px 24px", fontSize: "12px", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "sans-serif", color: view === "gallery" ? "#8B1A1A" : "rgba(10,10,10,0.5)", cursor: "pointer" }}
+          style={{ background: "none", border: "none", borderBottom: view === "gallery" ? "2px solid #8B1A1A" : "2px solid transparent", padding: "14px 20px", fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "sans-serif", color: view === "gallery" ? "#8B1A1A" : "rgba(10,10,10,0.5)", cursor: "pointer" }}
         >
           The Room
         </button>
@@ -112,26 +114,29 @@ export default function AdminDashboard() {
       {view === "gallery" ? (
         <AdminGallery />
       ) : (
-        <div style={{ maxWidth: "1152px", margin: "0 auto", padding: "40px 32px" }}>
-          <h1 style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: "36px", color: "#0A0A0A", margin: "0 0 32px" }}>Events</h1>
+        <div style={{ maxWidth: "1152px", margin: "0 auto", padding: "32px 20px" }}>
+          <h1 style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: "32px", color: "#0A0A0A", margin: "0 0 24px" }}>Events</h1>
 
           {loading ? (
             <p style={{ color: "rgba(10,10,10,0.4)", fontFamily: "sans-serif", fontSize: "14px" }}>Loading...</p>
           ) : events.length === 0 ? (
-            <p style={{ color: "rgba(10,10,10,0.4)", fontFamily: "sans-serif", fontSize: "14px" }}>No events yet. Add your first one.</p>
+            <p style={{ color: "rgba(10,10,10,0.4)", fontFamily: "sans-serif", fontSize: "14px" }}>No events yet.</p>
           ) : (
             <div style={{ border: "0.5px solid rgba(10,10,10,0.15)" }}>
               {events.map((event, i) => (
-                <div key={event.id} style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "16px 20px", borderBottom: i < events.length - 1 ? "0.5px solid rgba(10,10,10,0.15)" : "none", backgroundColor: "white" }}>
-                  <div>
-                    <p style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: "16px", color: "#0A0A0A", margin: "0 0 4px" }}>{event.name}</p>
-                    <p style={{ fontSize: "12px", color: "rgba(10,10,10,0.4)", fontFamily: "sans-serif", margin: 0 }}>{formatDate(event.date, event.end_date)} · {event.location || "TBD"} · {event.event_type}</p>
-                  </div>
-                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                <div
+                  key={event.id}
+                  style={{ padding: "14px 16px", borderBottom: i < events.length - 1 ? "0.5px solid rgba(10,10,10,0.15)" : "none", backgroundColor: "white", display: "flex", flexDirection: "column", gap: "8px" }}
+                >
+                  <p style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: "15px", color: "#0A0A0A", margin: 0 }}>{event.name}</p>
+                  <p style={{ fontSize: "11px", color: "rgba(10,10,10,0.4)", fontFamily: "sans-serif", margin: 0 }}>
+                    {formatDate(event.date, event.end_date)} · {event.location || "TBD"}
+                  </p>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
                     <select
                       value={event.status}
                       onChange={(e) => updateStatus(event.id, e.target.value)}
-                      style={{ fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", color: statusColor(event.status), border: "0.5px solid rgba(10,10,10,0.2)", padding: "6px 10px", backgroundColor: "white", cursor: "pointer" }}
+                      style={{ fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", color: statusColor(event.status), border: "0.5px solid rgba(10,10,10,0.2)", padding: "5px 8px", backgroundColor: "white", cursor: "pointer" }}
                     >
                       <option value="draft">Draft</option>
                       <option value="upcoming">Upcoming</option>
@@ -139,13 +144,13 @@ export default function AdminDashboard() {
                     </select>
                     <button
                       onClick={() => { setEditingEvent(event); setView("edit"); }}
-                      style={{ backgroundColor: "transparent", border: "0.5px solid rgba(10,10,10,0.2)", color: "rgba(10,10,10,0.6)", padding: "6px 14px", fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", cursor: "pointer" }}
+                      style={{ backgroundColor: "transparent", border: "0.5px solid rgba(10,10,10,0.2)", color: "rgba(10,10,10,0.6)", padding: "5px 12px", fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", cursor: "pointer" }}
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => deleteEvent(event.id)}
-                      style={{ backgroundColor: "transparent", border: "0.5px solid rgba(139,26,26,0.3)", color: "#8B1A1A", padding: "6px 14px", fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", cursor: "pointer" }}
+                      style={{ backgroundColor: "transparent", border: "0.5px solid rgba(139,26,26,0.3)", color: "#8B1A1A", padding: "5px 12px", fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", cursor: "pointer" }}
                     >
                       Delete
                     </button>

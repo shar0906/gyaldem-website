@@ -18,5 +18,6 @@ export default async function EventsPage() {
   const upcoming = (events || []).filter((e: Event) => e.status === "upcoming");
   const past = (events || []).filter((e: Event) => e.status === "past");
 
-  return <EventsClient upcoming={upcoming} past={past} />;
+  return (
+    <EventsClient upcoming={upcoming} past={past} />);
 }
