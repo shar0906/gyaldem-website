@@ -44,7 +44,7 @@ export default function JoinTheClub() {
           className="flex flex-col gap-6"
         >
           <h2 className="text-[#8B1A1A] font-serif italic text-5xl md:text-6xl leading-tight">
-            you should be in the room
+            the room is better with you in it.
           </h2>
           <p className="text-white/70 text-lg leading-relaxed">
             Be the first to know about upcoming events and membership announcements. Founding membership is limited — get on the list before it opens.

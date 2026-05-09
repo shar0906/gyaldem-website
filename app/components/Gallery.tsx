@@ -73,9 +73,13 @@ export default function Gallery() {
                   <div key={i} style={{ breakInside: "avoid", marginBottom: "12px" }}>
                     <img src={photo.url} alt={photo.caption || (active?.label + " " + (i + 1))} style={{ width: "100%", display: "block" }} />
                     {photo.caption && (
-                      <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "11px", fontFamily: "sans-serif", margin: "6px 0 0", fontStyle: "italic" }}>
-                        {photo.caption}
-                      </p>
+                      <div style={{ marginTop: "6px" }}>
+                        {photo.caption.split(" | ").map((line, idx) => (
+                          <p key={idx} style={{ color: "rgba(255,255,255,0.5)", fontSize: "11px", fontFamily: "sans-serif", margin: "0 0 2px", fontStyle: "italic" }}>
+                            {line}
+                          </p>
+                        ))}
+                      </div>
                     )}
                   </div>
                 ))}

@@ -73,9 +73,9 @@ export default function AdminDashboard() {
 
       {/* Header */}
       <div style={{ backgroundColor: "#0A0A0A", padding: "12px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
           <img src="/gyaldem_red_wl_transparent.png" alt="Gyal Dem" style={{ height: "60px", objectFit: "contain" }} />
-          <p style={{ color: "rgba(255,255,255,0.35)", fontSize: "9px", letterSpacing: "0.3em", textTransform: "uppercase", fontFamily: "sans-serif", margin: 0 }}>Admin</p>
+          <p style={{ color: "rgba(255,255,255,0.35)", fontSize: "8px", letterSpacing: "0.3em", textTransform: "uppercase", fontFamily: "sans-serif", margin: "-4px 0 0 4px" }}>Admin</p>
         </div>
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           {view === "events" && (
@@ -125,37 +125,39 @@ export default function AdminDashboard() {
             <div style={{ border: "0.5px solid rgba(10,10,10,0.15)" }}>
               {events.map((event, i) => (
                 <div
-                  key={event.id}
-                  style={{ padding: "14px 16px", borderBottom: i < events.length - 1 ? "0.5px solid rgba(10,10,10,0.15)" : "none", backgroundColor: "white", display: "flex", flexDirection: "column", gap: "8px" }}
-                >
+  key={event.id}
+  style={{ padding: "14px 16px", borderBottom: i < events.length - 1 ? "0.5px solid rgba(10,10,10,0.15)" : "none", backgroundColor: "white", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}
+>
+                <div style={{ flex: 1, minWidth: "200px", display: "flex", flexDirection: "column", gap: "4px" }}>
                   <p style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: "15px", color: "#0A0A0A", margin: 0 }}>{event.name}</p>
                   <p style={{ fontSize: "11px", color: "rgba(10,10,10,0.4)", fontFamily: "sans-serif", margin: 0 }}>
                     {formatDate(event.date, event.end_date)} · {event.location || "TBD"}
                   </p>
-                  <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-                    <select
-                      value={event.status}
-                      onChange={(e) => updateStatus(event.id, e.target.value)}
-                      style={{ fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", color: statusColor(event.status), border: "0.5px solid rgba(10,10,10,0.2)", padding: "5px 8px", backgroundColor: "white", cursor: "pointer" }}
-                    >
-                      <option value="draft">Draft</option>
-                      <option value="upcoming">Upcoming</option>
-                      <option value="past">Past</option>
-                    </select>
-                    <button
-                      onClick={() => { setEditingEvent(event); setView("edit"); }}
-                      style={{ backgroundColor: "transparent", border: "0.5px solid rgba(10,10,10,0.2)", color: "rgba(10,10,10,0.6)", padding: "5px 12px", fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", cursor: "pointer" }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => deleteEvent(event.id)}
-                      style={{ backgroundColor: "transparent", border: "0.5px solid rgba(139,26,26,0.3)", color: "#8B1A1A", padding: "5px 12px", fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", cursor: "pointer" }}
-                    >
-                      Delete
-                    </button>
-                  </div>
                 </div>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center", flexShrink: 0 }}>
+                  <select
+                    value={event.status}
+                    onChange={(e) => updateStatus(event.id, e.target.value)}
+                    style={{ fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", color: statusColor(event.status), border: "0.5px solid rgba(10,10,10,0.2)", padding: "5px 8px", backgroundColor: "white", cursor: "pointer" }}
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="upcoming">Upcoming</option>
+                    <option value="past">Past</option>
+                  </select>
+                  <button
+                    onClick={() => { setEditingEvent(event); setView("edit"); }}
+                    style={{ backgroundColor: "transparent", border: "0.5px solid rgba(10,10,10,0.2)", color: "rgba(10,10,10,0.6)", padding: "5px 12px", fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", cursor: "pointer" }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => deleteEvent(event.id)}
+                    style={{ backgroundColor: "transparent", border: "0.5px solid rgba(139,26,26,0.3)", color: "#8B1A1A", padding: "5px 12px", fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", cursor: "pointer" }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
               ))}
             </div>
           )}

@@ -1,3 +1,4 @@
+import JoinBanner from "../components/JoinBanner";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Gallery from "../components/Gallery";
@@ -13,6 +14,7 @@ export default function GalleryPage() {
         </div>
         <Gallery />
       </div>
+      <JoinBanner/>
       <Footer />
     </main>
   );
