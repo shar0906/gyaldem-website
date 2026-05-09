@@ -12,17 +12,20 @@ import Footer from "./components/Footer";
 export default function Home() {
   const [entered, setEntered] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [showGate, setShowGate] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     const hasEntered = sessionStorage.getItem("entered");
     const hasHash = window.location.hash.length > 0;
+
     if (hasEntered || hasHash) {
       setEntered(true);
-      if (hasHash) {
-        sessionStorage.setItem("entered", "true");
-      }
+      setShowGate(false);
+      if (hasHash) sessionStorage.setItem("entered", "true");
+    } else {
+      setShowGate(true);
     }
+    setMounted(true);
   }, []);
 
   useEffect(() => {
@@ -46,7 +49,12 @@ export default function Home() {
 
   return (
     <main>
-      {!entered && <EnterGate onEnter={() => setEntered(true)} />}
+      {showGate && !entered && (
+        <EnterGate onEnter={() => {
+          setEntered(true);
+          setShowGate(false);
+        }} />
+      )}
       <Navbar />
       <Hero />
       <WhoWeAre />
