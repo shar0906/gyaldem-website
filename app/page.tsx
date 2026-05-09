@@ -16,7 +16,13 @@ export default function Home() {
   useEffect(() => {
     setMounted(true);
     const hasEntered = sessionStorage.getItem("entered");
-    if (hasEntered) setEntered(true);
+    const hasHash = window.location.hash.length > 0;
+    if (hasEntered || hasHash) {
+      setEntered(true);
+      if (hasHash) {
+        sessionStorage.setItem("entered", "true");
+      }
+    }
   }, []);
 
   useEffect(() => {
