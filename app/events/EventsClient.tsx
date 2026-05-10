@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import type { Event } from "../lib/supabase";
-import JoinBanner from "../components/JoinBanner";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import JoinBanner from "../components/JoinBanner";
 
 export default function EventsClient({
   upcoming,
@@ -108,29 +108,34 @@ export default function EventsClient({
               </p>
               {past.map((event) => (
                 <div key={event.id} style={{ borderTop: "0.5px solid rgba(10,10,10,0.15)" }}>
-                  <div style={{ display: "flex", gap: "20px", alignItems: "center", padding: "20px 0" }} className="past-event-row">
-                    <div style={{ width: "80px", height: "80px", backgroundColor: "#d4c9b8", flexShrink: 0, overflow: "hidden" }}>
-                      {event.flyer_url && (
-                        <img src={event.flyer_url} alt={event.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      )}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ color: "rgba(10,10,10,0.4)", fontSize: "11px", letterSpacing: "0.15em", fontFamily: "sans-serif", margin: "0 0 4px" }}>
-                        {formatDate(event.date, event.end_date)}
-                      </p>
-                      <p style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: "18px", color: "#0A0A0A", margin: "0 0 4px" }}>
-                        {event.name}
-                      </p>
-                      <p style={{ fontSize: "12px", color: "rgba(10,10,10,0.5)", fontFamily: "sans-serif", margin: 0 }}>
-                        {eventTypeLabel(event.event_type)}{event.location ? ` · ${event.location}` : ""}
-                      </p>
+                  <div style={{ padding: "20px 0", display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
+                      <div style={{ width: "80px", height: "80px", backgroundColor: "#d4c9b8", flexShrink: 0, overflow: "hidden" }}>
+                        {event.flyer_url && (
+                          <img src={event.flyer_url} alt={event.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        )}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ color: "rgba(10,10,10,0.4)", fontSize: "11px", letterSpacing: "0.15em", fontFamily: "sans-serif", margin: "0 0 4px" }}>
+                          {formatDate(event.date, event.end_date)}
+                        </p>
+                        <p style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: "18px", color: "#0A0A0A", margin: "0 0 4px", lineHeight: 1.3 }}>
+                          {event.name}
+                        </p>
+                        <p style={{ fontSize: "12px", color: "rgba(10,10,10,0.5)", fontFamily: "sans-serif", margin: 0 }}>
+                          {eventTypeLabel(event.event_type)}{event.location ? ` · ${event.location}` : ""}
+                        </p>
+                      </div>
                     </div>
                     {event.event_type === "installation" ? (
-                      <span onClick={() => setActiveInstallation(event)} style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#0A0A0A", fontFamily: "sans-serif", borderBottom: "1px solid #8B1A1A", paddingBottom: "2px", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+                      <span
+                        onClick={() => setActiveInstallation(event)}
+                        style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#0A0A0A", fontFamily: "sans-serif", borderBottom: "1px solid #8B1A1A", paddingBottom: "2px", cursor: "pointer", alignSelf: "flex-start" }}
+                      >
                         View Activation →
                       </span>
                     ) : event.rsvp_link ? (
-                      <a href={event.rsvp_link} style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#0A0A0A", fontFamily: "sans-serif", textDecoration: "none", borderBottom: "1px solid #8B1A1A", paddingBottom: "2px", whiteSpace: "nowrap", flexShrink: 0 }}>View Event →</a>
+                      <a href={event.rsvp_link} style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#0A0A0A", fontFamily: "sans-serif", textDecoration: "none", borderBottom: "1px solid #8B1A1A", paddingBottom: "2px", alignSelf: "flex-start" }}>View Event →</a>
                     ) : null}
                   </div>
                 </div>
@@ -141,6 +146,7 @@ export default function EventsClient({
 
         </div>
       </div>
+
       <JoinBanner />
       <Footer />
 
@@ -151,7 +157,6 @@ export default function EventsClient({
           onClick={(e) => { if (e.target === e.currentTarget) setActiveInstallation(null); }}
         >
           <div style={{ backgroundColor: "#F5F0E8", maxWidth: "680px", width: "100%", maxHeight: "90vh", display: "flex", flexDirection: "column", position: "relative" }}>
-            {/* Fixed top — image + type/date/location */}
             <div style={{ flexShrink: 0 }}>
               {activeInstallation.flyer_url && (
                 <div style={{ height: "260px", overflow: "hidden" }}>
@@ -164,7 +169,6 @@ export default function EventsClient({
                 </p>
               </div>
             </div>
-            {/* Scrollable — name + description */}
             <div style={{ overflowY: "auto", padding: "16px 32px 32px", flex: 1 }}>
               <h2 style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: "28px", color: "#0A0A0A", margin: "0 0 16px", lineHeight: 1.2 }}>
                 {activeInstallation.name}
@@ -184,14 +188,6 @@ export default function EventsClient({
           </div>
         </div>
       )}
-
-      <style>{`
-        @media (max-width: 640px) {
-          .past-event-row {
-            flex-wrap: wrap;
-          }
-        }
-      `}</style>
     </main>
   );
 }
