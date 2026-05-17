@@ -5,6 +5,7 @@ import type { Event } from "../lib/supabase";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import JoinBanner from "../components/JoinBanner";
+import SetEntered from "../components/SetEntered";
 
 export default function EventsClient({
   upcoming,
@@ -188,6 +189,7 @@ export default function EventsClient({
           </div>
         </div>
       )}
+    <SetEntered />
     </main>
   );
 }

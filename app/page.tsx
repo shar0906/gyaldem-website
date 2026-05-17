@@ -17,8 +17,10 @@ export default function Home() {
   useEffect(() => {
     const hasEntered = sessionStorage.getItem("entered");
     const hasHash = window.location.hash.length > 0;
+    const referrer = document.referrer;
+    const cameFromSite = referrer.includes("gyaldemsocialclub.com") || referrer.includes("localhost");
 
-    if (hasEntered || hasHash) {
+    if (hasEntered || hasHash || cameFromSite) {
       setEntered(true);
       setShowGate(false);
       if (hasHash) sessionStorage.setItem("entered", "true");
@@ -53,6 +55,7 @@ export default function Home() {
         <EnterGate onEnter={() => {
           setEntered(true);
           setShowGate(false);
+          sessionStorage.setItem("entered", "true");
         }} />
       )}
       <Navbar />
