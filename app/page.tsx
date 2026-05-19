@@ -17,10 +17,11 @@ export default function Home() {
   useEffect(() => {
     const hasEntered = sessionStorage.getItem("entered");
     const hasHash = window.location.hash.length > 0;
-    const referrer = document.referrer;
-    const cameFromSite = referrer.includes("gyaldemsocialclub.com") || referrer.includes("localhost");
 
-    if (hasEntered || hasHash || cameFromSite) {
+    // Check cookie set by other pages
+    const hasCookie = document.cookie.includes("gd_entered=true");
+
+    if (hasEntered || hasHash || hasCookie) {
       setEntered(true);
       setShowGate(false);
       if (hasHash) sessionStorage.setItem("entered", "true");
@@ -56,6 +57,7 @@ export default function Home() {
           setEntered(true);
           setShowGate(false);
           sessionStorage.setItem("entered", "true");
+          document.cookie = "gd_entered=true; path=/; max-age=86400";
         }} />
       )}
       <Navbar />
