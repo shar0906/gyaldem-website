@@ -11,6 +11,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"events" | "gallery" | "add" | "edit">("events");
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [showTools, setShowTools] = useState(false);
 
   const fetchEvents = async () => {
     setLoading(true);
@@ -96,19 +97,37 @@ export default function AdminDashboard() {
       </div>
 
       {/* Nav tabs */}
-      <div style={{ backgroundColor: "white", borderBottom: "0.5px solid rgba(10,10,10,0.15)", display: "flex" }}>
-        <button
-          onClick={() => setView("events")}
-          style={{ background: "none", border: "none", borderBottom: view === "events" ? "2px solid #8B1A1A" : "2px solid transparent", padding: "14px 20px", fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "sans-serif", color: view === "events" ? "#8B1A1A" : "rgba(10,10,10,0.5)", cursor: "pointer" }}
-        >
-          Events
-        </button>
-        <button
-          onClick={() => setView("gallery")}
-          style={{ background: "none", border: "none", borderBottom: view === "gallery" ? "2px solid #8B1A1A" : "2px solid transparent", padding: "14px 20px", fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "sans-serif", color: view === "gallery" ? "#8B1A1A" : "rgba(10,10,10,0.5)", cursor: "pointer" }}
-        >
-          The Room
-        </button>
+      <div style={{ backgroundColor: "white", borderBottom: "0.5px solid rgba(10,10,10,0.15)", display: "flex", justifyContent: "space-between", alignItems: "center", paddingRight: "20px" }}>
+        <div style={{ display: "flex" }}>
+          <button
+            onClick={() => setView("events")}
+            style={{ background: "none", border: "none", borderBottom: view === "events" ? "2px solid #8B1A1A" : "2px solid transparent", padding: "14px 20px", fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "sans-serif", color: view === "events" ? "#8B1A1A" : "rgba(10,10,10,0.5)", cursor: "pointer" }}
+          >
+            Events
+          </button>
+          <button
+            onClick={() => setView("gallery")}
+            style={{ background: "none", border: "none", borderBottom: view === "gallery" ? "2px solid #8B1A1A" : "2px solid transparent", padding: "14px 20px", fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "sans-serif", color: view === "gallery" ? "#8B1A1A" : "rgba(10,10,10,0.5)", cursor: "pointer" }}
+          >
+            The Room
+          </button>
+        </div>
+        {/* Quick Access Tools */}
+        <div style={{ position: "relative" }}>
+          <button
+            onClick={() => setShowTools((v) => !v)}
+            style={{ background: "none", border: "0.5px solid rgba(10,10,10,0.15)", padding: "6px 12px", fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", color: "rgba(10,10,10,0.5)", cursor: "pointer", whiteSpace: "nowrap" }}
+          >
+            Tools ▾
+          </button>
+          {showTools && (
+            <div style={{ position: "absolute", right: 0, top: "100%", backgroundColor: "white", border: "0.5px solid rgba(10,10,10,0.15)", zIndex: 50, minWidth: "140px", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
+              <a href="https://railway.com/project/5e4d2ecc-24db-406c-94ac-f52150327896/service/66890aeb-1052-47d6-81f8-f673ceb24c53?environmentId=43290ffa-474e-491f-9d99-6a19dd41e1e9" style={{ display: "block", padding: "10px 16px", fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", color: "rgba(10,10,10,0.6)", textDecoration: "none", borderBottom: "0.5px solid rgba(10,10,10,0.08)" }}>Railway</a>
+              <a href="https://app.kit.com/dashboard" style={{ display: "block", padding: "10px 16px", fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", color: "rgba(10,10,10,0.6)", textDecoration: "none" }}>Subscribers</a>
+              <a href="https://supabase.com/dashboard/project/xuobimjrtzstgwvumckt" style={{ display: "block", padding: "10px 16px", fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", color: "rgba(10,10,10,0.6)", textDecoration: "none", borderBottom: "0.5px solid rgba(10,10,10,0.08)" }}>Supabase</a>
+            </div>
+          )}
+        </div>
       </div>
 
       {view === "gallery" ? (
