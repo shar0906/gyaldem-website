@@ -122,9 +122,9 @@ export default function AdminDashboard() {
           </button>
           {showTools && (
             <div style={{ position: "absolute", right: 0, top: "100%", backgroundColor: "white", border: "0.5px solid rgba(10,10,10,0.15)", zIndex: 50, minWidth: "140px", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
-              <a href="https://railway.com/project/5e4d2ecc-24db-406c-94ac-f52150327896/service/66890aeb-1052-47d6-81f8-f673ceb24c53?environmentId=43290ffa-474e-491f-9d99-6a19dd41e1e9" style={{ display: "block", padding: "10px 16px", fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", color: "rgba(10,10,10,0.6)", textDecoration: "none", borderBottom: "0.5px solid rgba(10,10,10,0.08)" }}>Railway</a>
-              <a href="https://app.kit.com/dashboard" style={{ display: "block", padding: "10px 16px", fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", color: "rgba(10,10,10,0.6)", textDecoration: "none" }}>Subscribers</a>
-              <a href="https://supabase.com/dashboard/project/xuobimjrtzstgwvumckt" style={{ display: "block", padding: "10px 16px", fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", color: "rgba(10,10,10,0.6)", textDecoration: "none", borderBottom: "0.5px solid rgba(10,10,10,0.08)" }}>Supabase</a>
+              <a href="https://railway.com/project/5e4d2ecc-24db-406c-94ac-f52150327896/service/66890aeb-1052-47d6-81f8-f673ceb24c53?environmentId=43290ffa-474e-491f-9d99-6a19dd41e1e9" target="_blank" style={{ display: "block", padding: "10px 16px", fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", color: "rgba(10,10,10,0.6)", textDecoration: "none", borderBottom: "0.5px solid rgba(10,10,10,0.08)" }}>Railway</a>
+              <a href="https://app.kit.com/dashboard" target="_blank" style={{ display: "block", padding: "10px 16px", fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", color: "rgba(10,10,10,0.6)", textDecoration: "none" }}>Subscribers</a>
+              <a href="https://supabase.com/dashboard/project/xuobimjrtzstgwvumckt" target="_blank" style={{ display: "block", padding: "10px 16px", fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", color: "rgba(10,10,10,0.6)", textDecoration: "none", borderBottom: "0.5px solid rgba(10,10,10,0.08)" }}>Supabase</a>
             </div>
           )}
         </div>

@@ -1,10 +1,32 @@
-import JoinBanner from "../components/JoinBanner";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Gallery from "../components/Gallery";
+import JoinBanner from "../components/JoinBanner";
 import SetEntered from "../components/SetEntered";
+import { supabase } from "../lib/supabase";
 
-export default function GalleryPage() {
+export const revalidate = 60;
+
+const categories = [
+  "ladies-night",
+  "gyalentines", 
+  "community",
+  "cultural-experiences",
+];
+
+export default async function GalleryPage() {
+  const gallery: Record<string, { url: string; caption: string | null }[]> = {};
+
+  for (const category of categories) {
+    const { data } = await supabase
+      .from("gallery_photos")
+      .select("url, caption")
+      .eq("category", category)
+      .order("created_at", { ascending: false });
+
+    gallery[category] = data || [];
+  }
+
   return (
     <main style={{ backgroundColor: "#F5F0E8", minHeight: "100vh" }}>
       <SetEntered />
@@ -14,9 +36,9 @@ export default function GalleryPage() {
           <p style={{ color: "#8B1A1A", fontSize: "11px", letterSpacing: "0.3em", textTransform: "uppercase", fontFamily: "sans-serif", margin: "0 0 8px" }}>Gallery</p>
           <h1 style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: "clamp(40px, 6vw, 72px)", color: "#0A0A0A", margin: 0, lineHeight: 1 }}>the room.</h1>
         </div>
-        <Gallery />
+        <Gallery initialPhotos={gallery} />
       </div>
-      <JoinBanner/>
+      <JoinBanner />
       <Footer />
     </main>
   );

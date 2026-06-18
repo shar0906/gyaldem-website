@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 const categoryMeta = [
   { id: "ladies-night", label: "Ladies Night", cover: "/entergate_background.jpg" },
@@ -11,17 +11,9 @@ const categoryMeta = [
 
 type Photo = { url: string; caption: string | null };
 
-export default function Gallery() {
+export default function Gallery({ initialPhotos = {} }: { initialPhotos?: Record<string, Photo[]> }) {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [photos, setPhotos] = useState<Record<string, Photo[]>>({});
-
-  useEffect(() => {
-    fetch("/api/gallery")
-      .then((res) => res.json())
-      .then((data) => setPhotos(data))
-      .catch(() => {});
-  }, []);
-
+  const photos = initialPhotos;
   const active = categoryMeta.find((c) => c.id === activeCategory);
 
   return (
@@ -52,7 +44,6 @@ export default function Gallery() {
         </div>
       </div>
 
-      {/* Modal */}
       {activeCategory && (
         <div
           style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.95)", zIndex: 100, overflowY: "auto", padding: "24px" }}
