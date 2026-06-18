@@ -20,7 +20,7 @@ export default function Footer() {
               <a href="/#who-we-are" style={{ color: "rgba(10,10,10,0.7)", fontSize: "14px", textDecoration: "none", fontFamily: "sans-serif" }}>Who We Are</a>
               <a href="/#what-we-do" style={{ color: "rgba(10,10,10,0.7)", fontSize: "14px", textDecoration: "none", fontFamily: "sans-serif" }}>What We Do</a>
               <a href="/events" style={{ color: "rgba(10,10,10,0.7)", fontSize: "14px", textDecoration: "none", fontFamily: "sans-serif" }}>Events</a>
-              {/* <a href="/gallery" style={{ color: "rgba(10,10,10,0.7)", fontSize: "14px", textDecoration: "none", fontFamily: "sans-serif" }}>The Room</a> */}
+              <a href="/gallery" style={{ color: "rgba(10,10,10,0.7)", fontSize: "14px", textDecoration: "none", fontFamily: "sans-serif" }}>The Room</a>
               <a href="/#join" style={{ color: "rgba(10,10,10,0.7)", fontSize: "14px", textDecoration: "none", fontFamily: "sans-serif" }}>Join the Club</a>
             </div>
           </div>
