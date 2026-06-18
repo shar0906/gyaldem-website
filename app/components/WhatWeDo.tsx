@@ -5,15 +5,15 @@ import { motion } from "framer-motion";
 const cards = [
   {
     title: "ladies nights",
-    description: "Monthly evenings designed around community ritual — good music, intentional conversation, and a room full of women who show up fully. Not passive attendance. Participation.",
+    description: "Monthly evenings designed around community ritual — good music, intentional conversation, and a room full of women who show up fully.",
   },
   {
     title: "cultural experiences",
-    description: "From pop-ups to immersive activations, every Gyal Dem moment blends social energy with emotional depth. Cultural salon. Party with purpose. Community without the stiffness.",
+    description: "From pop-ups to immersive activations, every Gyal Dem moment blends social energy with emotional depth.",
   },
   {
     title: "our community",
-    description: "Our community doesn't just attend — they amplify. Creatives, founders, tastemakers, and culturally fluent women who are influential within their circles. Not tourists. Participants.",
+    description: "Our community doesn't just attend — they amplify. Creatives, founders, tastemakers, and culturally fluent women who are influential within their circles.",
   },
 ];
 
