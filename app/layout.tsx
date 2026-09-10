@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Script from "next/script";
+import { Suspense } from "react";
+import AnalyticsTracker from "./components/AnalyticsTracker";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://gyaldemsocialclub.com"),
   title: "Gyal Dem Social Club",
   description: "A culturally-rooted social experience platform for women of the Afro-diasporic community. Based in Miami.",
   openGraph: {
@@ -34,7 +37,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-536819950"
+          src="https://www.googletagmanager.com/gtag/js?id=G-VKF82M2N2V"
           strategy="afterInteractive"
         />
         <Script id="google-analytics" strategy="afterInteractive">
@@ -42,11 +45,16 @@ export default function RootLayout({
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', 'G-VKF82M2N2V');
+            gtag('config', 'G-VKF82M2N2V', {
+              page_path: window.location.pathname,
+            });
           `}
         </Script>
       </head>
       <body style={{ margin: 0, padding: 0, backgroundColor: "#F5F0E8" }}>
+        <Suspense fallback={null}>
+          <AnalyticsTracker />
+        </Suspense>
         {children}
       </body>
     </html>
