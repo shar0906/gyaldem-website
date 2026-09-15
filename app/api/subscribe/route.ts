@@ -4,17 +4,23 @@ import { createClient } from "@supabase/supabase-js";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
+  console.log("Supabase URL loaded:", !!process.env.NEXT_PUBLIC_SUPABASE_URL);
+  console.log("Service Key loaded:", !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+
   const { firstName, email, tier, neighborhood, bio, diasporaConcept, releaseIntent, pillars } = await req.json();
 
   if (!firstName || !email) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
-  // 🛠️ Safety check for build environment variables
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  // 🛠️ Safety check to accept both key variants automatically
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !supabaseKey) {
     console.error("Missing Supabase configuration environment keys.");
     return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
   }
+
 
   try {
     // ⚡ Initialize client dynamically to prevent build-time initialization crashes
