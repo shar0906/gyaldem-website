@@ -34,7 +34,6 @@ export async function POST(req: NextRequest) {
       supabaseKey!
     );
 
-
     // -------------------------------------------------------------------------
     // ACTION 1 — Insert into Supabase Applications Database Table
     // -------------------------------------------------------------------------
