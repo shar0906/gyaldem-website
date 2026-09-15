@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 type FormState = {
   firstName: string;
   email: string;
-  tier: "collective" | "founding" | "ambassador";
+  tier: "mailing" | "collective" | "founding" | "ambassador";
   neighborhood: string;
   bio: string;
   diasporaConcept: string;
@@ -157,52 +157,52 @@ export default function ApplyPage() {
                     {step === 1 && (
                       <motion.div key="step1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
                         <div className="flex flex-col gap-2">
-                            <label className="text-white/40 text-xs tracking-widest uppercase">Select Path of Belonging</label>
-                            <div className="flex flex-col gap-3">
-                        
-                                {/* Option 1: Collective Patron */}
-                                <button
-                                type="button"
-                                onClick={() => setFormData({ ...formData, tier: "collective" })}
-                                className={`p-4 text-left transition-all ${
-                                    formData.tier === "collective" ? "border border-[#8B1A1A] bg-white/[0.02]" : "border border-white/5 bg-white/5"
-                                }`}
-                                >
-                                <span className={`text-xs uppercase tracking-wider block font-bold ${formData.tier === "collective" ? "text-[#8B1A1A]" : "text-white"}`}>
-                                    Collective Patron (General Membership)
-                                </span>
-                                <span className="text-white/40 text-[11px] block mt-1">General seasonal admission. Priority ticketing and cultural activations.</span>
-                                </button>
+                        <label className="text-white/40 text-xs tracking-widest uppercase">Select Path of Belonging</label>
+                        <div className="flex flex-col gap-3">
+                            
+                            {/* Track 1: Collective Patron */}
+                            <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, tier: "collective" })}
+                            className={`p-4 text-left transition-all ${
+                                formData.tier === "collective" ? "border border-[#8B1A1A] bg-white/[0.02]" : "border border-white/5 bg-white/5"
+                            }`}
+                            >
+                            <span className={`text-xs uppercase tracking-wider block font-bold ${formData.tier === "collective" ? "text-[#8B1A1A]" : "text-white"}`}>
+                                Collective Patron (Core Membership)
+                            </span>
+                            <span className="text-white/40 text-[11px] block mt-1">Priority track for our upcoming core membership rollout with dues. Includes seasonal assembly invitations and members-only ticket tiers.</span>
+                            </button>
 
-                                {/* Option 2: Founding Cohort */}
-                                <button
-                                type="button"
-                                onClick={() => setFormData({ ...formData, tier: "founding" })}
-                                className={`p-4 text-left transition-all ${
-                                    formData.tier === "founding" ? "border border-[#8B1A1A] bg-white/[0.02]" : "border border-white/5 bg-white/5"
-                                }`}
-                                >
-                                <span className={`text-xs uppercase tracking-wider block font-bold ${formData.tier === "founding" ? "text-[#8B1A1A]" : "text-white"}`}>
-                                    Founding Cohort (Premium Tier)
-                                </span>
-                                <span className="text-white/40 text-[11px] block mt-1">Premium tier. Lifetime rate locks, private board dinners, and exclusive partner event access.</span>
-                                </button>
+                            {/* Track 2: Founding Cohort */}
+                            <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, tier: "founding" })}
+                            className={`p-4 text-left transition-all ${
+                                formData.tier === "founding" ? "border border-[#8B1A1A] bg-white/[0.02]" : "border border-white/5 bg-white/5"
+                            }`}
+                            >
+                            <span className={`text-xs uppercase tracking-wider block font-bold ${formData.tier === "founding" ? "text-[#8B1A1A]" : "text-white"}`}>
+                                Founding Cohort (Premium Membership)
+                            </span>
+                            <span className="text-white/40 text-[11px] block mt-1">Our signature membership tier. Guaranteed seasonal rates, private quarterly board dinners, and exclusive partner events.</span>
+                            </button>
 
-                                {/* Option 3: Brand Ambassador */}
-                                <button
-                                type="button"
-                                onClick={() => setFormData({ ...formData, tier: "ambassador" })}
-                                className={`p-4 text-left transition-all ${
-                                    formData.tier === "ambassador" ? "border border-[#8B1A1A] bg-white/[0.02]" : "border border-white/5 bg-white/5"
-                                }`}
-                                >
-                                <span className={`text-xs uppercase tracking-wider block font-bold ${formData.tier === "ambassador" ? "text-[#8B1A1A]" : "text-white"}`}>
-                                    Brand Ambassador Interest
-                                </span>
-                                <span className="text-white/40 text-[11px] block mt-1">Express interest in championing our sisterhood, driving cultural strategy, and co-curating space.</span>
-                                </button>
+                            {/* Track 3: Brand Ambassador */}
+                            <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, tier: "ambassador" })}
+                            className={`p-4 text-left transition-all ${
+                                formData.tier === "ambassador" ? "border border-[#8B1A1A] bg-white/[0.02]" : "border border-white/5 bg-white/5"
+                            }`}
+                            >
+                            <span className={`text-xs uppercase tracking-wider block font-bold ${formData.tier === "ambassador" ? "text-[#8B1A1A]" : "text-white"}`}>
+                                Brand Ambassador Interest
+                            </span>
+                            <span className="text-white/40 text-[11px] block mt-1">Express interest in championing our sisterhood, driving cultural strategy, and co-curating space.</span>
+                            </button>
 
-                            </div>
+                        </div>
                         </div>
                         <div className="flex flex-col gap-2">
                           <label className="text-white/40 text-xs uppercase">First Name</label>

@@ -5,7 +5,8 @@ import { useState } from "react";
 export default function JoinBanner() {
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
-  const [tier, setTier] = useState<"collective" | "founding">("collective");
+  // Aligned with public routing choices: defaults to core membership track
+  const [publicChoice, setPublicChoice] = useState<"membership" | "ambassador" | "mailing">("membership");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
 
   const handleSubmit = async () => {
@@ -15,7 +16,11 @@ export default function JoinBanner() {
       const res = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firstName, email, tier }),
+        body: JSON.stringify({ 
+          firstName, 
+          email, 
+          tier: publicChoice // Sends 'membership', 'ambassador', or 'mailing' securely to Kit
+        }),
       });
       if (res.ok) {
         setStatus("success");
@@ -36,63 +41,91 @@ export default function JoinBanner() {
           the room is better with you in it.
         </h2>
         <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "15px", fontFamily: "sans-serif", margin: 0, maxWidth: "480px" }}>
-          Select your path of belonging and be the first to know when admissions open.
+          Select your path of connection and receive an official portal invitation dispatch.
         </p>
         
         {status === "success" ? (
-          <p style={{ color: "white", fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: "20px" }}>
-            you're in the room. ✓
+          <p style={{ color: "white", fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: "18px", maxWidth: "480px", lineHeight: 1.5 }}>
+            {publicChoice === "mailing"
+              ? "you're on the list. ✓ Welcome to the Guest List."
+              : "request logged. ✓ Please check your inbox within a few moments to unlock private portal access."}
           </p>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", width: "100%", maxWidth: "560px" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", width: "100%", maxWidth: "720px" }}>
             
-            {/* Elegant Tier Selection Container */}
-            <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", justifyContent: "center", width: "100%" }}>
-              <label 
-                onClick={() => setTier("collective")}
+            {/* High-Level 3 Option Selection Grid */}
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center", width: "100%" }}>
+              <button 
+                type="button"
+                onClick={() => setPublicChoice("membership")}
                 style={{ 
                   display: "flex", 
                   flexDirection: "column", 
                   alignItems: "center", 
-                  padding: "16px", 
+                  padding: "12px", 
                   backgroundColor: "rgba(255,255,255,0.02)", 
-                  border: tier === "collective" ? "1px solid #8B1A1A" : "1px solid rgba(255,255,255,0.05)", 
+                  border: publicChoice === "membership" ? "1px solid #8B1A1A" : "1px solid rgba(255,255,255,0.05)", 
                   cursor: "pointer", 
                   flex: 1, 
-                  minWidth: "200px", 
+                  minWidth: "180px", 
                   transition: "all 0.2s ease" 
                 }}
               >
-                <span style={{ fontSize: "12px", letterSpacing: "0.15em", textTransform: "uppercase", color: tier === "collective" ? "#8B1A1A" : "white", fontFamily: "sans-serif", fontWeight: "bold" }}>
-                  Collective Patron
+                <span style={{ fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", color: publicChoice === "membership" ? "#8B1A1A" : "white", fontFamily: "sans-serif", fontWeight: "bold" }}>
+                  Membership Interest
                 </span>
-                <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", fontFamily: "sans-serif", marginTop: "4px" }}>
-                  General Membership
+                <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)", fontFamily: "sans-serif", marginTop: "4px" }}>
+                  Core & Premium tracks
                 </span>
-              </label>
+              </button>
 
-              <label 
-                onClick={() => setTier("founding")}
+              <button 
+                type="button"
+                onClick={() => setPublicChoice("ambassador")}
                 style={{ 
                   display: "flex", 
                   flexDirection: "column", 
                   alignItems: "center", 
-                  padding: "16px", 
+                  padding: "12px", 
                   backgroundColor: "rgba(255,255,255,0.02)", 
-                  border: tier === "founding" ? "1px solid #8B1A1A" : "1px solid rgba(255,255,255,0.05)", 
+                  border: publicChoice === "ambassador" ? "1px solid #8B1A1A" : "1px solid rgba(255,255,255,0.05)", 
                   cursor: "pointer", 
                   flex: 1, 
-                  minWidth: "200px", 
+                  minWidth: "180px", 
                   transition: "all 0.2s ease" 
                 }}
               >
-                <span style={{ fontSize: "12px", letterSpacing: "0.15em", textTransform: "uppercase", color: tier === "founding" ? "#8B1A1A" : "white", fontFamily: "sans-serif", fontWeight: "bold" }}>
-                  Founding Cohort
+                <span style={{ fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", color: publicChoice === "ambassador" ? "#8B1A1A" : "white", fontFamily: "sans-serif", fontWeight: "bold" }}>
+                  Ambassador Track
                 </span>
-                <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", fontFamily: "sans-serif", marginTop: "4px" }}>
-                  Premium & Limited
+                <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)", fontFamily: "sans-serif", marginTop: "4px" }}>
+                  Creative advocate alignments
                 </span>
-              </label>
+              </button>
+
+              <button 
+                type="button"
+                onClick={() => setPublicChoice("mailing")}
+                style={{ 
+                  display: "flex", 
+                  flexDirection: "column", 
+                  alignItems: "center", 
+                  padding: "12px", 
+                  backgroundColor: "rgba(255,255,255,0.02)", 
+                  border: publicChoice === "mailing" ? "1px solid #8B1A1A" : "1px solid rgba(255,255,255,0.05)", 
+                  cursor: "pointer", 
+                  flex: 1, 
+                  minWidth: "180px", 
+                  transition: "all 0.2s ease" 
+                }}
+              >
+                <span style={{ fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", color: publicChoice === "mailing" ? "#8B1A1A" : "white", fontFamily: "sans-serif", fontWeight: "bold" }}>
+                  The Guest List
+                </span>
+                <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)", fontFamily: "sans-serif", marginTop: "4px" }}>
+                  General digital journals
+                </span>
+              </button>
             </div>
 
             {/* Inputs Container */}
@@ -116,7 +149,7 @@ export default function JoinBanner() {
                 disabled={status === "loading"}
                 style={{ backgroundColor: "#8B1A1A", color: "white", border: "none", padding: "12px 24px", fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
               >
-                {status === "loading" ? "..." : "Join"}
+                {status === "loading" ? "..." : publicChoice === "mailing" ? "Join List" : "Request Access"}
               </button>
             </div>
           </div>

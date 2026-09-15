@@ -3,12 +3,6 @@ import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
-// Initialize the secure server-side Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function POST(req: NextRequest) {
   const { firstName, email, tier, neighborhood, bio, diasporaConcept, releaseIntent, pillars } = await req.json();
 
@@ -16,7 +10,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
+  // 🛠️ Safety check for build environment variables
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error("Missing Supabase configuration environment keys.");
+    return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
+  }
+
   try {
+    // ⚡ Initialize client dynamically to prevent build-time initialization crashes
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+
     // -------------------------------------------------------------------------
     // ACTION 1 — Insert into Supabase Applications Database Table
     // -------------------------------------------------------------------------
@@ -31,18 +37,17 @@ export async function POST(req: NextRequest) {
           bio: bio || "",
           diaspora_concept: diasporaConcept || "",
           release_intent: releaseIntent || "",
-          pillars: pillars || [] // Saves directly as a clean native database array
+          pillars: pillars || []
         },
-        { onConflict: "email" } // If they submit again, it safely overwrites their file
+        { onConflict: "email" }
       );
 
     if (supabaseError) {
       console.error("Supabase storage error:", supabaseError);
-      // We don't return early here so that the Kit email pipeline has a fallback chance to trigger
     }
 
     // -------------------------------------------------------------------------
-    // ACTION 2 — Create or update subscriber profile in Kit
+    // ACTION 2 — Create or update subscriber profile in Kit V4 API
     // -------------------------------------------------------------------------
     const subscriberRes = await fetch("https://kit.com", {
       method: "POST",
@@ -53,7 +58,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         email_address: email,
         first_name: firstName,
-        state: "inactive", // Triggers confirmation email loop
+        state: "inactive", 
         send_incentive: true,
         fields: {
           tier: tier || "collective",
@@ -77,7 +82,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No system index returned" }, { status: 500 });
     }
 
+    // -------------------------------------------------------------------------
     // ACTION 3 — Associate profile with Kit main form sequence
+    // -------------------------------------------------------------------------
     const formRes = await fetch(
       `https://kit.com{process.env.KIT_FORM_ID}/subscribers/${subscriberId}`,
       {
@@ -90,7 +97,8 @@ export async function POST(req: NextRequest) {
     );
 
     if (!formRes.ok) {
-      console.error("Kit form attachment error");
+      const formError = await formRes.json();
+      console.error("Kit form attachment error:", formError);
       return NextResponse.json({ error: "Failed to bind profile to form node" }, { status: 500 });
     }
 
