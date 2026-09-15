@@ -2,36 +2,27 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function POST(req: NextRequest) {
-  console.log("Supabase URL loaded:", !!process.env.NEXT_PUBLIC_SUPABASE_URL);
-  console.log("Service Key loaded:", !!process.env.SUPABASE_SERVICE_ROLE_KEY);
-
   const { firstName, email, tier, neighborhood, bio, diasporaConcept, releaseIntent, pillars } = await req.json();
 
   if (!firstName || !email) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
-  // 🛠️ Safety check to accept both key variants automatically
+  // 🛠️ Safety check for build environment variables
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !supabaseKey) {
     console.error("Missing Supabase configuration environment keys.");
     return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
   }
 
-
   try {
-    // ⚡ Initialize client dynamically to prevent build-time initialization crashes
-    // ⚡ Initializes client using whichever key is successfully loaded
-    // 🛠️ 1. Extract the key using your updated safety fallback string
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-
-    // ⚡ 2. Initialize using the non-null assertion operator (!) to satisfy TypeScript
+    // ⚡ Initialize client dynamically to satisfy build pipeline rules
     const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      supabaseKey!
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      supabaseKey
     );
 
     // -------------------------------------------------------------------------
@@ -60,7 +51,7 @@ export async function POST(req: NextRequest) {
     // -------------------------------------------------------------------------
     // ACTION 2 — Create or update subscriber profile in Kit V4 API
     // -------------------------------------------------------------------------
-    const subscriberRes = await fetch("https://kit.com", {
+    const subscriberRes = await fetch("https://api.kit.com/v4/subscribers", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -70,27 +61,23 @@ export async function POST(req: NextRequest) {
         email_address: email,
         first_name: firstName,
         state: "inactive", 
-        // send_incentive: true,
         fields: {
-          tier: tier || "collective",
-          neighborhood: neighborhood || "",
-          bio: bio || "",
-          diaspora_concept: diasporaConcept || "",
-          release_intent: releaseIntent || "",
-          pillars: pillars ? pillars.join(", ") : ""
+          tier: tier || "collective"
         }
       }),
     });
 
-    const subscriberData = await subscriberRes.json();
+    // ⚡ Safe text inspection to prevent parser crashes
+    const subscriberText = await subscriberRes.text();
     if (!subscriberRes.ok) {
-      console.error("Kit mapping failure:", subscriberData);
-      return NextResponse.json({ error: "Failed to map subscriber profile" }, { status: 500 });
+      console.error("Kit API Subscriber Error status:", subscriberRes.status, subscriberText);
+      return NextResponse.json({ error: "Kit subscriber registration rejected", details: subscriberText }, { status: 500 });
     }
 
+    const subscriberData = JSON.parse(subscriberText);
     const subscriberId = subscriberData.subscriber?.id;
     if (!subscriberId) {
-      return NextResponse.json({ error: "No system index returned" }, { status: 500 });
+      return NextResponse.json({ error: "No subscriber profile ID returned from Kit" }, { status: 500 });
     }
 
     // -------------------------------------------------------------------------
@@ -107,15 +94,18 @@ export async function POST(req: NextRequest) {
       }
     );
 
+    const formText = await formRes.text();
     if (!formRes.ok) {
-      const formError = await formRes.json();
-      console.error("Kit form attachment error:", formError);
-      return NextResponse.json({ error: "Failed to bind profile to form node" }, { status: 500 });
+      console.error("Kit API Form Association Error status:", formRes.status, formText);
+      return NextResponse.json({ error: "Kit form assignment rejected", details: formText }, { status: 500 });
     }
 
     return NextResponse.json({ success: true }, { status: 200 });
-  } catch (err) {
+  } catch (err: any) {
     console.error("Critical server error catch:", err);
-    return NextResponse.json({ error: "Server system crash mapping profiles" }, { status: 500 });
+    return NextResponse.json({ 
+      error: "Server system crash mapping profiles", 
+      details: err?.message || err 
+    }, { status: 500 });
   }
 }
