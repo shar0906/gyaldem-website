@@ -24,10 +24,16 @@ export async function POST(req: NextRequest) {
 
   try {
     // ⚡ Initialize client dynamically to prevent build-time initialization crashes
+    // ⚡ Initializes client using whichever key is successfully loaded
+    // 🛠️ 1. Extract the key using your updated safety fallback string
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+
+    // ⚡ 2. Initialize using the non-null assertion operator (!) to satisfy TypeScript
     const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      supabaseKey!
     );
+
 
     // -------------------------------------------------------------------------
     // ACTION 1 — Insert into Supabase Applications Database Table
