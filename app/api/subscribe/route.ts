@@ -3,14 +3,15 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const { firstName, email } = await req.json();
+  // Destructure 'tier' along with firstName and email
+  const { firstName, email, tier } = await req.json();
 
   if (!firstName || !email) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
   try {
-    // Step 1 — Create or update subscriber
+    // Step 1 — Create or update subscriber with custom field mapping
     const subscriberRes = await fetch("https://api.kit.com/v4/subscribers", {
       method: "POST",
       headers: {
@@ -20,6 +21,9 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         email_address: email,
         first_name: firstName,
+        fields: {
+          tier: tier || "collective" // Fallback to general if undefined
+        }
       }),
     });
 

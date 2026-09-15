@@ -5,6 +5,7 @@ import { useState } from "react";
 export default function JoinBanner() {
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
+  const [tier, setTier] = useState<"collective" | "founding">("collective");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
 
   const handleSubmit = async () => {
@@ -14,7 +15,7 @@ export default function JoinBanner() {
       const res = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firstName, email }),
+        body: JSON.stringify({ firstName, email, tier }),
       });
       if (res.ok) {
         setStatus("success");
@@ -35,37 +36,92 @@ export default function JoinBanner() {
           the room is better with you in it.
         </h2>
         <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "15px", fontFamily: "sans-serif", margin: 0, maxWidth: "480px" }}>
-          Be the first to know about upcoming events and founding membership.
+          Select your path of belonging and be the first to know when admissions open.
         </p>
+        
         {status === "success" ? (
           <p style={{ color: "white", fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: "20px" }}>
             you're in the room. ✓
           </p>
         ) : (
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center", width: "100%", maxWidth: "560px" }}>
-            <input
-              type="text"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              placeholder="First name"
-              style={{ backgroundColor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "12px 16px", fontSize: "14px", fontFamily: "sans-serif", outline: "none", flex: 1, minWidth: "140px" }}
-            />
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              style={{ backgroundColor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "12px 16px", fontSize: "14px", fontFamily: "sans-serif", outline: "none", flex: 2, minWidth: "200px" }}
-            />
-            <button
-              onClick={handleSubmit}
-              disabled={status === "loading"}
-              style={{ backgroundColor: "#8B1A1A", color: "white", border: "none", padding: "12px 24px", fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
-            >
-              {status === "loading" ? "..." : "Join"}
-            </button>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", width: "100%", maxWidth: "560px" }}>
+            
+            {/* Elegant Tier Selection Container */}
+            <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", justifyContent: "center", width: "100%" }}>
+              <label 
+                onClick={() => setTier("collective")}
+                style={{ 
+                  display: "flex", 
+                  flexDirection: "column", 
+                  alignItems: "center", 
+                  padding: "16px", 
+                  backgroundColor: "rgba(255,255,255,0.02)", 
+                  border: tier === "collective" ? "1px solid #8B1A1A" : "1px solid rgba(255,255,255,0.05)", 
+                  cursor: "pointer", 
+                  flex: 1, 
+                  minWidth: "200px", 
+                  transition: "all 0.2s ease" 
+                }}
+              >
+                <span style={{ fontSize: "12px", letterSpacing: "0.15em", textTransform: "uppercase", color: tier === "collective" ? "#8B1A1A" : "white", fontFamily: "sans-serif", fontWeight: "bold" }}>
+                  Collective Patron
+                </span>
+                <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", fontFamily: "sans-serif", marginTop: "4px" }}>
+                  General Membership
+                </span>
+              </label>
+
+              <label 
+                onClick={() => setTier("founding")}
+                style={{ 
+                  display: "flex", 
+                  flexDirection: "column", 
+                  alignItems: "center", 
+                  padding: "16px", 
+                  backgroundColor: "rgba(255,255,255,0.02)", 
+                  border: tier === "founding" ? "1px solid #8B1A1A" : "1px solid rgba(255,255,255,0.05)", 
+                  cursor: "pointer", 
+                  flex: 1, 
+                  minWidth: "200px", 
+                  transition: "all 0.2s ease" 
+                }}
+              >
+                <span style={{ fontSize: "12px", letterSpacing: "0.15em", textTransform: "uppercase", color: tier === "founding" ? "#8B1A1A" : "white", fontFamily: "sans-serif", fontWeight: "bold" }}>
+                  Founding Cohort
+                </span>
+                <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", fontFamily: "sans-serif", marginTop: "4px" }}>
+                  Premium & Limited
+                </span>
+              </label>
+            </div>
+
+            {/* Inputs Container */}
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center", width: "100%" }}>
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="First name"
+                style={{ backgroundColor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "12px 16px", fontSize: "14px", fontFamily: "sans-serif", outline: "none", flex: 1, minWidth: "140px" }}
+              />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                style={{ backgroundColor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "12px 16px", fontSize: "14px", fontFamily: "sans-serif", outline: "none", flex: 2, minWidth: "200px" }}
+              />
+              <button
+                onClick={handleSubmit}
+                disabled={status === "loading"}
+                style={{ backgroundColor: "#8B1A1A", color: "white", border: "none", padding: "12px 24px", fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
+              >
+                {status === "loading" ? "..." : "Join"}
+              </button>
+            </div>
           </div>
         )}
+
         {status === "error" && (
           <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "12px", fontFamily: "sans-serif", margin: 0 }}>
             Something went wrong. Email us at hello@gyaldemsocialclub.com

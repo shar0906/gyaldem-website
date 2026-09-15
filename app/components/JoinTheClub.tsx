@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 export default function JoinTheClub() {
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
+  const [tier, setTier] = useState<"collective" | "founding">("collective");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
 
   const handleSubmit = async () => {
@@ -16,7 +17,7 @@ export default function JoinTheClub() {
       const res = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firstName, email }),
+        body: JSON.stringify({ firstName, email, tier }),
       });
 
       if (res.ok) {
@@ -84,6 +85,44 @@ export default function JoinTheClub() {
             </motion.div>
           ) : (
             <>
+              {/* Membership Tier Selectors */}
+              <div className="flex flex-col gap-2">
+                <label className="text-white/50 text-xs tracking-widest uppercase">
+                  Select Path of Belonging
+                </label>
+                <div className="grid grid-cols-2 gap-4 w-100">
+                  <button
+                    type="button"
+                    onClick={() => setTier("collective")}
+                    className={`p-4 flex flex-col text-left transition-all ${
+                      tier === "collective" 
+                        ? "bg-white/[0.03] border border-[#8B1A1A]" 
+                        : "bg-white/5 border border-white/10 hover:border-white/20"
+                    }`}
+                  >
+                    <span className={`text-xs tracking-wider uppercase font-semibold ${tier === "collective" ? "text-[#8B1A1A]" : "text-white"}`}>
+                      Collective Patron
+                    </span>
+                    <span className="text-white/40 text-[11px] mt-1">General Admission</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setTier("founding")}
+                    className={`p-4 flex flex-col text-left transition-all ${
+                      tier === "founding" 
+                        ? "bg-white/[0.03] border border-[#8B1A1A]" 
+                        : "bg-white/5 border border-white/10 hover:border-white/20"
+                    }`}
+                  >
+                    <span className={`text-xs tracking-wider uppercase font-semibold ${tier === "founding" ? "text-[#8B1A1A]" : "text-white"}`}>
+                      Founding Cohort
+                    </span>
+                    <span className="text-white/40 text-[11px] mt-1">Premium & Limited</span>
+                  </button>
+                </div>
+              </div>
+
               <div className="flex flex-col gap-2">
                 <label className="text-white/50 text-xs tracking-widest uppercase">
                   First Name
