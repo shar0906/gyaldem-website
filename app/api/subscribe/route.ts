@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
         email_address: email,
         first_name: firstName,
         state: "inactive", 
-        send_incentive: true,
+        // send_incentive: true,
         fields: {
           tier: tier || "collective",
           neighborhood: neighborhood || "",
