@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         email_address: email,
         first_name: firstName,
+        state: "inactive",
         send_incentive: true, 
         fields: {
           tier: tier || "collective" // Fallback to general if undefined
