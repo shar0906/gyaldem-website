@@ -46,8 +46,20 @@ export default function AdminPage() {
               value={password}
               onChange={(e) => { setPassword(e.target.value); setError(false); }}
               onKeyDown={(e) => { if (e.key === "Enter") handleLogin(); }}
-              style={{ backgroundColor: "rgba(255,255,255,0.05)", border: error ? "1px solid #8B1A1A" : "1px solid rgba(255,255,255,0.1)", color: "white", padding: "14px 16px", fontSize: "14px", fontFamily: "sans-serif", outline: "none", width: "100%", boxSizing: "border-box" }}
+              // style={{ backgroundColor: "rgba(255,255,255,0.05)", border: error ? "1px solid #8B1A1A" : "1px solid rgba(255,255,255,0.1)", color: "white", padding: "14px 16px", fontSize: "14px", fontFamily: "sans-serif", outline: "none", width: "100%", boxSizing: "border-box" }}
+              className={`w-full bg-white/5 border text-center text-white px-4 py-3 text-sm tracking-widest focus:outline-none transition-colors ${
+                error ? "border-red-500/50 focus:border-red-500" : "border-white/10 focus:border-[#8B1A1A]"
+              }`}
             />
+            {/* <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter Passcode"
+                className={`w-full bg-white/5 border text-center text-white px-4 py-3 text-sm tracking-widest focus:outline-none transition-colors ${
+                  passwordError ? "border-red-500/50 focus:border-red-500" : "border-white/10 focus:border-[#8B1A1A]"
+                }`}
+            /> */}
             {error && <p style={{ color: "#8B1A1A", fontSize: "12px", fontFamily: "sans-serif", margin: 0 }}>Incorrect password. Try again.</p>}
             <button
               onClick={handleLogin}
