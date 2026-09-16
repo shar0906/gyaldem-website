@@ -1,43 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const { firstName, email, tier, neighborhood, bio, diasporaConcept, releaseIntent, pillars } = await req.json();
+  // Destructure 'tier' along with firstName and email
+  const { firstName, email, tier } = await req.json();
 
   if (!firstName || !email) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
   try {
-    // -------------------------------------------------------------------------
-    // ACTION 1 — Save to Supabase (Safe initialization wrapper for npm run build)
-    // -------------------------------------------------------------------------
-    if (process.env.NEXT_PUBLIC_SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)) {
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-      const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, supabaseKey!);
-      
-      await supabase
-        .from("applications")
-        .upsert(
-          {
-            first_name: firstName,
-            email: email,
-            tier: tier || "collective",
-            neighborhood: neighborhood || "",
-            bio: bio || "",
-            diaspora_concept: diasporaConcept || "",
-            release_intent: releaseIntent || "",
-            pillars: pillars || []
-          },
-          { onConflict: "email" }
-        );
-    }
-
-    // -------------------------------------------------------------------------
-    // ACTION 2 — Create or update subscriber profile in Kit V4 API
-    // -------------------------------------------------------------------------
+    // Step 1 — Create or update subscriber with custom field mapping
     const subscriberRes = await fetch("https://api.kit.com/v4/subscribers", {
       method: "POST",
       headers: {
@@ -47,30 +21,30 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         email_address: email,
         first_name: firstName,
+        state: "inactive",
+        send_incentive: true, 
         fields: {
-          tier: tier || "collective"
+          tier: tier || "collective" // Fallback to general if undefined
         }
       }),
     });
 
+    const subscriberData = await subscriberRes.json();
+    console.log("Subscriber response:", subscriberRes.status, JSON.stringify(subscriberData));
+
     if (!subscriberRes.ok) {
-      const errorText = await subscriberRes.text();
-      console.error("Kit subscriber creation failed:", errorText);
       return NextResponse.json({ error: "Failed to create subscriber" }, { status: 500 });
     }
 
-    const subscriberData = await subscriberRes.json();
     const subscriberId = subscriberData.subscriber?.id;
 
     if (!subscriberId) {
       return NextResponse.json({ error: "No subscriber ID returned" }, { status: 500 });
     }
 
-    // -------------------------------------------------------------------------
-    // ACTION 3 — Add subscriber to form (FIXED URL TEMPLATE STRING)
-    // -------------------------------------------------------------------------
+    // Step 2 — Add subscriber to form
     const formRes = await fetch(
-      `https://kit.com{process.env.KIT_FORM_ID}/subscribers/${subscriberId}`,
+      `https://api.kit.com/v4/forms/${process.env.KIT_FORM_ID}/subscribers/${subscriberId}`,
       {
         method: "POST",
         headers: {
@@ -80,9 +54,11 @@ export async function POST(req: NextRequest) {
       }
     );
 
+    console.log("Form response:", formRes.status);
+
     if (!formRes.ok) {
       const formError = await formRes.json();
-      console.error("Kit form attachment failed:", formError);
+      console.error("Form error:", formError);
       return NextResponse.json({ error: "Failed to add to form" }, { status: 500 });
     }
 

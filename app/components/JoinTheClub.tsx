@@ -70,14 +70,14 @@ export default function JoinTheClub() {
               <div className="flex flex-col gap-2">
                 <label className="text-white/50 text-xs tracking-widest uppercase">Select Your Path</label>
                 <div className="flex flex-col gap-2">
+                  <button type="button" onClick={() => setPublicChoice("mailing")} className={`p-4 text-left border text-xs uppercase tracking-wider transition-all font-semibold ${publicChoice === "mailing" ? "border-[#8B1A1A] bg-white/[0.02] text-[#8B1A1A]" : "border-white/5 bg-white/5 text-white"}`}>
+                    The Guest List <span className="text-white/40 block text-[10px] font-normal normal-case mt-0.5">Join our mailing list for digital community journals and open public event notifications.</span>
+                  </button>
                   <button type="button" onClick={() => setPublicChoice("membership")} className={`p-4 text-left border text-xs uppercase tracking-wider transition-all font-semibold ${publicChoice === "membership" ? "border-[#8B1A1A] bg-white/[0.02] text-[#8B1A1A]" : "border-white/5 bg-white/5 text-white"}`}>
                     Active Membership Interest <span className="text-white/40 block text-[10px] font-normal normal-case mt-0.5">Request entry to apply for our upcoming core or premium founding membership cohorts.</span>
                   </button>
                   <button type="button" onClick={() => setPublicChoice("ambassador")} className={`p-4 text-left border text-xs uppercase tracking-wider transition-all font-semibold ${publicChoice === "ambassador" ? "border-[#8B1A1A] bg-white/[0.02] text-[#8B1A1A]" : "border-white/5 bg-white/5 text-white"}`}>
-                    Brand Ambassador Track <span className="text-white/40 block text-[10px] font-normal normal-case mt-0.5">Request entry to express localized strategic or creative ambassador alignment.</span>
-                  </button>
-                  <button type="button" onClick={() => setPublicChoice("mailing")} className={`p-4 text-left border text-xs uppercase tracking-wider transition-all font-semibold ${publicChoice === "mailing" ? "border-[#8B1A1A] bg-white/[0.02] text-[#8B1A1A]" : "border-white/5 bg-white/5 text-white"}`}>
-                    The Guest List <span className="text-white/40 block text-[10px] font-normal normal-case mt-0.5">Join our general mailing track for digital community journals and open public event notifications.</span>
+                    Brand Ambassador <span className="text-white/40 block text-[10px] font-normal normal-case mt-0.5">Request entry to express localized strategic or creative ambassador alignment.</span>
                   </button>
                 </div>
               </div>
