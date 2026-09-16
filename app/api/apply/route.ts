@@ -11,34 +11,48 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // ACTION 1 — Update Profile Details in Supabase
+    // ACTION 1 — Update Profile Details in Supabase safely
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-    if (process.env.NEXT_PUBLIC_SUPABASE_URL && supabaseKey) {
-      const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, supabaseKey);
-      
-      await supabase
-        .from("applications")
-        .upsert(
-          {
-            first_name: firstName,
-            email: email,
-            tier: tier || "collective",
-            neighborhood: neighborhood || "",
-            bio: bio || "",
-            diaspora_concept: diasporaConcept || "",
-            release_intent: releaseIntent || "",
-            pillars: pillars || []
-          },
-          { onConflict: "email" }
-        );
+    
+    if (supabaseUrl && supabaseKey) {
+      try {
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        const { error: sbError } = await supabase
+          .from("applications")
+          .upsert(
+            {
+              first_name: firstName,
+              email: email,
+              tier: tier || "collective",
+              neighborhood: neighborhood || "",
+              bio: bio || "",
+              diaspora_concept: diasporaConcept || "",
+              release_intent: releaseIntent || "",
+              pillars: pillars || []
+            },
+            { onConflict: "email" }
+          );
+          
+        if (sbError) console.error("Supabase upsert internal error:", sbError);
+      } catch (sbCatch) {
+        console.error("Supabase connection failed execution:", sbCatch);
+      }
+    } else {
+      console.warn("Supabase skipped: Missing environment variables.");
     }
 
-    // ACTION 2 — Create or update subscriber profile with complete payload
+    // ACTION 2 — Create or update subscriber profile in Kit
+    if (!process.env.KIT_API_KEY) {
+      console.error("Missing KIT_API_KEY");
+      return NextResponse.json({ error: "Server configuration missing API Key" }, { status: 500 });
+    }
+
     const subscriberRes = await fetch("https://kit.com", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Kit-Api-Key": process.env.KIT_API_KEY!,
+        "X-Kit-Api-Key": process.env.KIT_API_KEY,
       },
       body: JSON.stringify({
         email_address: email,
@@ -55,6 +69,13 @@ export async function POST(req: NextRequest) {
       }),
     });
 
+    const contentType = subscriberRes.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const htmlError = await subscriberRes.text();
+      console.error("Kit Apply API returned HTML error profile setup:", htmlError);
+      return NextResponse.json({ error: "Kit returned invalid layout profile structure" }, { status: 502 });
+    }
+
     const subscriberData = await subscriberRes.json();
     
     if (!subscriberRes.ok) {
@@ -70,7 +91,7 @@ export async function POST(req: NextRequest) {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "X-Kit-Api-Key": process.env.KIT_API_KEY!,
+              "X-Kit-Api-Key": process.env.KIT_API_KEY,
             },
           }
         );
@@ -78,6 +99,8 @@ export async function POST(req: NextRequest) {
           const formErr = await formRes.text();
           console.error("Kit tracking form subscription failed for apply track:", formErr);
         }
+      } else if (!process.env.KIT_MEMBERSHIP_FORM_ID) {
+        console.error("Warning: KIT_MEMBERSHIP_FORM_ID variable is missing in environment variables.");
       }
     }
 
@@ -101,7 +124,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
-    console.error("Apply form submission error:", err);
+    console.error("Apply form submission critical error:", err);
     return NextResponse.json({ error: "Server error saving application" }, { status: 500 });
   }
 }

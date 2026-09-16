@@ -9,13 +9,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
+  // Fail early if environment variables are missing
+  if (!process.env.KIT_FORM_ID || !process.env.KIT_API_KEY) {
+    console.error("CRITICAL: Missing KIT_FORM_ID or KIT_API_KEY in environment variables.");
+    return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+  }
+
   try {
-    // ACTION 1 — Create or update subscriber profile in Kit V4 API
+    // ACTION 1 — Create or update subscriber profile
     const subscriberRes = await fetch("https://kit.com", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Kit-Api-Key": process.env.KIT_API_KEY!,
+        "X-Kit-Api-Key": process.env.KIT_API_KEY,
       },
       body: JSON.stringify({
         email_address: email,
@@ -27,6 +33,14 @@ export async function POST(req: NextRequest) {
       }),
     });
 
+    // Check if the response is HTML instead of JSON
+    const contentType = subscriberRes.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const htmlError = await subscriberRes.text();
+      console.error("Kit API returned non-JSON response (Subscribers Endpoint):", htmlError);
+      return NextResponse.json({ error: "Kit API returned an invalid HTML response" }, { status: 502 });
+    }
+
     const subscriberData = await subscriberRes.json();
 
     if (!subscriberRes.ok) {
@@ -37,17 +51,17 @@ export async function POST(req: NextRequest) {
     const subscriberId = subscriberData.subscriber?.id;
 
     if (!subscriberId) {
-      return NextResponse.json({ error: "No subscriber ID returned" }, { status: 500 });
+      return NextResponse.json({ error: "No subscriber ID returned from Kit" }, { status: 500 });
     }
 
-    // ACTION 2 — Add subscriber directly to your baseline original form ID
+    // ACTION 2 — Add subscriber directly to form ID
     const formRes = await fetch(
       `https://kit.com{process.env.KIT_FORM_ID}/subscribers/${subscriberId}`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Kit-Api-Key": process.env.KIT_API_KEY!,
+          "X-Kit-Api-Key": process.env.KIT_API_KEY,
         },
       }
     );
@@ -60,7 +74,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
-    console.error("Subscribe error:", err);
+    console.error("Subscribe route catch error:", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
