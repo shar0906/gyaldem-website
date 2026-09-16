@@ -77,8 +77,8 @@ export default function JoinBanner() {
                   <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)", fontFamily: "sans-serif", marginTop: "4px" }}>
                     General digital journals
                   </span>
-                </button>
-              </div>
+              </button>
+
               <button 
                 type="button"
                 onClick={() => setPublicChoice("membership")}
@@ -126,7 +126,7 @@ export default function JoinBanner() {
                   Creative advocate alignments
                 </span>
               </button>
-
+            </div>
 
             {/* Inputs Container */}
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center", width: "100%" }}>

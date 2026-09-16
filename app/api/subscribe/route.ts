@@ -10,9 +10,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // -------------------------------------------------------------------------
     // ACTION 1 — Create or update subscriber profile in Kit V4 API
-    // -------------------------------------------------------------------------
     const subscriberRes = await fetch("https://kit.com", {
       method: "POST",
       headers: {
@@ -23,7 +21,6 @@ export async function POST(req: NextRequest) {
         email_address: email,
         first_name: firstName,
         state: "inactive",
-        // send_incentive: true, 
         fields: {
           tier: tier || "collective" 
         }
@@ -33,6 +30,7 @@ export async function POST(req: NextRequest) {
     const subscriberData = await subscriberRes.json();
 
     if (!subscriberRes.ok) {
+      console.error("Kit subscriber creation failed:", subscriberData);
       return NextResponse.json({ error: "Failed to create subscriber" }, { status: 500 });
     }
 
@@ -42,9 +40,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No subscriber ID returned" }, { status: 500 });
     }
 
-    // -------------------------------------------------------------------------
     // ACTION 2 — Add subscriber directly to your baseline original form ID
-    // -------------------------------------------------------------------------
     const formRes = await fetch(
       `https://kit.com{process.env.KIT_FORM_ID}/subscribers/${subscriberId}`,
       {
@@ -57,6 +53,8 @@ export async function POST(req: NextRequest) {
     );
 
     if (!formRes.ok) {
+      const formErr = await formRes.text();
+      console.error("Kit form subscription failed:", formErr);
       return NextResponse.json({ error: "Failed to add to form" }, { status: 500 });
     }
 
