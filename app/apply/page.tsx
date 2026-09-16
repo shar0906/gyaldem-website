@@ -143,7 +143,7 @@ export default function ApplyPage() {
                   e.preventDefault();
                   setStatus("loading");
                   try {
-                    const res = await fetch("/api/subscribe", {
+                    const res = await fetch("/api/apply", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify(formData),

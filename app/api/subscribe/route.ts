@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const { firstName, email, tier, neighborhood, bio, diasporaConcept, releaseIntent, pillars } = await req.json();
+  // ⚡ ONLY destructure what the landing page banner/popup inputs capture
+  const { firstName, email, tier } = await req.json();
 
   if (!firstName || !email) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
@@ -12,31 +12,7 @@ export async function POST(req: NextRequest) {
 
   try {
     // -------------------------------------------------------------------------
-    // ACTION 1 — Save to Supabase (Safe initialization wrapper for npm run build)
-    // -------------------------------------------------------------------------
-    if (process.env.NEXT_PUBLIC_SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)) {
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-      const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, supabaseKey!);
-      
-      await supabase
-        .from("applications")
-        .upsert(
-          {
-            first_name: firstName,
-            email: email,
-            tier: tier || "collective",
-            neighborhood: neighborhood || "",
-            bio: bio || "",
-            diaspora_concept: diasporaConcept || "",
-            release_intent: releaseIntent || "",
-            pillars: pillars || []
-          },
-          { onConflict: "email" }
-        );
-    }
-
-    // -------------------------------------------------------------------------
-    // ACTION 2 — Create or update subscriber profile in Kit V4 API
+    // ACTION 1 — Create or update basic subscriber profile in Kit V4 API
     // -------------------------------------------------------------------------
     const subscriberRes = await fetch("https://kit.com", {
       method: "POST",
@@ -47,19 +23,21 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         email_address: email,
         first_name: firstName,
+        state: "inactive", // Forces verification template email triggers
+        send_incentive: true, 
         fields: {
-          tier: tier || "collective"
+          tier: tier || "collective" 
         }
       }),
     });
 
+    const subscriberData = await subscriberRes.json();
+    console.log("Subscriber response:", subscriberRes.status, JSON.stringify(subscriberData));
+
     if (!subscriberRes.ok) {
-      const errorText = await subscriberRes.text();
-      console.error("Kit subscriber creation failed:", errorText);
       return NextResponse.json({ error: "Failed to create subscriber" }, { status: 500 });
     }
 
-    const subscriberData = await subscriberRes.json();
     const subscriberId = subscriberData.subscriber?.id;
 
     if (!subscriberId) {
@@ -67,7 +45,7 @@ export async function POST(req: NextRequest) {
     }
 
     // -------------------------------------------------------------------------
-    // ACTION 3 — Add subscriber to the correct form path (Dynamic Routing)
+    // ACTION 2 — Add subscriber to the correct dynamic form path
     // -------------------------------------------------------------------------
     const targetFormId = (tier === "mailing") 
       ? process.env.KIT_MAILING_FORM_ID 
@@ -78,7 +56,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
     }
 
-    // ⚡ FIXED TEMPLATE LITERAL STRINGS NATIVELY HERE
     const formRes = await fetch(
       `https://kit.com{targetFormId}/subscribers/${subscriberId}`,
       {
@@ -94,28 +71,8 @@ export async function POST(req: NextRequest) {
 
     if (!formRes.ok) {
       const formError = await formRes.json();
-      console.error("Kit form attachment failed:", formError);
+      console.error("Form error:", formError);
       return NextResponse.json({ error: "Failed to add to form" }, { status: 500 });
-    }
-
-    // -------------------------------------------------------------------------
-    // ACTION 4 — Live Free Google Sheet Sync Bypass
-    // -------------------------------------------------------------------------
-    if (process.env.GOOGLE_SHEETS_WEBHOOK_URL) {
-      fetch(process.env.GOOGLE_SHEETS_WEBHOOK_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName,
-          email,
-          tier,
-          neighborhood,
-          bio,
-          diasporaConcept,
-          releaseIntent,
-          pillars
-        }),
-      }).catch((err) => console.error("Google Sheets sync error catch:", err));
     }
 
     return NextResponse.json({ success: true }, { status: 200 });
