@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     }
 
     // -------------------------------------------------------------------------
-    // ACTION 2 — Your original Kit subscription logic (Fixed V4 URL)
+    // ACTION 2 — Create or update subscriber profile in Kit V4 API
     // -------------------------------------------------------------------------
     const subscriberRes = await fetch("https://api.kit.com/v4/subscribers", {
       method: "POST",
@@ -48,12 +48,14 @@ export async function POST(req: NextRequest) {
         email_address: email,
         first_name: firstName,
         fields: {
-          tier: tier || "collective" // Only text data Kit needs for Liquid routing
+          tier: tier || "collective"
         }
       }),
     });
 
     if (!subscriberRes.ok) {
+      const errorText = await subscriberRes.text();
+      console.error("Kit subscriber creation failed:", errorText);
       return NextResponse.json({ error: "Failed to create subscriber" }, { status: 500 });
     }
 
@@ -65,7 +67,7 @@ export async function POST(req: NextRequest) {
     }
 
     // -------------------------------------------------------------------------
-    // ACTION 3 — Add subscriber to form (Fixed V4 URL & Missing Slash)
+    // ACTION 3 — Add subscriber to form (FIXED URL TEMPLATE STRING)
     // -------------------------------------------------------------------------
     const formRes = await fetch(
       `https://kit.com{process.env.KIT_FORM_ID}/subscribers/${subscriberId}`,
@@ -79,6 +81,8 @@ export async function POST(req: NextRequest) {
     );
 
     if (!formRes.ok) {
+      const formError = await formRes.json();
+      console.error("Kit form attachment failed:", formError);
       return NextResponse.json({ error: "Failed to add to form" }, { status: 500 });
     }
 
