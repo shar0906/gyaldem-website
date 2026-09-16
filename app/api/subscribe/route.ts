@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const { firstName, email, tier, neighborhood, bio, diasporaConcept, releaseIntent, pillars } = await req.json();
+  // 1. Destructure baseline frontend sign-up payloads
+  const { firstName, email, tier } = await req.json();
 
   if (!firstName || !email) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
@@ -12,33 +12,9 @@ export async function POST(req: NextRequest) {
 
   try {
     // -------------------------------------------------------------------------
-    // ACTION 1 — Save to Supabase (Safe initialization wrapper for npm run build)
+    // ACTION 1 — Create or update subscriber profile in Kit V4 API
     // -------------------------------------------------------------------------
-    if (process.env.NEXT_PUBLIC_SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)) {
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-      const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, supabaseKey!);
-      
-      await supabase
-        .from("applications")
-        .upsert(
-          {
-            first_name: firstName,
-            email: email,
-            tier: tier || "collective",
-            neighborhood: neighborhood || "",
-            bio: bio || "",
-            diaspora_concept: diasporaConcept || "",
-            release_intent: releaseIntent || "",
-            pillars: pillars || []
-          },
-          { onConflict: "email" }
-        );
-    }
-
-    // -------------------------------------------------------------------------
-    // ACTION 2 — Your original Kit subscription logic (Fixed V4 URL)
-    // -------------------------------------------------------------------------
-    const subscriberRes = await fetch("https://api.kit.com/v4/subscribers", {
+    const subscriberRes = await fetch("https://kit.com", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -47,17 +23,21 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         email_address: email,
         first_name: firstName,
+        state: "inactive",
+        send_incentive: true, 
         fields: {
-          tier: tier || "collective" // Only text data Kit needs for Liquid routing
+          tier: tier || "collective" 
         }
       }),
     });
+
+    const subscriberData = await subscriberRes.json();
+    console.log("Subscriber response:", subscriberRes.status, JSON.stringify(subscriberData));
 
     if (!subscriberRes.ok) {
       return NextResponse.json({ error: "Failed to create subscriber" }, { status: 500 });
     }
 
-    const subscriberData = await subscriberRes.json();
     const subscriberId = subscriberData.subscriber?.id;
 
     if (!subscriberId) {
@@ -65,7 +45,7 @@ export async function POST(req: NextRequest) {
     }
 
     // -------------------------------------------------------------------------
-    // ACTION 3 — Add subscriber to form (Fixed V4 URL & Missing Slash)
+    // ACTION 2 — Add subscriber directly to your baseline original form ID
     // -------------------------------------------------------------------------
     const formRes = await fetch(
       `https://kit.com{process.env.KIT_FORM_ID}/subscribers/${subscriberId}`,
@@ -78,13 +58,17 @@ export async function POST(req: NextRequest) {
       }
     );
 
+    console.log("Form response status token:", formRes.status);
+
     if (!formRes.ok) {
+      const formError = await formRes.json();
+      console.error("Form error payload details:", formError);
       return NextResponse.json({ error: "Failed to add to form" }, { status: 500 });
     }
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
-    console.error("Subscribe error:", err);
+    console.error("Subscribe error handle catch trace:", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
