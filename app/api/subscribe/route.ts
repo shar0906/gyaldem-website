@@ -9,20 +9,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
-  const formId = process.env.KIT_FORM_ID;
-  const apiKey = process.env.KIT_API_KEY;
+  // Accepts both lowercase and uppercase environment variable layouts from Railway
+  const formId = process.env.KIT_FORM_ID || process.env.kit_form_id;
+  const apiKey = process.env.KIT_API_KEY || process.env.kit_api_key;
 
   if (!formId || !apiKey) {
-    console.error("CRITICAL: Missing KIT_FORM_ID or KIT_API_KEY.");
-    return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+    console.error("CRITICAL CONFIG ERROR: Form ID or API Key is completely missing in Railway environment variables.");
+    return NextResponse.json({ error: "Server environmental configuration error" }, { status: 500 });
   }
 
   try {
-    // Construct the endpoint out of isolated fragments to break any compiler string template bugs
-    const baseDomain = "https://convertkit.com";
-    const pathSegment = "/v3/forms/";
-    const actionSegment = "/subscribe";
-    const totalUrl = baseDomain + pathSegment + formId + actionSegment;
+    // Explicitly safe v3 structural layout path parameters
+    const totalUrl = "https://api.convertkit.com/v3/forms/" + formId + "/subscribe";
 
     const response = await fetch(totalUrl, {
       method: "POST",
@@ -41,8 +39,8 @@ export async function POST(req: NextRequest) {
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("Kit Fallback submission failed:", response.status, errText.substring(0, 200));
-      return NextResponse.json({ error: "Kit gateway integration error" }, { status: 502 });
+      console.error("Kit API Gateway Pipeline Failed:", response.status, errText.substring(0, 200));
+      return NextResponse.json({ error: "Kit integration endpoint failure" }, { status: 502 });
     }
 
     return NextResponse.json({ success: true }, { status: 200 });

@@ -38,15 +38,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ACTION 2 — Submit to Kit using isolated string logic
-    const membershipFormId = process.env.KIT_MEMBERSHIP_FORM_ID;
-    const apiKey = process.env.KIT_API_KEY;
+    // ACTION 2 — Submit to Kit using the public V3 Form gateway layer
+    const membershipFormId = process.env.KIT_MEMBERSHIP_FORM_ID || process.env.kit_membership_form_id;
+    const apiKey = process.env.KIT_API_KEY || process.env.kit_api_key;
 
     if (membershipFormId && apiKey) {
-      const baseDomain = "https://convertkit.com";
-      const pathSegment = "/v3/forms/";
-      const actionSegment = "/subscribe";
-      const totalUrl = baseDomain + pathSegment + membershipFormId + actionSegment;
+      const totalUrl = "https://api.convertkit.com/v3/forms/" + membershipFormId + "/subscribe";
       
       const formRes = await fetch(totalUrl, {
         method: "POST",
@@ -73,7 +70,7 @@ export async function POST(req: NextRequest) {
         console.error("Kit legacy pipeline failed for application track:", formRes.status, errText.substring(0, 200));
       }
     } else {
-      console.error("Missing structural Kit environmental setup metrics.");
+      console.error("CRITICAL: KIT_MEMBERSHIP_FORM_ID environment variable is missing in setup metrics.");
     }
 
     // ACTION 3 — Google Sheet Sync Backup Execution
