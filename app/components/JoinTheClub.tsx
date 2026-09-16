@@ -16,13 +16,16 @@ export default function JoinTheClub() {
 
     setStatus("loading");
     try {
-      const res = await fetch("/api/subscribe", {
+      // DYNAMIC TARGET LOGIC: Route to /api/apply if they select an active registration tier
+      const targetApiRoute = publicChoice === "mailing" ? "/api/subscribe" : "/api/apply";
+
+      const res = await fetch(targetApiRoute, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           firstName, 
           email, 
-          tier: publicChoice // Sends 'mailing', 'membership', or 'ambassador' securely to Kit
+          tier: publicChoice // Sends 'mailing', 'membership', or 'ambassador' securely
         }),
       });
 

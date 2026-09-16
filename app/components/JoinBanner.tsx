@@ -9,19 +9,25 @@ export default function JoinBanner() {
   const [publicChoice, setPublicChoice] = useState<"membership" | "ambassador" | "mailing">("membership");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!firstName || !email) return;
+
     setStatus("loading");
     try {
-      const res = await fetch("/api/subscribe", {
+      // DYNAMIC TARGET LOGIC: Route to /api/apply if they select an active registration tier
+      const targetApiRoute = publicChoice === "mailing" ? "/api/subscribe" : "/api/apply";
+
+      const res = await fetch(targetApiRoute, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           firstName, 
           email, 
-          tier: publicChoice // Sends 'membership', 'ambassador', or 'mailing' securely to Kit
+          tier: publicChoice // Sends 'mailing', 'membership', or 'ambassador' securely
         }),
       });
+
       if (res.ok) {
         setStatus("success");
         setFirstName("");
