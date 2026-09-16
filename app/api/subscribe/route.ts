@@ -1,17 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  // Destructure 'tier' along with firstName and email
-  const { firstName, email, tier } = await req.json();
+  // Destructure all parameters coming from the /apply page or public landing pages
+  const { firstName, email, tier, neighborhood, bio, diasporaConcept, releaseIntent, pillars } = await req.json();
 
   if (!firstName || !email) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
   try {
-    // Step 1 — Create or update subscriber with custom field mapping
+    // -------------------------------------------------------------------------
+    // ACTION 1 — Inject into Supabase Applications Database Table
+    // (Safely wrapped so it never crashes your "npm run build" checks)
+    // -------------------------------------------------------------------------
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)) {
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+      const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, supabaseKey!);
+      
+      await supabase
+        .from("applications")
+        .upsert(
+          {
+            first_name: firstName,
+            email: email,
+            tier: tier || "collective",
+            neighborhood: neighborhood || "",
+            bio: bio || "",
+            diaspora_concept: diasporaConcept || "",
+            release_intent: releaseIntent || "",
+            pillars: pillars || [] // Logs your array questions cleanly
+          },
+          { onConflict: "email" } // Safely overwrites if the email already exists
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // ACTION 2 — Your exact working Kit subscriber creation code
+    // -------------------------------------------------------------------------
     const subscriberRes = await fetch("https://api.kit.com/v4/subscribers", {
       method: "POST",
       headers: {
@@ -42,7 +70,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No subscriber ID returned" }, { status: 500 });
     }
 
-    // Step 2 — Add subscriber to form
+    // -------------------------------------------------------------------------
+    // ACTION 3 — Your exact working Kit form assignment code
+    // -------------------------------------------------------------------------
     const formRes = await fetch(
       `https://api.kit.com/v4/forms/${process.env.KIT_FORM_ID}/subscribers/${subscriberId}`,
       {
