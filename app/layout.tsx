@@ -42,12 +42,13 @@ export default function RootLayout({
         />
         <Script id="google-analytics" strategy="afterInteractive">
           {`
+            if (!window.location.hostname.includes("railway.app")) {
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
             gtag('config', 'G-VKF82M2N2V', {
               page_path: window.location.pathname,
-            });
+            })};
           `}
         </Script>
       </head>

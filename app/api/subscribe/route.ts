@@ -24,7 +24,6 @@ export async function POST(req: NextRequest) {
         email_address: email,
         first_name: firstName,
         state: "inactive", // Forces verification template email triggers
-        send_incentive: true, 
         fields: {
           tier: tier || "collective" 
         }
