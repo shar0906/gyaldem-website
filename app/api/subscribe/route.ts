@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     // ACTION 3 — Add subscriber to form (Fixed V4 URL & Missing Slash)
     // -------------------------------------------------------------------------
     const formRes = await fetch(
-      `https://kit.com{process.env.KIT_MAILING_FORM_ID}/subscribers/${subscriberId}`,
+    `https://kit.com{targetFormId}/subscribers/${subscriberId}`,
       {
         method: "POST",
         headers: {
@@ -77,6 +77,27 @@ export async function POST(req: NextRequest) {
         },
       }
     );
+
+    // -------------------------------------------------------------------------
+    // ACTION 4 — Live Free Google Sheet Sync Bypass
+    // -------------------------------------------------------------------------
+    if (process.env.GOOGLE_SHEETS_WEBHOOK_URL) {
+      // Fires as a background fetch task so it won't slow down the user's browser response
+      fetch(process.env.GOOGLE_SHEETS_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName,
+          email,
+          tier,
+          neighborhood,
+          bio,
+          diasporaConcept,
+          releaseIntent,
+          pillars
+        }),
+      }).catch((err) => console.error("Google Sheets sync error catch:", err));
+    }
 
     if (!formRes.ok) {
       return NextResponse.json({ error: "Failed to add to form" }, { status: 500 });
