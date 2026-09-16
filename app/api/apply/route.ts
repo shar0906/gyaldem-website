@@ -10,6 +10,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
+  const apiKey = process.env.KIT_API_KEY;
+
+  const browserHeaders = {
+    "Content-Type": "application/json",
+    "X-Kit-Api-Key": apiKey,
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9",
+  };
+
   try {
     // ACTION 1 — Update Profile Details in Supabase safely
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

@@ -17,14 +17,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
   }
 
+  const browserHeaders = {
+    "Content-Type": "application/json",
+    "X-Kit-Api-Key": apiKey,
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9",
+  };
+
   try {
     // ACTION 1 — Create or update subscriber custom fields profile
     const subscriberRes = await fetch("https://kit.com", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Kit-Api-Key": apiKey,
-      },
+      headers: browserHeaders,
       body: JSON.stringify({
         email_address: email,
         first_name: firstName,
@@ -37,20 +42,16 @@ export async function POST(req: NextRequest) {
 
     if (!subscriberRes.ok) {
       const errLog = await subscriberRes.text();
-      console.error("Kit profile update failed:", subscriberRes.status, errLog);
+      console.error("Kit profile update failed:", subscriberRes.status, errLog.substring(0, 300));
       return NextResponse.json({ error: "Failed to sync subscriber profile details" }, { status: 500 });
     }
 
-    // Explicitly isolated clean URL layout string to prevent string interpolation errors
     const kitFormUrl = "https://kit.com" + formId + "/subscribers";
 
     // ACTION 2 — Add subscriber to the baseline form using the body payload
     const formRes = await fetch(kitFormUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Kit-Api-Key": apiKey,
-      },
+      headers: browserHeaders,
       body: JSON.stringify({
         email_address: email,
         first_name: firstName
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
 
     if (!formRes.ok) {
       const formErr = await formRes.text();
-      console.error("Kit form submission failed:", formRes.status, formErr);
+      console.error("Kit form submission failed:", formRes.status, formErr.substring(0, 300));
       return NextResponse.json({ error: "Failed to map subscriber to target Kit Form structural pipeline" }, { status: 500 });
     }
 
