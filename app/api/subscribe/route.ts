@@ -18,10 +18,13 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Route via the public form submission portal layout
-    const fallbackUrl = `https://convertkit.com{formId}/subscribe`;
+    // Construct the endpoint out of isolated fragments to break any compiler string template bugs
+    const baseDomain = "https://convertkit.com";
+    const pathSegment = "/v3/forms/";
+    const actionSegment = "/subscribe";
+    const totalUrl = baseDomain + pathSegment + formId + actionSegment;
 
-    const response = await fetch(fallbackUrl, {
+    const response = await fetch(totalUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

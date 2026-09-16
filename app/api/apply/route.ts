@@ -38,14 +38,17 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ACTION 2 — Submit to Kit using the public V3 Fallback layer
+    // ACTION 2 — Submit to Kit using isolated string logic
     const membershipFormId = process.env.KIT_MEMBERSHIP_FORM_ID;
     const apiKey = process.env.KIT_API_KEY;
 
     if (membershipFormId && apiKey) {
-      const fallbackUrl = `https://convertkit.com{membershipFormId}/subscribe`;
+      const baseDomain = "https://convertkit.com";
+      const pathSegment = "/v3/forms/";
+      const actionSegment = "/subscribe";
+      const totalUrl = baseDomain + pathSegment + membershipFormId + actionSegment;
       
-      const formRes = await fetch(fallbackUrl, {
+      const formRes = await fetch(totalUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
