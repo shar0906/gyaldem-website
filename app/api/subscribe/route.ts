@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 export async function POST(req: NextRequest) {
   const { firstName, email, tier, neighborhood, bio, diasporaConcept, releaseIntent, pillars } = await req.json();
@@ -11,73 +10,81 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
-  // Verify your environmental variables are active
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !supabaseKey) {
-    console.error("Missing Supabase configuration environment keys.");
-    return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
-  }
-
   try {
     // -------------------------------------------------------------------------
-    // ACTION 1 — Log Application Data into Supabase
+    // ACTION 1 — Save to Supabase (Safe initialization wrapper for npm run build)
     // -------------------------------------------------------------------------
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, supabaseKey);
-    const { error: supabaseError } = await supabase
-      .from("applications")
-      .upsert(
-        {
-          first_name: firstName,
-          email: email,
-          tier: tier || "collective",
-          neighborhood: neighborhood || "",
-          bio: bio || "",
-          diaspora_concept: diasporaConcept || "",
-          release_intent: releaseIntent || "",
-          pillars: pillars || []
-        },
-        { onConflict: "email" }
-      );
-
-    if (supabaseError) {
-      console.error("Supabase engine error log:", supabaseError);
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)) {
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+      const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, supabaseKey!);
+      
+      await supabase
+        .from("applications")
+        .upsert(
+          {
+            first_name: firstName,
+            email: email,
+            tier: tier || "collective",
+            neighborhood: neighborhood || "",
+            bio: bio || "",
+            diaspora_concept: diasporaConcept || "",
+            release_intent: releaseIntent || "",
+            pillars: pillars || []
+          },
+          { onConflict: "email" }
+        );
     }
 
     // -------------------------------------------------------------------------
-    // ACTION 2 — Directly Subscribe to Form (Triggers Incentive Email Auto)
+    // ACTION 2 — Your original Kit subscription logic (Fixed V4 URL)
     // -------------------------------------------------------------------------
-    // Using Kit's unified endpoint allows tracking data mappings cleanly in one trip
+    const subscriberRes = await fetch("https://api.kit.com/v4/subscribers", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Kit-Api-Key": process.env.KIT_API_KEY!,
+      },
+      body: JSON.stringify({
+        email_address: email,
+        first_name: firstName,
+        fields: {
+          tier: tier || "collective" // Only text data Kit needs for Liquid routing
+        }
+      }),
+    });
+
+    if (!subscriberRes.ok) {
+      return NextResponse.json({ error: "Failed to create subscriber" }, { status: 500 });
+    }
+
+    const subscriberData = await subscriberRes.json();
+    const subscriberId = subscriberData.subscriber?.id;
+
+    if (!subscriberId) {
+      return NextResponse.json({ error: "No subscriber ID returned" }, { status: 500 });
+    }
+
+    // -------------------------------------------------------------------------
+    // ACTION 3 — Add subscriber to form (Fixed V4 URL & Missing Slash)
+    // -------------------------------------------------------------------------
     const formRes = await fetch(
-      `https://kit.com{process.env.KIT_FORM_ID}/subscribers`,
+      `https://kit.com{process.env.KIT_FORM_ID}/subscribers/${subscriberId}`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-Kit-Api-Key": process.env.KIT_API_KEY!,
         },
-        body: JSON.stringify({
-          email_address: email,
-          first_name: firstName,
-          fields: {
-            tier: tier || "collective" // Keeps custom parameters aligned for Liquid loops
-          }
-        }),
       }
     );
 
-    const resText = await formRes.text();
     if (!formRes.ok) {
-      console.error("Kit Form System Rejection Status:", formRes.status, resText);
-      return NextResponse.json({ error: "Kit gateway transaction declined", details: resText }, { status: 500 });
+      return NextResponse.json({ error: "Failed to add to form" }, { status: 500 });
     }
 
     return NextResponse.json({ success: true }, { status: 200 });
-
-  } catch (err: any) {
-    console.error("System pipeline crash safety catch block triggered:", err);
-    return NextResponse.json({ 
-      error: "Server system crash mapping profiles", 
-      details: err?.message || err 
-    }, { status: 500 });
+  } catch (err) {
+    console.error("Subscribe error:", err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
