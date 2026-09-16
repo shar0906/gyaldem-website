@@ -51,15 +51,6 @@ export default function AdminPage() {
                 error ? "border-red-500/50 focus:border-red-500" : "border-white/10 focus:border-[#8B1A1A]"
               }`}
             />
-            {/* <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter Passcode"
-                className={`w-full bg-white/5 border text-center text-white px-4 py-3 text-sm tracking-widest focus:outline-none transition-colors ${
-                  passwordError ? "border-red-500/50 focus:border-red-500" : "border-white/10 focus:border-[#8B1A1A]"
-                }`}
-            /> */}
             {error && <p style={{ color: "#8B1A1A", fontSize: "12px", fontFamily: "sans-serif", margin: 0 }}>Incorrect password. Try again.</p>}
             <button
               onClick={handleLogin}

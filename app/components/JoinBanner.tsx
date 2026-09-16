@@ -56,6 +56,30 @@ export default function JoinBanner() {
             {/* High-Level 3 Option Selection Grid */}
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center", width: "100%" }}>
               <button 
+                  type="button"
+                  onClick={() => setPublicChoice("mailing")}
+                  style={{ 
+                    display: "flex", 
+                    flexDirection: "column", 
+                    alignItems: "center", 
+                    padding: "12px", 
+                    backgroundColor: "rgba(255,255,255,0.02)", 
+                    border: publicChoice === "mailing" ? "1px solid #8B1A1A" : "1px solid rgba(255,255,255,0.05)", 
+                    cursor: "pointer", 
+                    flex: 1, 
+                    minWidth: "180px", 
+                    transition: "all 0.2s ease" 
+                  }}
+                >
+                  <span style={{ fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", color: publicChoice === "mailing" ? "#8B1A1A" : "white", fontFamily: "sans-serif", fontWeight: "bold" }}>
+                    The Guest List
+                  </span>
+                  <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)", fontFamily: "sans-serif", marginTop: "4px" }}>
+                    General digital journals
+                  </span>
+                </button>
+              </div>
+              <button 
                 type="button"
                 onClick={() => setPublicChoice("membership")}
                 style={{ 
@@ -103,30 +127,6 @@ export default function JoinBanner() {
                 </span>
               </button>
 
-              <button 
-                type="button"
-                onClick={() => setPublicChoice("mailing")}
-                style={{ 
-                  display: "flex", 
-                  flexDirection: "column", 
-                  alignItems: "center", 
-                  padding: "12px", 
-                  backgroundColor: "rgba(255,255,255,0.02)", 
-                  border: publicChoice === "mailing" ? "1px solid #8B1A1A" : "1px solid rgba(255,255,255,0.05)", 
-                  cursor: "pointer", 
-                  flex: 1, 
-                  minWidth: "180px", 
-                  transition: "all 0.2s ease" 
-                }}
-              >
-                <span style={{ fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", color: publicChoice === "mailing" ? "#8B1A1A" : "white", fontFamily: "sans-serif", fontWeight: "bold" }}>
-                  The Guest List
-                </span>
-                <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)", fontFamily: "sans-serif", marginTop: "4px" }}>
-                  General digital journals
-                </span>
-              </button>
-            </div>
 
             {/* Inputs Container */}
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center", width: "100%" }}>

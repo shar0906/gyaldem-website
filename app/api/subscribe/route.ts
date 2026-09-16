@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
 
   try {
     // Step 1 — Create or update subscriber with custom field mapping
-    const subscriberRes = await fetch("https://api.kit.com/v4/subscribers", {
+    const subscriberRes = await fetch("https://kit.com", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
         email_address: email,
         first_name: firstName,
         state: "inactive",
-        // send_incentive: true, 
+        send_incentive: true, 
         fields: {
           tier: tier || "collective" // Fallback to general if undefined
         }
@@ -42,20 +42,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No subscriber ID returned" }, { status: 500 });
     }
 
-    // -------------------------------------------------------------------------
-    // Step 2 — Add subscriber to form (Updated with your exact variable name)
-    // -------------------------------------------------------------------------
-    const targetFormId = (tier === "mailing") 
-      ? process.env.KIT_MAILING_FORM_ID 
-      : process.env.KIT_MEMBERSHIP_FORM_ID;
-
-    if (!targetFormId) {
-      console.error("Missing targeting configuration for Kit form mapping. Check dashboard keys.");
-      return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
-    }
-
+    // Step 2 — Add subscriber to form
     const formRes = await fetch(
-      `https://kit.com{targetFormId}/subscribers/${subscriberId}`,
+      `https://kit.com{process.env.KIT_MAILING_FORM_ID}/subscribers/${subscriberId}`,
       {
         method: "POST",
         headers: {
@@ -65,7 +54,7 @@ export async function POST(req: NextRequest) {
       }
     );
 
-    console.log(`Form response for ID ${targetFormId}:`, formRes.status);
+    console.log("Form response:", formRes.status);
 
     if (!formRes.ok) {
       const formError = await formRes.json();
