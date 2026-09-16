@@ -34,18 +34,16 @@ export async function POST(req: NextRequest) {
             { onConflict: "email" }
           );
           
-        if (sbError) console.error("Supabase upsert internal error:", sbError);
+        if (sbError) console.error("Supabase upsert internal error logs:", sbError);
       } catch (sbCatch) {
-        console.error("Supabase connection failed execution:", sbCatch);
+        console.error("Supabase connection execution failed gracefully:", sbCatch);
       }
-    } else {
-      console.warn("Supabase skipped: Missing environment variables.");
     }
 
-    // ACTION 2 — Create or update subscriber profile in Kit
+    // ACTION 2 — Create or update comprehensive custom fields profile inside Kit v4
     if (!process.env.KIT_API_KEY) {
-      console.error("Missing KIT_API_KEY");
-      return NextResponse.json({ error: "Server configuration missing API Key" }, { status: 500 });
+      console.error("Missing KIT_API_KEY inside system environment configuration.");
+      return NextResponse.json({ error: "Server configurations missing structural dependencies" }, { status: 500 });
     }
 
     const subscriberRes = await fetch("https://kit.com", {
@@ -69,42 +67,37 @@ export async function POST(req: NextRequest) {
       }),
     });
 
-    const contentType = subscriberRes.headers.get("content-type");
-    if (!contentType || !contentType.includes("application/json")) {
-      const htmlError = await subscriberRes.text();
-      console.error("Kit Apply API returned HTML error profile setup:", htmlError);
-      return NextResponse.json({ error: "Kit returned invalid layout profile structure" }, { status: 502 });
-    }
-
-    const subscriberData = await subscriberRes.json();
-    
     if (!subscriberRes.ok) {
-      console.error("Kit apply subscriber profile update failed:", subscriberData);
-    } else {
-      const subscriberId = subscriberData.subscriber?.id;
-      
-      // ACTION 2b — Add applicant directly to your dedicated Membership/Ambassador Form ID
-      if (subscriberId && process.env.KIT_MEMBERSHIP_FORM_ID) {
-        const formRes = await fetch(
-          `https://kit.com{process.env.KIT_MEMBERSHIP_FORM_ID}/subscribers/${subscriberId}`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Kit-Api-Key": process.env.KIT_API_KEY,
-            },
-          }
-        );
-        if (!formRes.ok) {
-          const formErr = await formRes.text();
-          console.error("Kit tracking form subscription failed for apply track:", formErr);
-        }
-      } else if (!process.env.KIT_MEMBERSHIP_FORM_ID) {
-        console.error("Warning: KIT_MEMBERSHIP_FORM_ID variable is missing in environment variables.");
-      }
+      const errText = await subscriberRes.text();
+      console.error("Kit detailed profile setup failed parameters:", subscriberRes.status, errText);
     }
 
-    // ACTION 3 — Live Free Google Sheet Sync Backup
+    // ACTION 2b — Add application track to its standalone dedicated form endpoint
+    if (process.env.KIT_MEMBERSHIP_FORM_ID) {
+      const formRes = await fetch(
+        `https://kit.com{process.env.KIT_MEMBERSHIP_FORM_ID}/subscribers`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Kit-Api-Key": process.env.KIT_API_KEY,
+          },
+          body: JSON.stringify({
+            email_address: email,
+            first_name: firstName
+          }),
+        }
+      );
+      
+      if (!formRes.ok) {
+        const formErr = await formRes.text();
+        console.error("Kit membership form placement endpoint failed execution:", formRes.status, formErr);
+      }
+    } else {
+      console.error("Warning: KIT_MEMBERSHIP_FORM_ID is missing from environment layout parameters.");
+    }
+
+    // ACTION 3 — Live Free Google Sheet Sync Backup execution sequence
     if (process.env.GOOGLE_SHEETS_WEBHOOK_URL) {
       fetch(process.env.GOOGLE_SHEETS_WEBHOOK_URL, {
         method: "POST",
@@ -119,12 +112,12 @@ export async function POST(req: NextRequest) {
           releaseIntent,
           pillars
         }),
-      }).catch((err) => console.error("Google Sheets sync error catch:", err));
+      }).catch((err) => console.error("Google Sheets fallback capture sequence exception:", err));
     }
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
-    console.error("Apply form submission critical error:", err);
-    return NextResponse.json({ error: "Server error saving application" }, { status: 500 });
+    console.error("Apply form sequence global catch event thrown:", err);
+    return NextResponse.json({ error: "Server processing exception caught completely" }, { status: 500 });
   }
 }
