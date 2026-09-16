@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     // ACTION 3 — Add subscriber to form (Fixed V4 URL & Missing Slash)
     // -------------------------------------------------------------------------
     const formRes = await fetch(
-      `https://kit.com{process.env.KIT_FORM_ID}/subscribers/${subscriberId}`,
+      `https://kit.com{process.env.KIT_MAILING_FORM_ID}/subscribers/${subscriberId}`,
       {
         method: "POST",
         headers: {
