@@ -128,7 +128,7 @@ export default function ApplyPage() {
                     Thank you for completing your profile with such intention. Over the coming weeks, our founding committee will review submissions by hand and finalize our first seasonal cohort blocks. If selected, you will receive a formal invitation code via email to lock in your lifetime tier patronage and secure your seat at our private inaugural assemblies and partner events.
                     </p>
                     <p className="text-[#8B1A1A] font-mono text-xs tracking-widest uppercase mt-4">
-                    In Stewardship | <a href="https://www.instragram.com/gyaldemsocialclub"></a>@GyalDemSocialClub
+                    In Stewardship | <a href="https://www.instragram.com/gyaldemsocialclub">@GyalDemSocialClub</a>
                     </p>
                 </motion.div>
             ) : (

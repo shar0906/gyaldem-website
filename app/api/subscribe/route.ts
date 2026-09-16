@@ -71,10 +71,20 @@ export async function POST(req: NextRequest) {
     }
 
     // -------------------------------------------------------------------------
-    // ACTION 3 — Your exact working Kit form assignment code
+    // ACTION 3 — Add subscriber to the correct form path (Dynamic Routing)
     // -------------------------------------------------------------------------
+    // ⚡ Routes dynamically: if 'mailing' use your original KIT_MAILING_FORM_ID, otherwise use the membership ID
+    const targetFormId = (tier === "mailing") 
+      ? process.env.KIT_MAILING_FORM_ID 
+      : process.env.KIT_MEMBERSHIP_FORM_ID;
+
+    if (!targetFormId) {
+      console.error("Missing targeting configuration for Kit form mapping. Check form variables.");
+      return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
+    }
+
     const formRes = await fetch(
-      `https://api.kit.com/v4/forms/${process.env.KIT_FORM_ID}/subscribers/${subscriberId}`,
+      `https://kit.com{targetFormId}/subscribers/${subscriberId}`,
       {
         method: "POST",
         headers: {
@@ -84,13 +94,14 @@ export async function POST(req: NextRequest) {
       }
     );
 
-    console.log("Form response:", formRes.status);
+    console.log(`Form response for ID ${targetFormId}:`, formRes.status);
 
     if (!formRes.ok) {
       const formError = await formRes.json();
-      console.error("Form error:", formError);
+      console.error("Kit form attachment failed:", formError);
       return NextResponse.json({ error: "Failed to add to form" }, { status: 500 });
     }
+
 
     // -------------------------------------------------------------------------
     // ACTION 4 — Live Free Google Sheet Sync Bypass
