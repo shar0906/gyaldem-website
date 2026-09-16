@@ -10,16 +10,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
-  const apiKey = process.env.KIT_API_KEY;
-
-  const browserHeaders = {
-    "Content-Type": "application/json",
-    "X-Kit-Api-Key": apiKey,
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-    "Accept": "application/json, text/plain, */*",
-    "Accept-Language": "en-US,en;q=0.9",
-  };
-
   try {
     // ACTION 1 — Update Profile Details in Supabase safely
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -28,7 +18,7 @@ export async function POST(req: NextRequest) {
     if (supabaseUrl && supabaseKey) {
       try {
         const supabase = createClient(supabaseUrl, supabaseKey);
-        const { error: sbError } = await supabase
+        await supabase
           .from("applications")
           .upsert(
             {
@@ -43,71 +33,47 @@ export async function POST(req: NextRequest) {
             },
             { onConflict: "email" }
           );
-          
-        if (sbError) console.error("Supabase upsert internal error logs:", sbError);
       } catch (sbCatch) {
-        console.error("Supabase connection execution failed gracefully:", sbCatch);
+        console.error("Supabase storage step bypassed gracefully:", sbCatch);
       }
     }
 
-    // ACTION 2 — Create or update comprehensive custom fields profile inside Kit v4
-    if (!process.env.KIT_API_KEY) {
-      console.error("Missing KIT_API_KEY inside system environment configuration.");
-      return NextResponse.json({ error: "Server configurations missing structural dependencies" }, { status: 500 });
-    }
+    // ACTION 2 — Submit to Kit using the public V3 Fallback layer
+    const membershipFormId = process.env.KIT_MEMBERSHIP_FORM_ID;
+    const apiKey = process.env.KIT_API_KEY;
 
-    const subscriberRes = await fetch("https://kit.com", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Kit-Api-Key": process.env.KIT_API_KEY,
-      },
-      body: JSON.stringify({
-        email_address: email,
-        first_name: firstName,
-        state: "inactive",
-        fields: {
-          tier: tier || "collective",
-          neighborhood: neighborhood || "",
-          bio: bio || "",
-          diaspora_concept: diasporaConcept || "",
-          release_intent: releaseIntent || "",
-          pillars: pillars ? pillars.join(", ") : ""
-        }
-      }),
-    });
-
-    if (!subscriberRes.ok) {
-      const errText = await subscriberRes.text();
-      console.error("Kit detailed profile setup failed parameters:", subscriberRes.status, errText);
-    }
-
-    // ACTION 2b — Add application track to its standalone dedicated form endpoint
-    if (process.env.KIT_MEMBERSHIP_FORM_ID) {
-      const formRes = await fetch(
-        `https://kit.com{process.env.KIT_MEMBERSHIP_FORM_ID}/subscribers`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Kit-Api-Key": process.env.KIT_API_KEY,
-          },
-          body: JSON.stringify({
-            email_address: email,
-            first_name: firstName
-          }),
-        }
-      );
+    if (membershipFormId && apiKey) {
+      const fallbackUrl = `https://convertkit.com{membershipFormId}/subscribe`;
       
+      const formRes = await fetch(fallbackUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          api_key: apiKey,
+          email: email,
+          first_name: firstName,
+          fields: {
+            tier: tier || "collective",
+            neighborhood: neighborhood || "",
+            bio: bio || "",
+            diaspora_concept: diasporaConcept || "",
+            release_intent: releaseIntent || "",
+            pillars: pillars ? pillars.join(", ") : ""
+          }
+        }),
+      });
+
       if (!formRes.ok) {
-        const formErr = await formRes.text();
-        console.error("Kit membership form placement endpoint failed execution:", formRes.status, formErr);
+        const errText = await formRes.text();
+        console.error("Kit legacy pipeline failed for application track:", formRes.status, errText.substring(0, 200));
       }
     } else {
-      console.error("Warning: KIT_MEMBERSHIP_FORM_ID is missing from environment layout parameters.");
+      console.error("Missing structural Kit environmental setup metrics.");
     }
 
-    // ACTION 3 — Live Free Google Sheet Sync Backup execution sequence
+    // ACTION 3 — Google Sheet Sync Backup Execution
     if (process.env.GOOGLE_SHEETS_WEBHOOK_URL) {
       fetch(process.env.GOOGLE_SHEETS_WEBHOOK_URL, {
         method: "POST",
@@ -122,12 +88,12 @@ export async function POST(req: NextRequest) {
           releaseIntent,
           pillars
         }),
-      }).catch((err) => console.error("Google Sheets fallback capture sequence exception:", err));
+      }).catch((err) => console.error("Sheets fallback bypassed:", err));
     }
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
-    console.error("Apply form sequence global catch event thrown:", err);
-    return NextResponse.json({ error: "Server processing exception caught completely" }, { status: 500 });
+    console.error("Apply route critical failure event:", err);
+    return NextResponse.json({ error: "Server processing exception caught" }, { status: 500 });
   }
 }
