@@ -4,12 +4,16 @@ import { motion } from "framer-motion";
 
 const cards = [
   {
-    title: "ladies nights",
-    description: "Monthly evenings designed around community ritual — good music, intentional conversation, and a room full of women who show up fully.",
+    title: "the gatherings",
+    description: "Game nights, dinners, pop-ups, and monthly evenings built around community ritual — good music, real conversation, and a room full of women who show up fully, no performing required.",
   },
   {
-    title: "cultural experiences",
-    description: "From pop-ups to immersive activations, every Gyal Dem moment blends social energy with emotional depth.",
+    title: "the salons",
+    description: "Smaller, immersive gatherings for real talk — the conversations and connections that don't happen on a dance floor.",
+  },
+  {
+    title: "the balance",
+    description: "Financial workshops, mental health support, and moments to reset — real substance behind the party, the things that carry us outside of the room.",
   },
   {
     title: "our community",
@@ -51,7 +55,7 @@ export default function WhatWeDo() {
             what we do
           </motion.h3>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "40px" }}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "40px" }}
 className="what-we-do-grid">
             {cards.map((card, i) => (
               <motion.div
@@ -72,9 +76,30 @@ className="what-we-do-grid">
             ))}
           </div>
 
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: cards.length * 0.15 }}
+            style={{ marginTop: "64px", borderTop: "0.5px solid rgba(139,26,26,0.4)", paddingTop: "32px" }}
+          >
+            <h4 style={{ color: "#8B1A1A", fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: "22px", margin: "0 0 14px 0" }}>
+              what's next
+            </h4>
+            <p style={{ color: "rgba(10,10,10,0.75)", fontSize: "15px", lineHeight: 1.7, margin: 0, fontFamily: "sans-serif", maxWidth: "640px" }}>
+              A home base is coming. More than a calendar of gatherings — a place.
+            </p>
+          </motion.div>
+
         </div>
       </div>
       <style>{`
+        @media (max-width: 1024px) {
+          .what-we-do-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 32px !important;
+          }
+        }
         @media (max-width: 768px) {
           .what-we-do-grid {
             grid-template-columns: 1fr !important;

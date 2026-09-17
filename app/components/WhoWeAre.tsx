@@ -43,10 +43,10 @@ className="who-we-are-grid">
             style={{ display: "flex", flexDirection: "column", gap: "24px" }}
           >
             <p style={{ color: "#0A0A0A", fontSize: "18px", lineHeight: 1.7, margin: 0, fontFamily: "sans-serif" }}>
-              Gyal Dem Social Club is a Miami-based women's cultural collective, co-founded by two brand leaders at the intersection of experience strategy and community building. We created what the city was missing.
+              Gyal Dem Social Club is a Miami-based cultural collective for Caribbean and Afro-diasporic women, co-founded by two brand leaders who created what the city was missing.
             </p>
             <p style={{ color: "#0A0A0A", fontSize: "18px", lineHeight: 1.7, margin: 0, fontFamily: "sans-serif" }}>
-              We are not a party brand. We are not a networking group. We are a culturally rooted social platform operating at the intersection of sisterhood, celebration, and intentional community — designed for women of the Afro-diasporic community.
+              The gatherings are real — game nights, dinners, functions, genuine laughs, no performing required — but Gyal Dem is more than the party. It's culture, creativity, wellness and a community that holds each other outside the room too. Miami's social scene has a lot of noise and not enough substance. We're the alternative.
             </p>
             <p style={{ color: "#8B1A1A", fontSize: "17px", fontWeight: 500, lineHeight: 1.6, margin: 0, fontFamily: "sans-serif" }}>
               Cultural salon. Party with purpose. Community without the stiffness.

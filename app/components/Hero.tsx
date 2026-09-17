@@ -50,7 +50,7 @@ export default function Hero() {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="text-white/80 text-lg md:text-xl max-w-xl mx-auto mb-10"
         >
-          A space for women of the Caribbean and Afro-diasporic community to gather, connect, and feel completely at home.
+          A home for Caribbean and Afro-diasporic women — real connection, real culture, real good time.
         </motion.p>
 
         <motion.a

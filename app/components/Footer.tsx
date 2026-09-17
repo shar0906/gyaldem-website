@@ -10,7 +10,7 @@ export default function Footer() {
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <img src="/gyaldem_red_bl_transparent.png" alt="Gyal Dem Social Club" style={{ width: "144px", objectFit: "contain" }} />
             <p style={{ color: "rgba(10,10,10,0.6)", fontSize: "14px", lineHeight: "1.6", maxWidth: "280px", fontFamily: "sans-serif" }}>
-              Miami's social club for women of the Caribbean and Afro-diasporic community.
+              Miami's social club for Caribbean and Afro-diasporic women — real connection, real culture, real good time.
             </p>
           </div>
 

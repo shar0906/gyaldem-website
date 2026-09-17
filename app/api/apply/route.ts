@@ -4,10 +4,14 @@ import { createClient } from "@supabase/supabase-js";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const { firstName, email, tier, neighborhood, bio, diasporaConcept, releaseIntent, pillars } = await req.json();
+  const { firstName, email, tier, neighborhood, bio, diasporaConcept, releaseIntent, pillars, agreedToUnderstanding } = await req.json();
 
   if (!firstName || !email) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+  }
+
+  if (!agreedToUnderstanding) {
+    return NextResponse.json({ error: "Agreement to The Understanding is required" }, { status: 400 });
   }
 
   try {
@@ -29,7 +33,8 @@ export async function POST(req: NextRequest) {
               bio: bio || "",
               diaspora_concept: diasporaConcept || "",
               release_intent: releaseIntent || "",
-              pillars: pillars || []
+              pillars: pillars || [],
+              agreed_to_understanding: agreedToUnderstanding || false
             },
             { onConflict: "email" }
           );
@@ -60,7 +65,8 @@ export async function POST(req: NextRequest) {
             bio: bio || "",
             diaspora_concept: diasporaConcept || "",
             release_intent: releaseIntent || "",
-            pillars: pillars ? pillars.join(", ") : ""
+            pillars: pillars ? pillars.join(", ") : "",
+            agreed_to_understanding: agreedToUnderstanding ? "yes" : "no"
           }
         }),
       });
@@ -86,30 +92,10 @@ export async function POST(req: NextRequest) {
           bio,
           diasporaConcept,
           releaseIntent,
-          pillars
+          pillars,
+          agreedToUnderstanding
         }),
       }).catch((err) => console.error("Sheets fallback bypassed:", err));
-    }
-
-    // -------------------------------------------------------------------------
-    // ACTION 4 — Live Free Google Sheet Sync Bypass
-    // -------------------------------------------------------------------------
-    if (process.env.GOOGLE_SHEETS_WEBHOOK_URL) {
-      // Fires as a background fetch task so it won't slow down the user's browser response
-      fetch(process.env.GOOGLE_SHEETS_WEBHOOK_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName,
-          email,
-          tier,
-          neighborhood,
-          bio,
-          diasporaConcept,
-          releaseIntent,
-          pillars
-        }),
-      }).catch((err) => console.error("Google Sheets sync error catch:", err));
     }
 
     return NextResponse.json({ success: true }, { status: 200 });
