@@ -4,13 +4,16 @@ import { createClient } from "@supabase/supabase-js";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const { firstName, email, tier, neighborhood, bio, diasporaConcept, releaseIntent, pillars, agreedToUnderstanding } = await req.json();
+  const body = await req.json();
+  const { firstName, email, tier, neighborhood, bio, diasporaConcept, releaseIntent, pillars, agreedToUnderstanding } = body;
 
   if (!firstName || !email) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
-  if (!agreedToUnderstanding) {
+  const isFullApplication = "bio" in body;
+
+  if (isFullApplication && !agreedToUnderstanding) {
     return NextResponse.json({ error: "Agreement to The Understanding is required" }, { status: 400 });
   }
 
