@@ -3,12 +3,36 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 
-const categories = [
-  { id: "ladies-night", label: "Ladies Night" },
-  { id: "gyalentines", label: "Gyalentines" },
-  { id: "community", label: "Community" },
-  { id: "cultural-experiences", label: "Cultural Experiences" },
+// Grouped by pillar for the tab UI, so it's clear which pillar an upload
+// belongs to. Category ids are unchanged for the existing four; two new
+// ids ("the-salons", "the-balance") are added for the new pillars — brand
+// new categories, no migration of existing data needed.
+const pillars = [
+  {
+    label: "The Gatherings",
+    categories: [
+      { id: "ladies-night", label: "Ladies Night" },
+      { id: "gyalentines", label: "Gyalentines" },
+      { id: "cultural-experiences", label: "Cultural Experiences" },
+    ],
+  },
+  {
+    label: "The Salons",
+    categories: [{ id: "the-salons", label: "The Salons" }],
+  },
+  {
+    label: "The Balance",
+    categories: [{ id: "the-balance", label: "The Balance" }],
+  },
+  {
+    label: "Our Community",
+    categories: [{ id: "community", label: "Community" }],
+  },
 ];
+
+// Flat lookup used by fetch/upload/delete logic — unchanged in behavior
+// from before, just derived from the grouped structure above.
+const categories = pillars.flatMap((p) => p.categories);
 
 type GalleryPhoto = {
   id: string;
@@ -127,16 +151,25 @@ export default function AdminGallery() {
         The Room
       </h1>
 
-      {/* Category tabs — horizontal scroll on mobile */}
-      <div style={{ display: "flex", overflowX: "auto", WebkitOverflowScrolling: "touch" as any, marginBottom: "24px", borderBottom: "0.5px solid rgba(10,10,10,0.15)" }}>
-        {categories.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => setActiveCategory(cat.id)}
-            style={{ background: "none", border: "none", borderBottom: activeCategory === cat.id ? "2px solid #8B1A1A" : "2px solid transparent", padding: "12px 16px", fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", color: activeCategory === cat.id ? "#8B1A1A" : "rgba(10,10,10,0.5)", cursor: "pointer", marginBottom: "-1px", flexShrink: 0, whiteSpace: "nowrap" }}
-          >
-            {cat.label}
-          </button>
+      {/* Category tabs, grouped by pillar — horizontal scroll on mobile */}
+      <div style={{ marginBottom: "24px" }}>
+        {pillars.map((pillar) => (
+          <div key={pillar.label} style={{ marginBottom: "12px" }}>
+            <p style={{ color: "rgba(10,10,10,0.35)", fontSize: "10px", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "sans-serif", margin: "0 0 4px" }}>
+              {pillar.label}
+            </p>
+            <div style={{ display: "flex", overflowX: "auto", WebkitOverflowScrolling: "touch" as any, borderBottom: "0.5px solid rgba(10,10,10,0.15)" }}>
+              {pillar.categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveCategory(cat.id)}
+                  style={{ background: "none", border: "none", borderBottom: activeCategory === cat.id ? "2px solid #8B1A1A" : "2px solid transparent", padding: "12px 16px", fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", color: activeCategory === cat.id ? "#8B1A1A" : "rgba(10,10,10,0.5)", cursor: "pointer", marginBottom: "-1px", flexShrink: 0, whiteSpace: "nowrap" }}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
 

@@ -7,11 +7,16 @@ import { supabase } from "../lib/supabase";
 
 export const revalidate = 60;
 
+// Flat list of every category slug across all four pillars. "the-salons"
+// and "the-balance" are new and currently empty — they simply won't render
+// on the page until photos exist for them (handled in Gallery.tsx).
 const categories = [
   "ladies-night",
-  "gyalentines", 
-  "community",
+  "gyalentines",
   "cultural-experiences",
+  "the-salons",
+  "the-balance",
+  "community",
 ];
 
 export default async function GalleryPage() {

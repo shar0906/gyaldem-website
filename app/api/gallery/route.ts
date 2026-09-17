@@ -6,8 +6,10 @@ export const dynamic = "force-dynamic";
 const categories = [
   "ladies-night",
   "gyalentines",
-  "community",
   "cultural-experiences",
+  "the-salons",
+  "the-balance",
+  "community",
 ];
 
 export async function GET() {
