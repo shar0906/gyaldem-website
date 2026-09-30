@@ -5,11 +5,12 @@ import { supabase } from "../lib/supabase";
 import type { Event } from "../lib/supabase";
 import AdminEventForm from "./AdminEventForm";
 import AdminGallery from "./AdminGallery";
+import AdminLadiesNight from "./AdminLadiesNight";
 
-export default function AdminDashboard() {
+export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"events" | "gallery" | "add" | "edit">("events");
+  const [view, setView] = useState<"events" | "gallery" | "ladiesNight" | "add" | "edit">("events");
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [showTools, setShowTools] = useState(false);
 
@@ -34,11 +35,6 @@ export default function AdminDashboard() {
     if (!confirm("Delete this event?")) return;
     await supabase.from("events").delete().eq("id", id);
     fetchEvents();
-  };
-
-  const handleLogout = () => {
-    sessionStorage.removeItem("gd_admin_auth");
-    window.location.reload();
   };
 
   const formatDate = (dateString: string, endDate?: string | null) => {
@@ -88,7 +84,7 @@ export default function AdminDashboard() {
             </button>
           )}
           <button
-            onClick={handleLogout}
+            onClick={onLogout}
             style={{ backgroundColor: "transparent", color: "rgba(255,255,255,0.4)", border: "1px solid rgba(255,255,255,0.1)", padding: "8px 12px", fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", cursor: "pointer" }}
           >
             Logout
@@ -110,6 +106,12 @@ export default function AdminDashboard() {
             style={{ background: "none", border: "none", borderBottom: view === "gallery" ? "2px solid #8B1A1A" : "2px solid transparent", padding: "14px 20px", fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "sans-serif", color: view === "gallery" ? "#8B1A1A" : "rgba(10,10,10,0.5)", cursor: "pointer" }}
           >
             The Room
+          </button>
+          <button
+            onClick={() => setView("ladiesNight")}
+            style={{ background: "none", border: "none", borderBottom: view === "ladiesNight" ? "2px solid #8B1A1A" : "2px solid transparent", padding: "14px 20px", fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "sans-serif", color: view === "ladiesNight" ? "#8B1A1A" : "rgba(10,10,10,0.5)", cursor: "pointer" }}
+          >
+            Ladies Night
           </button>
         </div>
         {/* Quick Access Tools */}
@@ -133,8 +135,10 @@ export default function AdminDashboard() {
 
       {view === "gallery" ? (
         <AdminGallery />
+      ) : view === "ladiesNight" ? (
+        <AdminLadiesNight />
       ) : (
-        <div style={{ maxWidth: "1152px", margin: "0 auto", padding: "32px 20px" }}>
+        <div style={{ maxWidth: "1152px", margin: "0 auto", padding: "32px 20px"}}>
           <h1 style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: "32px", color: "#0A0A0A", margin: "0 0 24px" }}>Events</h1>
 
           {loading ? (

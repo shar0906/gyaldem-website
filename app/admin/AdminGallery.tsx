@@ -11,9 +11,9 @@ const pillars = [
   {
     label: "The Gatherings",
     categories: [
-      { id: "ladies-night", label: "Ladies Night" },
-      { id: "gyalentines", label: "Gyalentines" },
       { id: "cultural-experiences", label: "Cultural Experiences" },
+      { id: "gyalentines", label: "Gyalentines" },
+      { id: "ladies-night", label: "Ladies Night" },
     ],
   },
   {

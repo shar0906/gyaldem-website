@@ -13,7 +13,7 @@ const cards = [
   },
   {
     title: "the balance",
-    description: "Financial workshops, mental health support, and moments to reset — real substance behind the party, the things that carry us outside of the room.",
+    description: "Financial workshops, mental health support, and wellness moments to reset — real substance behind the party, the things that carry us outside of the room.",
   },
   {
     title: "our community",
@@ -87,7 +87,7 @@ className="what-we-do-grid">
               what's next
             </h4>
             <p style={{ color: "rgba(10,10,10,0.75)", fontSize: "15px", lineHeight: 1.7, margin: 0, fontFamily: "sans-serif", maxWidth: "640px" }}>
-              A home base is coming. More than a calendar of gatherings — a place.
+              A home base is coming. More than a calendar of gatherings — a home.
             </p>
           </motion.div>
 
