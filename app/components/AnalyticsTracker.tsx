@@ -14,7 +14,12 @@ export default function AnalyticsTracker() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (typeof window.gtag !== "undefined") {
+    if (typeof window === "undefined") return;
+
+    // Check if the current URL is your exact Railway staging link
+    const isStaging = window.location.href.includes("gyaldem-website-production.up.railway.app");
+
+    if (!isStaging && typeof window.gtag !== "undefined") {
       window.gtag("config", "G-VKF82M2N2V", {
         page_path: pathname + (searchParams.toString() ? `?${searchParams.toString()}` : ""),
       });
