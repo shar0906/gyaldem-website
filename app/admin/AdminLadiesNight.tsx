@@ -1,7 +1,7 @@
 // AdminLadiesNight.tsx  (same folder as AdminDashboard.tsx, AdminGallery.tsx, etc.)
 //
 // Admin-only Ladies Night tab: shows the current event's ballot, split
-// into what Kay has proposed (draft) and what's live for voting
+// into what artist has proposed (draft) and what's live for voting
 // (published). Publishing is a single bulk action for the whole batch,
 // gated at 10 songs minimum — not a per-song button.
 //

@@ -1,7 +1,7 @@
 // app/api/admin/ladies-night/overview/route.ts
 //
 // GET /api/admin/ladies-night/overview
-// Admin-only (not artist — Kay proposes, she doesn't see this screen).
+// Admin-only (not artist — artist proposes, she doesn't see this screen).
 // Returns the LATEST non-archived event (the one being actively prepped —
 // not necessarily whichever has voting open right now, since you'll
 // often be building the next ballot while the current cycle is still

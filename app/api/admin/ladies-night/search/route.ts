@@ -1,7 +1,7 @@
 // app/api/admin/ladies-night/search/route.ts
 //
 // GET /api/admin/ladies-night/search?q=say+my+name
-// Staff-only (admin or artist — Kay uses this directly, admins can too
+// Staff-only (admin or artist — uses this directly, admins can too
 // if helping her). Searches iTunes server-side; results cached an hour.
 //
 // This replaces the earlier draft of this route — it now uses the
@@ -25,7 +25,7 @@ type ItunesResult = {
 };
 
 // Best guess only — iTunes often returns a compilation/remaster with a
-// later release date, so Kay confirms the category in the portal.
+// later release date, so artist confirms the category in the portal.
 function suggestCategory(r: ItunesResult): "80s" | "90s" | "2000s" | "jazz" | null {
   if (r.primaryGenreName?.toLowerCase().includes("jazz")) return "jazz";
   const year = r.releaseDate ? new Date(r.releaseDate).getUTCFullYear() : NaN;

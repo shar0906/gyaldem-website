@@ -3,7 +3,7 @@
 // GET /api/admin/ladies-night/my-event
 // Staff-only. Returns the latest non-archived event (same "one being
 // actively prepped" event the admin tab shows) plus whichever songs
-// THIS signed-in person has already proposed for it — so Kay sees her
+// THIS signed-in person has already proposed for it — so artist sees their
 // own running list, not everyone's.
 //
 // Untested draft — not run inside your repo yet.

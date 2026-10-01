@@ -2,6 +2,7 @@
 //
 // POST /api/admin/ladies-night/propose
 // Body: { event_id: string, songs: Array<{
+//   repertoire_id?: string | null,   // set when re-adding from "Your Repertoire"
 //   title: string, artist: string, category: string | null,
 //   artwork_url: string | null, apple_track_id: number | null,
 //   apple_music_url: string | null
@@ -12,11 +13,17 @@
 // Sending fewer is rejected outright, both here and (implicitly) on
 // the client, which should disable Submit until 10 are selected.
 //
-// For each song: if it has an apple_track_id, upsert into ln_repertoire
-// keyed on that (so searching the same song twice across proposals
-// reuses one repertoire row instead of creating duplicates). Manually
-// entered songs (no apple_track_id — jazz standards, etc.) always
-// insert fresh, since there's no reliable natural key to dedupe on.
+// Each song resolves to a ln_repertoire id one of three ways:
+//   1. repertoire_id already set — it's a known existing row (added
+//      from "Your Repertoire"). Used directly, no insert/upsert at all.
+//      This is what avoids creating a duplicate repertoire row every
+//      time a past song gets reused on a new proposal.
+//   2. has apple_track_id, no repertoire_id — fresh from search. Upsert
+//      keyed on apple_track_id, so searching + adding the same song
+//      twice (e.g. across two different proposals) still reuses one row.
+//   3. neither — a fresh manual entry (jazz standards, etc). Always
+//      inserts new, since there's no reliable natural key to dedupe on.
+//
 // Then every song gets drafted onto this event's ballot, attributed to
 // whoever's submitting.
 //
@@ -28,6 +35,7 @@ import { requireStaffUser, serviceClient } from "../../../../lib/admin/staff-aut
 const MIN_SONGS_TO_PROPOSE = 10;
 
 type IncomingSong = {
+  repertoire_id?: string | null;
   title: string;
   artist: string;
   category: string | null;
@@ -57,10 +65,13 @@ export async function POST(req: NextRequest) {
 
   const admin = serviceClient();
 
-  const appleSongs = songs.filter((s) => s.apple_track_id != null);
-  const manualSongs = songs.filter((s) => s.apple_track_id == null);
+  const knownSongs = songs.filter((s) => s.repertoire_id != null);
+  const appleSongs = songs.filter((s) => s.repertoire_id == null && s.apple_track_id != null);
+  const manualSongs = songs.filter((s) => s.repertoire_id == null && s.apple_track_id == null);
 
-  const repertoireIds: string[] = [];
+  // Already-existing repertoire rows contribute their id directly —
+  // no insert, no upsert, nothing to dedupe.
+  const repertoireIds: string[] = knownSongs.map((s) => s.repertoire_id as string);
 
   if (appleSongs.length > 0) {
     const { data, error } = await admin

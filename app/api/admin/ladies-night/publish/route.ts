@@ -5,7 +5,7 @@
 //
 // Publishes the ENTIRE current batch of draft songs for an event at
 // once — not one song at a time. Requires at least 10 drafts; anything
-// less is rejected, matching the same 10-song minimum Kay's propose
+// less is rejected, matching the same 10-song minimum artist's propose
 // screen will enforce on her side.
 //
 // This is also what takes the event live: publishing the ballot flips
