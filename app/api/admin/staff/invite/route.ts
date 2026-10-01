@@ -23,7 +23,7 @@
 // Untested draft — not run inside your repo yet.
 
 import { NextRequest, NextResponse } from "next/server";
-import { requireStaffUser, serviceClient } from "../../../lib/admin/staff-auth";
+import { requireStaffUser, serviceClient } from "../../../../lib/admin/staff-auth";
 
 export async function POST(req: NextRequest) {
   const user = await requireStaffUser(["admin"]);
