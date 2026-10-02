@@ -7,28 +7,25 @@ import { supabase } from "../lib/supabase";
 
 export const revalidate = 60;
 
-// Flat list of every category slug across all four pillars. "the-salons"
-// and "the-balance" are new and currently empty — they simply won't render
-// on the page until photos exist for them (handled in Gallery.tsx).
 const categories = [
   "ladies-night",
   "gyalentines",
+  "community",
   "cultural-experiences",
   "the-salons",
   "the-balance",
-  "community",
 ];
 
 export default async function GalleryPage() {
-  const gallery: Record<string, { url: string; caption: string | null }[]> = {};
+  const gallery: Record<string, { url: string; caption: string | null; external_link: string | null; external_link_label: string | null; is_cover: boolean }[]> = {};
 
   for (const category of categories) {
     const { data } = await supabase
-      .from("gallery_photos")
-      .select("url, caption")
-      .eq("category", category)
-      .order("created_at", { ascending: false });
-
+    .from("gallery_photos")
+    .select("url, caption, external_link, external_link_label, is_cover, cover_position")
+    .eq("category", category)
+    .order("is_cover", { ascending: false })
+    .order("created_at", { ascending: false });
     gallery[category] = data || [];
   }
 
