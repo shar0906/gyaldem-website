@@ -10,22 +10,23 @@ export const revalidate = 60;
 const categories = [
   "ladies-night",
   "gyalentines",
-  "community",
   "cultural-experiences",
   "the-salons",
   "the-balance",
+  "community",
 ];
 
 export default async function GalleryPage() {
-  const gallery: Record<string, { url: string; caption: string | null; external_link: string | null; external_link_label: string | null; is_cover: boolean }[]> = {};
+  const gallery: Record<string, { url: string; caption: string | null; external_link: string | null; external_link_label: string | null; is_cover: boolean; cover_position: string | null }[]> = {};
 
   for (const category of categories) {
     const { data } = await supabase
-    .from("gallery_photos")
-    .select("url, caption, external_link, external_link_label, is_cover, cover_position")
-    .eq("category", category)
-    .order("is_cover", { ascending: false })
-    .order("created_at", { ascending: false });
+      .from("gallery_photos")
+      .select("url, caption, external_link, external_link_label, is_cover, cover_position")
+      .eq("category", category)
+      .order("is_cover", { ascending: false })
+      .order("created_at", { ascending: false });
+
     gallery[category] = data || [];
   }
 
