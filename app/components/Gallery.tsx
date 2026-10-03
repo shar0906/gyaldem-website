@@ -69,23 +69,25 @@ export default function Gallery({ initialPhotos = {} }: { initialPhotos?: Record
   const activePillarData = pillarsWithData.find((p) => p.id === activePillar);
   const subcategoriesWithPhotos = activePillarData?.categories.filter((c) => c.photos.length > 0) || [];
 
-  const displayedCategory =
-    subcategoriesWithPhotos.length === 1
-      ? subcategoriesWithPhotos[0]
-      : subcategoriesWithPhotos.find((c) => c.id === activeSubcategory);
+const displayedCategory =
+  subcategoriesWithPhotos.length === 1
+    ? subcategoriesWithPhotos[0]
+    : subcategoriesWithPhotos.find((c) => c.id === activeSubcategory) || subcategoriesWithPhotos[0];
 
-  const openPillar = (pillarId: string) => {
-    setActivePillar(pillarId);
-    setActiveSubcategory(null);
-    setModalLoading(true);
-    setTimeout(() => setModalLoading(false), 400);
-  };
+const openPillar = (pillarId: string) => {
+  document.body.style.overflow = "hidden";
+  setActivePillar(pillarId);
+  setActiveSubcategory(null);
+  setModalLoading(true);
+  setTimeout(() => setModalLoading(false), 800);
+};
 
-  const closeModal = () => {
-    setActivePillar(null);
-    setActiveSubcategory(null);
-    setModalLoading(false);
-  };
+const closeModal = () => {
+  document.body.style.overflow = "";
+  setActivePillar(null);
+  setActiveSubcategory(null);
+  setModalLoading(false);
+};
 
   return (
     <section id="gallery" style={{ backgroundColor: "#F5F0E8", padding: "40px 24px 80px" }}>
@@ -165,7 +167,7 @@ export default function Gallery({ initialPhotos = {} }: { initialPhotos?: Record
                       onClick={() => {
                         setModalLoading(true);
                         setActiveSubcategory(sub.id);
-                        setTimeout(() => setModalLoading(false), 400);
+                        setTimeout(() => setModalLoading(false), 2000);
                       }}
                       style={{ background: "none", border: "1px solid", borderColor: activeSubcategory === sub.id ? "#8B1A1A" : "rgba(255,255,255,0.2)", color: activeSubcategory === sub.id ? "#8B1A1A" : "rgba(255,255,255,0.6)", padding: "8px 16px", fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", cursor: "pointer" }}
                     >
@@ -187,7 +189,7 @@ export default function Gallery({ initialPhotos = {} }: { initialPhotos?: Record
                   {displayedCategory.photos.map((photo, i) => (
                     <div
                       key={i}
-                      style={{ breakInside: "avoid", marginBottom: "12px", position: "relative", cursor: photo.external_link ? "pointer" : "default" }}
+                      style={{ breakInside: "avoid", marginBottom: "12px", position: "relative", cursor: photo.external_link ? "pointer" : "default", backgroundColor: "#000", minHeight: "200px" }}
                       onClick={() => { if (photo.external_link) window.open(photo.external_link, "_blank"); }}
                     >
                       <img
