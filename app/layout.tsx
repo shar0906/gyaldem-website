@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Script from "next/script";
 import { Suspense } from "react";
-import AnalyticsTracker from "./components/AnalyticsTracker";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://gyaldemsocialclub.com"),
