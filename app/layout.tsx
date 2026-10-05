@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Script from "next/script";
 import { Suspense } from "react";
+import Analytics from "./components/Analytics";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://gyaldemsocialclub.com"),
@@ -39,6 +39,7 @@ export default function RootLayout({
       <body style={{ margin: 0, padding: 0, backgroundColor: "#F5F0E8" }}>
         <Suspense fallback={null}>
         </Suspense>
+        <Analytics />
         {children}
       </body>
     </html>
