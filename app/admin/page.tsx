@@ -5,23 +5,21 @@
 // what changed, not the look.
 //
 // Flow: sign in with Supabase Auth -> ask /api/admin/role who they are
-// -> branch on role. "admin" gets your existing AdminDashboard,
-// untouched. "artist" gets a placeholder for now — her real
-// screen is the last piece of this build, not part of this step.
+// -> branch on role: admin gets AdminDashboard, artist gets the artist
+// dashboard (Propose, Profile, Results), door and host get their screens.
 //
 // Needs: npm i @supabase/ssr @supabase/supabase-js (already installed)
 // Env: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 //
-// Untested draft — not run inside your repo yet.
 
 "use client";
 
 import { useState, useEffect } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import AdminDashboard from "./AdminDashboard";
-import ArtistPropose from "./ArtistPropose";
+import ArtistDashboard from "./artist/ArtistDashboard";
 
-type StaffRole = "admin" | "artist";
+type StaffRole = "admin" | "artist" | "door" | "host";
 type StaffUser = { email: string; role: StaffRole };
 
 function supabaseBrowser() {
@@ -111,7 +109,17 @@ export default function AdminPage() {
   }
 
   if (staffUser?.role === "artist") {
-    return <ArtistPropose email={staffUser.email} onLogout={handleLogout} />;
+    return <ArtistDashboard email={staffUser.email} onLogout={handleLogout} />;
+  }
+
+  // Door and host screens arrive in a later batch.
+  if (staffUser?.role === "door" || staffUser?.role === "host") {
+    return (
+      <div style={{ minHeight: "100vh", backgroundColor: "#0A0A0A", color: "white", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, fontFamily: "sans-serif", padding: 24, textAlign: "center" }}>
+        <p style={{ margin: 0, fontSize: 15 }}>Your {staffUser.role === "door" ? "check-in" : "bingo"} screen opens on show night.</p>
+        <button onClick={handleLogout} style={{ background: "transparent", color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.15)", padding: "10px 14px", fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", cursor: "pointer" }}>Log out</button>
+      </div>
+    );
   }
 
   return (

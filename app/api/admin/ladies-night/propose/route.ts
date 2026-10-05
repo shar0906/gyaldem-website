@@ -29,43 +29,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireArtist, serviceClient } from "../../../../lib/admin/staff-auth";
 import { todayEastern } from "../../../../lib/ln/dates";
+import { addToLibrary, CleanSong, cleanSong, resolveSongIds } from "../../../../lib/ln/songs";
 
 const MIN_SONGS_TO_PROPOSE = 10;
 const MAX_SONGS_TO_PROPOSE = 60;
-const TEXT_MAX = 200;
-
-type CleanSong = {
-  repertoire_id: string | null;
-  title: string;
-  artist: string;
-  artwork_url: string | null;
-  apple_track_id: number | null;
-  apple_music_url: string | null;
-};
-
-function cleanUrl(v: unknown): string | null {
-  return typeof v === "string" && v.startsWith("https://") && v.length <= 1000 ? v : null;
-}
-
-function cleanSong(raw: unknown): CleanSong | null {
-  if (!raw || typeof raw !== "object") return null;
-  const s = raw as Record<string, unknown>;
-  const title = typeof s.title === "string" ? s.title.trim() : "";
-  const artist = typeof s.artist === "string" ? s.artist.trim() : "";
-  if (!title || !artist || title.length > TEXT_MAX || artist.length > TEXT_MAX) return null;
-  const trackId =
-    typeof s.apple_track_id === "number" && Number.isSafeInteger(s.apple_track_id) && s.apple_track_id > 0
-      ? s.apple_track_id
-      : null;
-  return {
-    repertoire_id: typeof s.repertoire_id === "string" && s.repertoire_id ? s.repertoire_id : null,
-    title,
-    artist,
-    artwork_url: cleanUrl(s.artwork_url),
-    apple_track_id: trackId,
-    apple_music_url: cleanUrl(s.apple_music_url),
-  };
-}
 
 export async function POST(req: NextRequest) {
   const auth = await requireArtist();
@@ -119,92 +86,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "ballot_published" }, { status: 409 });
   }
 
-  // 1. Library songs must actually be in this artist's library.
-  const libraryIds = [...new Set(songs.flatMap((s) => (s.repertoire_id ? [s.repertoire_id] : [])))];
-  if (libraryIds.length) {
-    const { data: owned, error } = await db
-      .from("ln_artist_library")
-      .select("song_id")
-      .eq("artist_id", artist.id)
-      .in("song_id", libraryIds);
-    if (error) {
-      console.error("propose: library check failed:", error);
-      return NextResponse.json({ error: "server_error" }, { status: 500 });
-    }
-    const ownedSet = new Set((owned ?? []).map((r) => r.song_id as string));
-    if (libraryIds.some((id) => !ownedSet.has(id))) {
-      return NextResponse.json({ error: "unknown_song" }, { status: 400 });
-    }
-  }
-
-  // 2. Apple songs: reuse existing catalog rows, add only the missing ones.
-  const trackIds = [
-    ...new Set(songs.flatMap((s) => (!s.repertoire_id && s.apple_track_id ? [s.apple_track_id] : []))),
-  ];
-  const idByTrack = new Map<number, string>();
-  if (trackIds.length) {
-    const lookup = async () => {
-      const { data, error } = await db
-        .from("ln_repertoire")
-        .select("id, apple_track_id")
-        .in("apple_track_id", trackIds);
-      if (error) throw error;
-      for (const row of data ?? []) idByTrack.set(Number(row.apple_track_id), row.id as string);
-    };
-    try {
-      await lookup();
-      const missing = songs.filter(
-        (s) => !s.repertoire_id && s.apple_track_id && !idByTrack.has(s.apple_track_id)
-      );
-      const seen = new Set<number>();
-      const toInsert = missing
-        .filter((s) => (seen.has(s.apple_track_id!) ? false : (seen.add(s.apple_track_id!), true)))
-        .map((s) => ({
-          title: s.title,
-          artist: s.artist,
-          artwork_url: s.artwork_url,
-          apple_track_id: s.apple_track_id,
-          apple_music_url: s.apple_music_url,
-          source: "itunes",
-        }));
-      if (toInsert.length) {
-        // ignoreDuplicates covers a race with another artist adding the
-        // same track at the same moment; the lookup below picks it up.
-        const { error } = await db
-          .from("ln_repertoire")
-          .upsert(toInsert, { onConflict: "apple_track_id", ignoreDuplicates: true });
-        if (error) throw error;
-        await lookup();
-      }
-    } catch (error) {
-      console.error("propose: catalog upsert failed:", error);
-      return NextResponse.json({ error: "server_error" }, { status: 500 });
-    }
-  }
-
-  // 3. Manual songs: always new catalog rows.
-  const manual = songs.filter((s) => !s.repertoire_id && !s.apple_track_id);
-  const manualIds: string[] = [];
-  if (manual.length) {
-    const { data, error } = await db
-      .from("ln_repertoire")
-      .insert(manual.map((s) => ({ title: s.title, artist: s.artist, artwork_url: s.artwork_url, source: "manual" })))
-      .select("id");
-    if (error) {
-      console.error("propose: manual insert failed:", error);
-      return NextResponse.json({ error: "server_error" }, { status: 500 });
-    }
-    manualIds.push(...(data ?? []).map((r) => r.id as string));
-  }
-
-  // Resolve every song to an id in the order the artist submitted them,
-  // dropping repeats.
-  let manualIndex = 0;
-  const orderedIds: string[] = [];
-  for (const s of songs) {
-    const id = s.repertoire_id ?? (s.apple_track_id ? idByTrack.get(s.apple_track_id) : manualIds[manualIndex++]);
-    if (id && !orderedIds.includes(id)) orderedIds.push(id);
-  }
+  const resolved = await resolveSongIds(db, artist.id, songs);
+  if (!resolved.ok) return NextResponse.json({ error: resolved.error }, { status: resolved.status });
+  const orderedIds = resolved.ids;
 
   if (orderedIds.length < MIN_SONGS_TO_PROPOSE) {
     return NextResponse.json(
@@ -214,14 +98,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Everything proposed lands in the artist's library.
-  const { error: libraryError } = await db
-    .from("ln_artist_library")
-    .upsert(
-      orderedIds.map((songId) => ({ artist_id: artist.id, song_id: songId })),
-      { onConflict: "artist_id,song_id", ignoreDuplicates: true }
-    );
-  if (libraryError) {
-    console.error("propose: library upsert failed:", libraryError);
+  if (!(await addToLibrary(db, artist.id, orderedIds))) {
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 
