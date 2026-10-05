@@ -18,6 +18,8 @@ import { useState, useEffect } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import AdminDashboard from "./AdminDashboard";
 import ArtistDashboard from "./artist/ArtistDashboard";
+import DoorCheckIn from "./showtime/DoorCheckIn";
+import HostBingo from "./showtime/HostBingo";
 
 type StaffRole = "admin" | "artist" | "door" | "host";
 type StaffUser = { email: string; role: StaffRole };
@@ -105,6 +107,11 @@ export default function AdminPage() {
   if (!mounted || checking) return null;
 
   if (staffUser?.role === "admin") {
+    // Admins can also open the show-night screens: /admin?screen=checkin
+    // or /admin?screen=bingo (linked from the Ladies Night menu).
+    const screen = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("screen") : null;
+    if (screen === "checkin") return <DoorCheckIn onLogout={handleLogout} />;
+    if (screen === "bingo") return <HostBingo onLogout={handleLogout} />;
     return <AdminDashboard onLogout={handleLogout} />;
   }
 
@@ -112,15 +119,8 @@ export default function AdminPage() {
     return <ArtistDashboard email={staffUser.email} onLogout={handleLogout} />;
   }
 
-  // Door and host screens arrive in a later batch.
-  if (staffUser?.role === "door" || staffUser?.role === "host") {
-    return (
-      <div style={{ minHeight: "100vh", backgroundColor: "#0A0A0A", color: "white", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, fontFamily: "sans-serif", padding: 24, textAlign: "center" }}>
-        <p style={{ margin: 0, fontSize: 15 }}>Your {staffUser.role === "door" ? "check-in" : "bingo"} screen opens on show night.</p>
-        <button onClick={handleLogout} style={{ background: "transparent", color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.15)", padding: "10px 14px", fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", cursor: "pointer" }}>Log out</button>
-      </div>
-    );
-  }
+  if (staffUser?.role === "door") return <DoorCheckIn onLogout={handleLogout} />;
+  if (staffUser?.role === "host") return <HostBingo onLogout={handleLogout} />;
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center" }}>

@@ -46,6 +46,21 @@ export default function LadiesNightAdmin({ pending, onPendingChange }: { pending
             {s === "Approvals" && pending > 0 ? ` (${pending})` : ""}
           </button>
         ))}
+        <span style={{ flex: 1 }} />
+        {[
+          { href: "/admin?screen=checkin", label: "Door check-in ↗" },
+          { href: "/admin?screen=bingo", label: "Bingo caller ↗" },
+        ].map((l) => (
+          <a
+            key={l.href}
+            href={l.href}
+            target="_blank"
+            rel="noopener"
+            style={{ padding: "0 0 12px", fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: RED, textDecoration: "none", whiteSpace: "nowrap" }}
+          >
+            {l.label}
+          </a>
+        ))}
       </nav>
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "28px 20px 48px" }}>
         {section === "Shows" && <ShowsSection />}
