@@ -6,19 +6,19 @@
 // no concept of "who," only "yes/no."
 //
 // GET /api/admin/role
-//   200 { email, role: "admin" | "artist" }
+//   200 { email, role: "admin" | "artist" | "door" | "host", name }
 //   401 not signed in
 //   403 signed in, but not on the ln_staff allowlist
 //
-// Untested draft — not run inside your repo yet.
 
 import { NextResponse } from "next/server";
-import { requireStaffUser } from "../../../lib/admin/staff-auth";
+import { requireStaffUser, STAFF_ROLES } from "../../../lib/admin/staff-auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const user = await requireStaffUser();
+  // Every role can ask who it is; each screen then shows only its own view.
+  const user = await requireStaffUser(STAFF_ROLES);
 
   if (!user) {
     return NextResponse.json({ error: "not_staff" }, { status: 403 });

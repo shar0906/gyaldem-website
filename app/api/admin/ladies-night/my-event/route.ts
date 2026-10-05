@@ -1,54 +1,62 @@
 // app/api/admin/ladies-night/my-event/route.ts
 //
 // GET /api/admin/ladies-night/my-event
-// Staff-only. Returns the latest non-archived event (same "one being
-// actively prepped" event the admin tab shows) plus whichever songs
-// THIS signed-in person has already proposed for it — so artist sees their
-// own running list, not everyone's.
+// Artist-only. Returns the signed-in artist's next booked show (today or
+// later, not archived) and the songs currently on that show's ballot.
+// One artist per show, so every song on the ballot is theirs.
 //
-// Untested draft — not run inside your repo yet.
+//   200 { event: null, songs: [] }                 no upcoming booking
+//   200 { event: {...}, songs: [...] }
+//   403 not a signed-in, active artist
 
 import { NextResponse } from "next/server";
-import { requireStaffUser, serviceClient } from "../../../../lib/admin/staff-auth";
+import { requireArtist, serviceClient } from "../../../../lib/admin/staff-auth";
+import { todayEastern } from "../../../../lib/ln/dates";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const user = await requireStaffUser();
-  if (!user) {
+  const auth = await requireArtist();
+  if (!auth) {
     return NextResponse.json({ error: "unauthorized" }, { status: 403 });
   }
 
-  const admin = serviceClient();
+  const db = serviceClient();
 
-  const { data: event, error: eventError } = await admin
+  const { data: event, error: eventError } = await db
     .from("ln_events")
-    .select("id, title, event_date")
+    .select("id, title, event_date, event_start_time, voting_opens_at, voting_closes_at")
+    .eq("artist_id", auth.artist.id)
     .eq("archived", false)
-    .order("event_date", { ascending: false })
+    .gte("event_date", todayEastern())
+    .order("event_date", { ascending: true })
     .limit(1)
     .maybeSingle();
 
   if (eventError) {
-    console.error("event lookup failed:", eventError);
+    console.error("my-event lookup failed:", eventError);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 
   if (!event) {
-    return NextResponse.json({ event: null, mySongs: [] });
+    return NextResponse.json({ event: null, songs: [] });
   }
 
-  const { data: mySongs, error: songsError } = await admin
+  const { data: songs, error: songsError } = await db
     .from("ln_event_songs")
-    .select("song_id, status, ln_repertoire(title, artist, category, artwork_url)")
+    .select("song_id, status, sort_order, ln_repertoire(title, artist, artwork_url, apple_track_id)")
     .eq("event_id", event.id)
-    .eq("proposed_by", user.email)
     .order("sort_order", { ascending: true });
 
   if (songsError) {
-    console.error("my-songs lookup failed:", songsError);
+    console.error("my-event songs lookup failed:", songsError);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 
-  return NextResponse.json({ event, mySongs: mySongs ?? [] });
+  const ballotPublished = (songs ?? []).some((s) => s.status === "published");
+
+  return NextResponse.json({
+    event: { ...event, ballot_published: ballotPublished },
+    songs: songs ?? [],
+  });
 }
