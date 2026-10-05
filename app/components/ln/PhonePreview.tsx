@@ -36,7 +36,15 @@ const frame: CSSProperties = {
   flexShrink: 0,
 };
 
-export function GatePreview({ profile }: { profile: PreviewProfile }) {
+export function GatePreview({
+  profile,
+  headline,
+  description,
+}: {
+  profile: PreviewProfile;
+  headline?: string | null;
+  description?: string | null;
+}) {
   const theme = ballotTheme(profile.primary_color, profile.accent_color);
   const name = profile.display_name || "Your name";
   return (
@@ -77,7 +85,12 @@ export function GatePreview({ profile }: { profile: PreviewProfile }) {
         }}
       >
         <div style={{ width: "100%", display: "flex", flexDirection: "column", textAlign: "center", gap: 7 }}>
-          <span style={{ fontFamily: SERIF, fontStyle: "italic", fontWeight: 700, fontSize: 18 }}>Ladies Night: An Ode To Her</span>
+          <span style={{ fontFamily: SERIF, fontStyle: "italic", fontWeight: 700, fontSize: 18 }}>{headline || "Ladies Night: An Ode To Her"}</span>
+          {description && (
+            <span style={{ fontSize: 9.5, lineHeight: 1.5, color: "rgba(251,243,236,0.75)", overflowWrap: "anywhere", maxHeight: 72, overflow: "hidden" }}>
+              {description}
+            </span>
+          )}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
             <div style={fieldStub} />
             <div style={fieldStub} />

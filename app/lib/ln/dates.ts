@@ -44,3 +44,25 @@ export function easternToUtcIso(date: string, time: string): string {
   if (second !== utc) utc = second;
   return new Date(utc).toISOString();
 }
+
+// UTC ISO -> "YYYY-MM-DDTHH:mm" in Eastern time, for datetime-local inputs.
+export function isoToEasternInput(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: SHOW_TIME_ZONE,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).formatToParts(new Date(iso));
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "00";
+  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
+}
+
+// "YYYY-MM-DDTHH:mm" in Eastern time -> UTC ISO, or null when blank.
+export function easternInputToIso(value: string): string | null {
+  const m = value.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+  return m ? easternToUtcIso(m[1], m[2]) : null;
+}

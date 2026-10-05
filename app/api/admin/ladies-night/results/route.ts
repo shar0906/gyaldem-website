@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
   const [showRes, resultsRes, orderRes, ballotsRes, rsvpRes] = await Promise.all([
     db
       .from("ln_events")
-      .select("id, title, event_date, archived, rsvp_opens_at, voting_opens_at, voting_closes_at")
+      .select("id, title, event_date, archived, rsvp_opens_at, voting_opens_at, voting_closes_at, artist_id, results_emailed_at, results_email_error")
       .eq("id", eventId)
       .maybeSingle(),
     db.from("ln_results").select("song_id, title, artist, votes").eq("event_id", eventId),

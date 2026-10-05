@@ -1,10 +1,7 @@
 // AdminStaffTools.tsx  (same folder as AdminDashboard.tsx)
 //
-// A small modal with two buttons/forms that replace the console
-// commands entirely — Sync Staff Metadata (one click) and Invite Staff
-// (a real form). No more hand-typing fetch() calls.
-//
-// Untested draft — not run inside your repo yet.
+// A small modal: Sync Staff Metadata (one click) and Invite Staff, with
+// all four roles. Artists can also be invited from Ladies Night > Artists.
 
 "use client";
 
@@ -17,13 +14,27 @@ const inputStyle: React.CSSProperties = { width: "100%", border: "0.5px solid rg
 const btnPrimary: React.CSSProperties = { backgroundColor: "#8B1A1A", color: "white", border: "none", padding: "10px 16px", fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" };
 const btnSecondary: React.CSSProperties = { backgroundColor: "transparent", border: "0.5px solid rgba(10,10,10,0.2)", color: "rgba(10,10,10,0.6)", padding: "10px 16px", fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" };
 
+type Role = "admin" | "artist" | "door" | "host";
+const ROLE_HELP: Record<Role, string> = {
+  admin: "Everything: shows, artists, guests, results, and the rest of this admin.",
+  artist: "Their own Propose, Profile, and Results. Creates their artist profile.",
+  door: "Only the check-in screen on show night.",
+  host: "Only the bingo caller on show night.",
+};
+const INVITE_ERRORS: Record<string, string> = {
+  bad_email: "Check the email address.",
+  bad_role: "Pick a role.",
+  rate_limited: "Too many emails sent this hour. Try again in a little while.",
+  unauthorized: "Your login expired. Refresh and sign in again.",
+};
+
 export default function AdminStaffTools({ onClose }: { onClose: () => void }) {
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
 
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
-  const [role, setRole] = useState<"admin" | "artist">("artist");
+  const [role, setRole] = useState<Role>("artist");
   const [inviteMessage, setInviteMessage] = useState<string | null>(null);
   const [inviting, setInviting] = useState(false);
 
@@ -60,9 +71,13 @@ export default function AdminStaffTools({ onClose }: { onClose: () => void }) {
       });
       const data = await res.json();
       if (!res.ok) {
-        setInviteMessage(data.detail || "Something went wrong sending the invite.");
+        setInviteMessage(INVITE_ERRORS[data.error] ?? (data.error === "email_failed" ? `The email didn't send: ${data.message}` : "Something went wrong sending the invite."));
       } else {
-        setInviteMessage(`Invited ${email.trim()}.`);
+        setInviteMessage(
+          data.email_sent === "reset"
+            ? `Invited ${email.trim()}. They already had a login, so they got a password-reset email.`
+            : `Invited ${email.trim()}.`
+        );
         setEmail("");
         setName("");
         setRole("artist");
@@ -102,10 +117,13 @@ export default function AdminStaffTools({ onClose }: { onClose: () => void }) {
           <input type="text" value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} placeholder="First name" />
 
           <label style={labelStyle}>Role</label>
-          <select value={role} onChange={(e) => setRole(e.target.value as "admin" | "artist")} style={{ ...inputStyle, cursor: "pointer" }}>
+          <select value={role} onChange={(e) => setRole(e.target.value as Role)} style={{ ...inputStyle, cursor: "pointer", marginBottom: "6px" }}>
             <option value="artist">Artist</option>
+            <option value="door">Door (check-in only)</option>
+            <option value="host">Host (bingo only)</option>
             <option value="admin">Admin</option>
           </select>
+          <p style={{ fontSize: "12px", color: "rgba(10,10,10,0.5)", margin: "0 0 14px" }}>{ROLE_HELP[role]}</p>
 
           <button onClick={sendInvite} disabled={inviting} style={btnPrimary}>
             {inviting ? "Sending…" : "Send Invite"}

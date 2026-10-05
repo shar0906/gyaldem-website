@@ -5,7 +5,7 @@ import { supabase } from "../lib/supabase";
 import type { Event } from "../lib/supabase";
 import AdminEventForm from "./AdminEventForm";
 import AdminGallery from "./AdminGallery";
-import AdminLadiesNight from "./AdminLadiesNight";
+import LadiesNightAdmin from "./ladies-night/LadiesNightAdmin";
 import AdminStaffTools from "./AdminStaffTools";
 
 export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
@@ -15,6 +15,17 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [showTools, setShowTools] = useState(false);
   const [showStaffTools, setShowStaffTools] = useState(false);
+  const [pendingApprovals, setPendingApprovals] = useState(0);
+
+  // Count of artist profile changes waiting for review, for the tab badge.
+  const fetchPending = async () => {
+    try {
+      const res = await fetch("/api/admin/ladies-night/approvals");
+      if (res.ok) setPendingApprovals(((await res.json()).pending ?? []).length);
+    } catch {
+      /* badge is a nicety; ignore network hiccups */
+    }
+  };
 
   const fetchEvents = async () => {
     setLoading(true);
@@ -26,7 +37,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     setLoading(false);
   };
 
-  useEffect(() => { fetchEvents(); }, []);
+  useEffect(() => { fetchEvents(); fetchPending(); }, []);
 
   const updateStatus = async (id: string, status: string) => {
     await supabase.from("events").update({ status }).eq("id", id);
@@ -114,6 +125,11 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             style={{ background: "none", border: "none", borderBottom: view === "ladiesNight" ? "2px solid #8B1A1A" : "2px solid transparent", padding: "14px 20px", fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "sans-serif", color: view === "ladiesNight" ? "#8B1A1A" : "rgba(10,10,10,0.5)", cursor: "pointer" }}
           >
             Ladies Night
+            {pendingApprovals > 0 && (
+              <span aria-label={`${pendingApprovals} waiting for review`} style={{ marginLeft: "8px", background: "#8B1A1A", color: "white", fontSize: "10px", letterSpacing: 0, minWidth: "18px", height: "18px", borderRadius: "999px", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "0 5px" }}>
+                {pendingApprovals}
+              </span>
+            )}
           </button>
         </div>
         {/* Quick Access Tools */}
@@ -144,7 +160,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       {view === "gallery" ? (
         <AdminGallery />
       ) : view === "ladiesNight" ? (
-        <AdminLadiesNight />
+        <LadiesNightAdmin pending={pendingApprovals} onPendingChange={fetchPending} />
       ) : (
         <div style={{ maxWidth: "1152px", margin: "0 auto", padding: "32px 20px"}}>
           <h1 style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: "32px", color: "#0A0A0A", margin: "0 0 24px" }}>Events</h1>
