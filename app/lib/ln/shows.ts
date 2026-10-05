@@ -8,7 +8,7 @@ import { easternToUtcIso } from "./dates";
 export const SHOW_COLUMNS =
   "id, slug, title, event_date, event_start_time, event_end_time, artist_id, gate_headline, gate_description, " +
   "rsvp_opens_at, voting_opens_at, voting_closes_at, opentable_widget, vip_enabled, vip_price_cents, vip_perks, " +
-  "vip_cap, archived, public_event_id, created_at";
+  "vip_cap, archived, public_event_id, door_code, created_at";
 
 export type ShowRow = {
   id: string;
@@ -30,6 +30,7 @@ export type ShowRow = {
   vip_cap: number;
   archived: boolean;
   public_event_id: string | null;
+  door_code: string;
   created_at: string;
 };
 
