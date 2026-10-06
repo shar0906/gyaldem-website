@@ -182,7 +182,7 @@ export function Footer({ venue, artist }: { venue?: Venue | null; artist?: Artis
       {items.map((it) => {
         const mark = it.logo ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={it.logo} alt={it.name} style={{ height: it.key === "gyaldem" ? 40 : 32, maxWidth: 96, objectFit: "contain", display: "block" }} />
+          <img src={it.logo} alt={it.name} style={{ maxWidth: 96, objectFit: "contain", display: "block" }} />
         ) : (
           <span style={{ fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(251,243,236,0.7)" }}>{it.name}</span>
         );
