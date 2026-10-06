@@ -75,36 +75,48 @@ export default function Gate({
 
   const inputProps = { onKeyDown: (e: React.KeyboardEvent) => e.key === "Enter" && submit() };
 
+  const coverStyle = artist?.cover_url
+    ? { backgroundImage: `url("${artist.cover_url}")` }
+    : { backgroundImage: "linear-gradient(180deg, #4A3A3D, #2B2224)" };
+
   return (
-    <div style={{ position: "relative", minHeight: "100dvh", background: "#2B2224", color: CREAM, fontFamily: SANS, overflow: "hidden" }}>
-      <div
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          inset: 0,
-          height: "62%",
-          background: artist?.cover_url ? `center top / cover no-repeat url("${artist.cover_url}")` : "linear-gradient(180deg, #4A3A3D, #2B2224)",
-        }}
-      />
-      <div
-        style={{
-          position: "relative",
-          minHeight: "100dvh",
-          display: "flex",
-          alignItems: "flex-end",
-          justifyContent: "center",
-          boxSizing: "border-box",
-          padding: "40vh 22px calc(26px + env(safe-area-inset-bottom))",
-          background: "linear-gradient(180deg, rgba(18,13,14,0) 0%, rgba(18,13,14,0.55) 32%, #120D0E 58%, #120D0E 100%)",
-        }}
-      >
+    <div className="ln-gate" style={{ color: CREAM, fontFamily: SANS }}>
+      <style>{`
+        /* Full-bleed cover photo; the bottom fades into the artist's own deep
+           color, with the form on top (the People's Choice mockup look). */
+        .ln-gate { position: relative; min-height: 100dvh; background: var(--ln-deep); display: flex; justify-content: center; overflow: hidden; }
+        .ln-gate-backdrop { display: none; }
+        .ln-gate-frame { position: relative; width: 100%; min-height: 100dvh; overflow: hidden; }
+        .ln-gate-photo { position: absolute; inset: 0; background-color: #2B2224; background-size: cover; background-position: center top; background-repeat: no-repeat; }
+        .ln-gate-body {
+          position: relative; min-height: 100dvh; display: flex; align-items: flex-end; justify-content: center; box-sizing: border-box;
+          padding: 45vh 22px calc(26px + env(safe-area-inset-bottom));
+          background: linear-gradient(180deg,
+            color-mix(in srgb, var(--ln-deep) 0%, transparent) 0%,
+            color-mix(in srgb, var(--ln-deep) 0%, transparent) 42%,
+            color-mix(in srgb, var(--ln-deep) 75%, transparent) 66%,
+            var(--ln-deep) 86%, var(--ln-deep) 100%);
+        }
+        .ln-gate h1 { text-wrap: balance; }
+        /* Wider screens: the same phone-shaped card, centered, with a soft
+           blurred copy of the photo filling the sides, so portraits never
+           get cropped into a wide strip. */
+        @media (min-width: 700px) {
+          .ln-gate-backdrop { display: block; position: absolute; inset: -40px; background-size: cover; background-position: center; filter: blur(28px) brightness(0.4) saturate(1.1); }
+          .ln-gate-frame { max-width: 480px; box-shadow: 0 0 80px rgba(0,0,0,0.55); }
+        }
+      `}</style>
+      <div aria-hidden="true" className="ln-gate-backdrop" style={coverStyle} />
+      <div className="ln-gate-frame">
+      <div aria-hidden="true" className="ln-gate-photo" style={coverStyle} />
+      <div className="ln-gate-body">
         <main style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", textAlign: "center" }}>
           {door && (
             <span style={{ alignSelf: "center", marginBottom: 12, fontSize: 10.5, letterSpacing: "0.16em", textTransform: "uppercase", color: GOLD, border: `1px solid ${GOLD}66`, borderRadius: 999, padding: "6px 12px" }}>
               You&apos;re at the door
             </span>
           )}
-          <h1 style={{ margin: "0 0 10px", fontFamily: SERIF, fontStyle: "italic", fontWeight: 700, fontSize: 30, lineHeight: 1.1 }}>
+          <h1 style={{ margin: "0 0 10px", fontFamily: SERIF, fontStyle: "italic", fontWeight: 700, fontSize: 28, lineHeight: 1.1 }}>
             {mode === "returning" ? "Welcome back" : headline}
           </h1>
           <p style={{ margin: "0 0 22px", fontSize: 14, lineHeight: 1.55, color: "rgba(251,243,236,0.78)" }}>
@@ -160,6 +172,7 @@ export default function Gate({
             By continuing, you&apos;re RSVPing for this event and joining the Gyal Dem mailing list.
           </p>
         </main>
+      </div>
       </div>
     </div>
   );

@@ -48,18 +48,18 @@ export function GatePreview({
   const theme = ballotTheme(profile.primary_color, profile.accent_color);
   const name = profile.display_name || "Your name";
   return (
-    <div style={{ ...frame, background: "#2B2224" }} aria-label="Gate preview">
+    <div style={{ ...frame, background: theme.deep }} aria-label="Gate preview">
       <div
         style={{
           position: "absolute",
-          inset: "0 0 auto 0",
-          height: 270,
+          inset: 0,
           background: profile.cover_url
             ? `center top / cover no-repeat url("${profile.cover_url}")`
             : "linear-gradient(180deg, #4A3A3D, #2B2224)",
           display: "flex",
-          alignItems: "center",
+          alignItems: "flex-start",
           justifyContent: "center",
+          paddingTop: 120,
         }}
       >
         {!profile.cover_url && (
@@ -68,20 +68,19 @@ export function GatePreview({
           </span>
         )}
       </div>
-      <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 255, borderBottom: "1px dashed rgba(216,182,103,0.75)" }} />
-      <span style={{ position: "absolute", right: 8, top: 238, fontSize: 8, letterSpacing: "0.08em", textTransform: "uppercase", color: GOLD }}>
-        Visible above
+      <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 215, borderBottom: "1px dashed rgba(216,182,103,0.75)" }} />
+      <span style={{ position: "absolute", right: 8, top: 198, fontSize: 8, letterSpacing: "0.08em", textTransform: "uppercase", color: GOLD }}>
+        Clear of the form above
       </span>
       <div
         style={{
           position: "absolute",
-          inset: "auto 0 0 0",
-          height: 390,
+          inset: 0,
           display: "flex",
           alignItems: "flex-end",
           boxSizing: "border-box",
           padding: "0 14px 16px",
-          background: "linear-gradient(180deg, rgba(18,13,14,0) 0%, rgba(18,13,14,0.6) 26%, #120D0E 54%, #120D0E 100%)",
+          background: `linear-gradient(180deg, ${theme.deep}00 0%, ${theme.deep}00 42%, ${theme.deep}BF 66%, ${theme.deep} 86%)`,
         }}
       >
         <div style={{ width: "100%", display: "flex", flexDirection: "column", textAlign: "center", gap: 7 }}>
