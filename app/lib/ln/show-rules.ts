@@ -22,6 +22,10 @@ export type ShowPatch = Partial<{
   vip_perks: string | null;
   vip_cap: number;
   archived: boolean;
+  reminder_enabled: boolean;
+  reminder_send_at: string | null;
+  reminder_subject: string | null;
+  reminder_body: string | null;
 }>;
 
 type Result = { ok: true; value: ShowPatch } | { ok: false; field: string; error: string };
@@ -162,6 +166,25 @@ export function parseShowPatch(body: Record<string, unknown>): Result {
     const v = text(body.vip_perks, 300);
     if (v === undefined) return { ok: false, field: "vip_perks", error: "Keep the perks under 300 characters." };
     out.vip_perks = v;
+  }
+  if ("reminder_enabled" in body) {
+    if (typeof body.reminder_enabled !== "boolean") return { ok: false, field: "reminder_enabled", error: "Invalid reminder setting." };
+    out.reminder_enabled = body.reminder_enabled;
+  }
+  if ("reminder_send_at" in body) {
+    const v = isoTimestamp(body.reminder_send_at);
+    if (v === undefined) return { ok: false, field: "reminder_send_at", error: "Pick when the reminder sends." };
+    out.reminder_send_at = v;
+  }
+  if ("reminder_subject" in body) {
+    const v = text(body.reminder_subject, 150);
+    if (v === undefined) return { ok: false, field: "reminder_subject", error: "Keep the subject under 150 characters." };
+    out.reminder_subject = v;
+  }
+  if ("reminder_body" in body) {
+    if (body.reminder_body === null || body.reminder_body === "") out.reminder_body = null;
+    else if (typeof body.reminder_body === "string" && body.reminder_body.length <= 5000) out.reminder_body = body.reminder_body.trim();
+    else return { ok: false, field: "reminder_body", error: "Keep the message under 5,000 characters." };
   }
   if ("archived" in body) {
     if (typeof body.archived !== "boolean") return { ok: false, field: "archived", error: "Invalid archive setting." };

@@ -191,6 +191,10 @@ export async function POST(req: NextRequest) {
     ...(v.vip_price_cents !== undefined && { vip_price_cents: v.vip_price_cents }),
     ...(v.vip_cap !== undefined && { vip_cap: v.vip_cap }),
     vip_perks: v.vip_perks ?? null,
+    ...(v.reminder_enabled !== undefined && { reminder_enabled: v.reminder_enabled }),
+    ...(v.reminder_send_at !== undefined && { reminder_send_at: v.reminder_send_at }),
+    ...(v.reminder_subject !== undefined && { reminder_subject: v.reminder_subject }),
+    ...(v.reminder_body !== undefined && { reminder_body: v.reminder_body }),
   };
 
   const { data: show, error: updateError } = await db

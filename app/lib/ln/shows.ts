@@ -9,7 +9,8 @@ import { getVenue, venueLocation } from "./venues";
 export const SHOW_COLUMNS =
   "id, slug, title, event_date, event_start_time, event_end_time, artist_id, venue_id, gate_headline, gate_description, " +
   "rsvp_opens_at, voting_opens_at, voting_closes_at, opentable_widget, vip_enabled, vip_price_cents, vip_perks, " +
-  "vip_cap, archived, public_event_id, door_code, results_emailed_at, results_email_error, created_at";
+  "vip_cap, archived, public_event_id, door_code, results_emailed_at, results_email_error, reminder_enabled, reminder_send_at, " +
+  "reminder_subject, reminder_body, reminder_broadcast_id, reminder_scheduled_at, reminder_error, created_at";
 
 export type ShowRow = {
   id: string;
@@ -35,6 +36,13 @@ export type ShowRow = {
   door_code: string;
   results_emailed_at: string | null;
   results_email_error: string | null;
+  reminder_enabled: boolean;
+  reminder_send_at: string | null;
+  reminder_subject: string | null;
+  reminder_body: string | null;
+  reminder_broadcast_id: number | null;
+  reminder_scheduled_at: string | null;
+  reminder_error: string | null;
   created_at: string;
 };
 

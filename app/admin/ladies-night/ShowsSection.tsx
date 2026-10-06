@@ -9,6 +9,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { GatePreview } from "../../components/ln/PhonePreview";
 import { easternInputToIso, isoToEasternInput } from "../../lib/ln/dates";
+import { DEFAULT_BODY, DEFAULT_SUBJECT, defaultSendAt } from "../../lib/ln/reminder-template";
+import { formatDateTime } from "../artist/ui";
 import {
   FAINT,
   Field,
@@ -25,7 +27,6 @@ import {
   button,
   errorText,
   inputStyle,
-  selectStyle,
   sectionLabel,
   showLabel,
 } from "./kit";
@@ -58,6 +59,13 @@ type ShowRow = {
   vip_perks: string | null;
   vip_cap: number;
   archived: boolean;
+  reminder_enabled: boolean;
+  reminder_send_at: string | null;
+  reminder_subject: string | null;
+  reminder_body: string | null;
+  reminder_broadcast_id: number | null;
+  reminder_scheduled_at: string | null;
+  reminder_error: string | null;
   stage: string;
   artist?: Artist | null;
   ballot?: { draft: number; published: number };
@@ -85,6 +93,10 @@ type Form = {
   vip_price: string;
   vip_cap: string;
   vip_perks: string;
+  reminder_enabled: boolean;
+  reminder_send_at: string;
+  reminder_subject: string;
+  reminder_body: string;
 };
 
 const MIN_SONGS = 10;
@@ -114,6 +126,10 @@ function toForm(s: ShowRow): Form {
     vip_price: (s.vip_price_cents / 100).toFixed(2).replace(/\.00$/, ""),
     vip_cap: String(s.vip_cap),
     vip_perks: s.vip_perks ?? "",
+    reminder_enabled: s.reminder_enabled,
+    reminder_send_at: isoToEasternInput(s.reminder_send_at),
+    reminder_subject: s.reminder_subject ?? DEFAULT_SUBJECT,
+    reminder_body: s.reminder_body ?? DEFAULT_BODY,
   };
 }
 
@@ -135,6 +151,10 @@ function blankForm(suggestion: { event_date: string; voting_opens_at: string | n
     vip_price: "25",
     vip_cap: "24",
     vip_perks: "Wristband, skip the line, gift bag",
+    reminder_enabled: true,
+    reminder_send_at: "",
+    reminder_subject: DEFAULT_SUBJECT,
+    reminder_body: DEFAULT_BODY,
   };
 }
 
@@ -153,6 +173,12 @@ function toBody(f: Form) {
     opentable_widget: f.opentable_widget || null,
     vip_enabled: f.vip_enabled,
     vip_perks: f.vip_perks || null,
+    reminder_enabled: f.reminder_enabled,
+    // Blank time means the default (6 PM the evening before); unchanged
+    // template text is stored as "use the default."
+    reminder_send_at: easternInputToIso(f.reminder_send_at),
+    reminder_subject: f.reminder_subject.trim() === DEFAULT_SUBJECT ? null : f.reminder_subject || null,
+    reminder_body: f.reminder_body.trim() === DEFAULT_BODY.trim() ? null : f.reminder_body || null,
   };
   // VIP numbers only go out when filled in; a blank price on a show
   // without VIP shouldn't block saving.
@@ -363,7 +389,7 @@ export default function ShowsSection() {
                 {show && <StageChip stage={show.stage} />}
               </div>
               <Field id="s-artist" label="Artist" hint={selectedArtist && !selectedArtist.approved_at ? "This artist's profile isn't approved yet. You can book them, but publishing waits for approval." : undefined}>
-                <select id="s-artist" value={form.artist_id} onChange={(e) => set("artist_id", e.target.value)} style={selectStyle}>
+                <select id="s-artist" value={form.artist_id} onChange={(e) => set("artist_id", e.target.value)} style={inputStyle}>
                   <option value="">Leave unassigned</option>
                   {artists
                     .filter((a) => a.active || a.id === form.artist_id)
@@ -376,7 +402,7 @@ export default function ShowsSection() {
               </Field>
               {fieldErr("artist_id")}
               <Field id="s-venue" label="Venue" hint={venues.length === 0 ? "Add venues under Ladies Night, Venues." : undefined}>
-                <select id="s-venue" value={form.venue_id} onChange={(e) => set("venue_id", e.target.value)} style={selectStyle}>
+                <select id="s-venue" value={form.venue_id} onChange={(e) => set("venue_id", e.target.value)} style={inputStyle}>
                   <option value="">No venue yet</option>
                   {venues
                     .filter((v) => v.active || v.id === form.venue_id)
@@ -487,6 +513,52 @@ export default function ShowsSection() {
               {fieldErr("vip_price_cents")}
               {fieldErr("vip_cap")}
               {fieldErr("vip_perks")}
+            </section>
+
+            <section style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 20, borderTop: LINE }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                <input type="checkbox" checked={form.reminder_enabled} onChange={(e) => set("reminder_enabled", e.target.checked)} style={{ width: 18, height: 18, accentColor: RED }} />
+                <span style={sectionLabel}>Reminder email (sent through Kit)</span>
+              </label>
+              {form.reminder_enabled && (
+                <>
+                  <span style={{ fontSize: 12, color: show?.reminder_error ? RED : show?.reminder_broadcast_id ? GREEN : MUTED }}>
+                    {show?.reminder_error
+                      ? show.reminder_error
+                      : show?.reminder_broadcast_id && show.reminder_scheduled_at
+                        ? `Scheduled in Kit (last synced ${formatDateTime(show.reminder_scheduled_at)}). Edits here update it within the hour.`
+                        : "Goes to everyone RSVP'd to this show. It's handed to Kit automatically in the week before it sends."}
+                  </span>
+                  <Field
+                    id="s-rem-at"
+                    label="Sends (Eastern)"
+                    hint={form.event_date ? `Leave blank for the default: ${formatDateTime(defaultSendAt(form.event_date))}.` : "Leave blank for 6 PM the evening before."}
+                  >
+                    <input id="s-rem-at" type="datetime-local" value={form.reminder_send_at} onChange={(e) => set("reminder_send_at", e.target.value)} style={{ ...inputStyle, maxWidth: 280 }} />
+                  </Field>
+                  <Field id="s-rem-subject" label="Subject">
+                    <input id="s-rem-subject" value={form.reminder_subject} maxLength={150} onChange={(e) => set("reminder_subject", e.target.value)} style={inputStyle} />
+                  </Field>
+                  <Field
+                    id="s-rem-body"
+                    label="Message"
+                    hint="{artist}, {date}, {time}, {venue}, and {link} fill in from the show. Leave a blank line between paragraphs."
+                  >
+                    <textarea id="s-rem-body" rows={10} maxLength={5000} value={form.reminder_body} onChange={(e) => set("reminder_body", e.target.value)} style={{ ...inputStyle, lineHeight: 1.5, resize: "vertical" }} />
+                  </Field>
+                  {(form.reminder_subject !== DEFAULT_SUBJECT || form.reminder_body.trim() !== DEFAULT_BODY.trim()) && (
+                    <button
+                      onClick={() => setForm((f) => (f ? { ...f, reminder_subject: DEFAULT_SUBJECT, reminder_body: DEFAULT_BODY } : f))}
+                      style={{ ...button("quiet"), alignSelf: "flex-start", padding: "4px 0" }}
+                    >
+                      Reset to the default template
+                    </button>
+                  )}
+                </>
+              )}
+              {fieldErr("reminder_send_at")}
+              {fieldErr("reminder_subject")}
+              {fieldErr("reminder_body")}
             </section>
 
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", paddingTop: 20, borderTop: LINE }}>
