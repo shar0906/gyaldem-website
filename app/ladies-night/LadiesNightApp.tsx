@@ -50,6 +50,40 @@ export default function LadiesNightApp() {
   const [changing, setChanging] = useState(false);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
 
+  // Coming back from Stripe checkout: confirm the passes (asking Stripe
+  // directly if the webhook hasn't landed yet), then show the summary.
+  const finishVipReturn = useCallback(async () => {
+    const params = new URLSearchParams(window.location.search);
+    const vip = params.get("vip");
+    const sessionId = params.get("session_id");
+    const clean = new URL(window.location.href);
+    clean.searchParams.delete("vip");
+    clean.searchParams.delete("session_id");
+    window.history.replaceState(null, "", clean.toString());
+    setWelcome(false);
+    if (vip === "success" && sessionId) {
+      let paid: { status: string; quantity: number } | null = null;
+      for (let i = 0; i < 8 && paid?.status !== "paid"; i++) {
+        try {
+          paid = await getJson(`/api/ladies-night/vip/status?session_id=${encodeURIComponent(sessionId)}`);
+        } catch {
+          /* keep trying briefly */
+        }
+        if (paid?.status !== "paid") await new Promise((r) => setTimeout(r, 1500));
+      }
+      const fresh = await getJson<{ guest: Guest | null }>("/api/ladies-night/me").catch(() => null);
+      if (fresh?.guest) setGuest(fresh.guest);
+      setNotice(
+        paid?.status === "paid"
+          ? { ok: true, text: `You're VIP. ${paid.quantity} pass${paid.quantity === 1 ? "" : "es"} confirmed; your receipt is in your email.` }
+          : { ok: true, text: "Payment received. Your VIP passes will show here in a minute; your receipt is in your email." }
+      );
+    } else {
+      setNotice({ ok: false, text: "Checkout was cancelled. You weren't charged." });
+    }
+    setStep("summary");
+  }, []);
+
   const load = useCallback(async () => {
     setStep("loading");
     const params = new URLSearchParams(window.location.search);
@@ -80,42 +114,13 @@ export default function LadiesNightApp() {
       setWelcome(true);
 
       // Back from Stripe.
-      const vip = params.get("vip");
-      const sessionId = params.get("session_id");
-      if (vip) {
-        const clean = new URL(window.location.href);
-        clean.searchParams.delete("vip");
-        clean.searchParams.delete("session_id");
-        window.history.replaceState(null, "", clean.toString());
-        setWelcome(false);
-        if (vip === "success" && sessionId) {
-          let paid: { status: string; quantity: number } | null = null;
-          for (let i = 0; i < 8 && paid?.status !== "paid"; i++) {
-            try {
-              paid = await getJson(`/api/ladies-night/vip/status?session_id=${encodeURIComponent(sessionId)}`);
-            } catch {
-              /* keep trying briefly */
-            }
-            if (paid?.status !== "paid") await new Promise((r) => setTimeout(r, 1500));
-          }
-          const fresh = await getJson<{ guest: Guest | null }>("/api/ladies-night/me").catch(() => null);
-          if (fresh?.guest) setGuest(fresh.guest);
-          setNotice(
-            paid?.status === "paid"
-              ? { ok: true, text: `You're VIP. ${paid.quantity} pass${paid.quantity === 1 ? "" : "es"} confirmed; your receipt is in your email.` }
-              : { ok: true, text: "Payment received. Your VIP passes will show here in a minute; your receipt is in your email." }
-          );
-        } else {
-          setNotice({ ok: false, text: "Checkout was cancelled. You weren't charged." });
-        }
-        return setStep("summary");
-      }
+      if (params.get("vip")) return finishVipReturn();
 
       setStep(canVote(cur as OpenCurrent, me.guest) ? "ballot" : "summary");
     } catch {
       setStep("error");
     }
-  }, []);
+  }, [finishVipReturn]);
 
   useEffect(() => {
     load();
@@ -127,6 +132,11 @@ export default function LadiesNightApp() {
     setGuest(g);
     setWelcome(false);
     if (!open) return;
+    // Signed in again right after paying: finish the Stripe return.
+    if (new URLSearchParams(window.location.search).get("vip")) {
+      finishVipReturn();
+      return;
+    }
     if (open.door) return setStep("checked_in");
     if (canVote(open, g)) return setStep("ballot");
     if (vipOpen(open, g)) return setStep("vip");

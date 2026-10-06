@@ -19,7 +19,7 @@ import { readGuestId } from "../../../../lib/ln/guest-session";
 import { getCurrentShow, publicArtist } from "../../../../lib/ln/public-show";
 import { limited, tooMany } from "../../../../lib/ln/public-guard";
 import { stripe } from "../../../../lib/ln/stripe";
-import { siteUrl } from "../../../../lib/ln/tonight";
+import { returnOrigin } from "../../../../lib/ln/return-origin";
 
 const RESERVE_ERRORS = ["vip_disabled", "vip_closed", "sold_out", "rsvp_limit", "invalid_quantity", "rsvp_not_found"];
 // Stripe's minimum checkout lifetime is 30 minutes; a little extra
@@ -72,7 +72,8 @@ export async function POST(req: NextRequest) {
 
     const artist = await publicArtist(db, show.artist_id);
     const expiresAt = Math.floor(Date.now() / 1000) + CHECKOUT_MINUTES * 60;
-    const site = siteUrl();
+    // Back to the same address they paid from, so they stay remembered.
+    const site = returnOrigin(req);
 
     let session;
     try {
