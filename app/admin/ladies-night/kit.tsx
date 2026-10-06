@@ -150,9 +150,15 @@ export async function api<T = Record<string, unknown>>(
   }
 }
 
-export function showLabel(s: { event_date: string; artist?: { display_name: string } | null }): string {
+export function showLabel(s: {
+  event_date: string;
+  artist?: { display_name: string } | null;
+  venue?: { name: string } | null;
+}): string {
   const date = new Date(`${s.event_date}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
-  return `${date} · ${s.artist?.display_name ?? "No artist yet"}`;
+  const parts = [date, s.artist?.display_name ?? "No artist yet"];
+  if (s.venue?.name) parts.push(s.venue.name);
+  return parts.join(" · ");
 }
 
 export const ERROR_TEXT: Record<string, string> = {

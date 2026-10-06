@@ -14,6 +14,7 @@ export type ShowOption = {
   archived: boolean;
   stage: string;
   artist: { display_name: string } | null;
+  venue?: { name: string } | null;
 };
 
 export function useShows() {
