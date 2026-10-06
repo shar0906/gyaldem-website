@@ -7,6 +7,7 @@ import AdminEventForm from "./AdminEventForm";
 import AdminGallery from "./AdminGallery";
 import LadiesNightAdmin from "./ladies-night/LadiesNightAdmin";
 import AdminStaffTools from "./AdminStaffTools";
+import StaffHeader from "./StaffHeader";
 
 export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [events, setEvents] = useState<Event[]>([]);
@@ -81,29 +82,20 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#F5F0E8" }}>
 
-      {/* Header */}
-      <div style={{ backgroundColor: "#0A0A0A", padding: "12px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-          <img src="/gyaldem_red_wl_transparent.png" alt="Gyal Dem" style={{ height: "60px", objectFit: "contain" }} />
-          <p style={{ color: "rgba(255,255,255,0.35)", fontSize: "8px", letterSpacing: "0.3em", textTransform: "uppercase", fontFamily: "sans-serif", margin: "-4px 0 0 4px" }}>Admin</p>
-        </div>
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          {view === "events" && (
+      <StaffHeader
+        label="Admin"
+        onLogout={onLogout}
+        right={
+          view === "events" ? (
             <button
               onClick={() => { setEditingEvent(null); setView("add"); }}
               style={{ backgroundColor: "#8B1A1A", color: "white", border: "none", padding: "8px 14px", fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", cursor: "pointer" }}
             >
               + Add Event
             </button>
-          )}
-          <button
-            onClick={onLogout}
-            style={{ backgroundColor: "transparent", color: "rgba(255,255,255,0.4)", border: "1px solid rgba(255,255,255,0.1)", padding: "8px 12px", fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", cursor: "pointer" }}
-          >
-            Logout
-          </button>
-        </div>
-      </div>
+          ) : null
+        }
+      />
 
       {/* Nav tabs */}
       <div style={{ backgroundColor: "white", borderBottom: "0.5px solid rgba(10,10,10,0.15)", display: "flex", justifyContent: "space-between", alignItems: "center", paddingRight: "20px" }}>

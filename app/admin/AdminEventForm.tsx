@@ -1,5 +1,6 @@
 "use client";
 
+import StaffHeader from "./StaffHeader";
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
 import type { Event } from "../lib/supabase";
@@ -95,15 +96,14 @@ export default function AdminEventForm({
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#F5F0E8" }}>
-      <div style={{ backgroundColor: "#0A0A0A", padding: "16px 32px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <img src="/gyaldem_red_wl_transparent.png" alt="Gyal Dem" style={{ height: "60px", objectFit: "contain" }} />
-          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "11px", letterSpacing: "0.3em", textTransform: "uppercase", fontFamily: "sans-serif", margin: 0 }}>{event ? "Edit Event" : "Add Event"}</p>
-        </div>
-        <button onClick={onCancel} style={{ backgroundColor: "transparent", color: "rgba(255,255,255,0.4)", border: "1px solid rgba(255,255,255,0.1)", padding: "10px 16px", fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "sans-serif", cursor: "pointer" }}>
-          Cancel
-        </button>
-      </div>
+      <StaffHeader
+        label={event ? "Edit Event" : "Add Event"}
+        right={
+          <button onClick={onCancel} style={{ backgroundColor: "transparent", color: "rgba(255,255,255,0.45)", border: "1px solid rgba(255,255,255,0.12)", padding: "8px 12px", minHeight: 36, fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", cursor: "pointer" }}>
+            Cancel
+          </button>
+        }
+      />
 
       <div style={{ maxWidth: "720px", margin: "0 auto", padding: "40px 32px" }}>
         <h1 style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: "32px", color: "#0A0A0A", margin: "0 0 32px" }}>

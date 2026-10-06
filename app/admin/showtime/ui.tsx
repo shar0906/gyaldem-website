@@ -6,6 +6,7 @@
 "use client";
 
 import type { CSSProperties, ReactNode } from "react";
+import StaffHeader from "../StaffHeader";
 
 export const CREAM = "#F5F0E8";
 export const RED = "#8B1A1A";
@@ -24,23 +25,9 @@ export const screen: CSSProperties = {
   flexDirection: "column",
 };
 
+// Show-night screens use the shared staff header, sized for phones.
 export function TopBar({ label, onLogout, right }: { label: string; onLogout?: () => void; right?: ReactNode }) {
-  return (
-    <header style={{ padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, borderBottom: LINE }}>
-      <div style={{ display: "flex", flexDirection: "column" }}>
-        <img src="/gyaldem_red_wl_transparent.png" alt="Gyal Dem" style={{ height: 44, objectFit: "contain" }} />
-        <span style={{ fontSize: 8, letterSpacing: "0.3em", textTransform: "uppercase", color: "rgba(245,240,232,0.45)", marginTop: 4 }}>{label}</span>
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        {right}
-        {onLogout && (
-          <button onClick={onLogout} style={{ background: "transparent", color: MUTED, border: "1px solid rgba(245,240,232,0.15)", padding: "8px 10px", minHeight: 36, fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", cursor: "pointer" }}>
-            Log out
-          </button>
-        )}
-      </div>
-    </header>
-  );
+  return <StaffHeader compact label={label} onLogout={onLogout} right={right} />;
 }
 
 export function Reconnecting({ online }: { online: boolean }) {
