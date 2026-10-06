@@ -124,7 +124,6 @@ export default function Summary({
             </Chip>
           )}
           {passes > 0 && <Chip>VIP × {passes}</Chip>}
-          {stage === "voting_closed" && <Chip>Voting closed</Chip>}
         </div>
         {notice && (
           <p role="status" style={{ margin: 0, fontSize: 14, color: notice.ok ? GOLD : "#FFC9CF" }}>{notice.text}</p>
@@ -177,6 +176,12 @@ export default function Summary({
           <button onClick={onChangePicks} style={textLink}>Change my picks</button>
           <span style={{ fontSize: 12, color: "rgba(251,243,236,0.65)" }}>You can change them until voting closes.</span>
         </div>
+      )}
+
+      {stage === "voting_closed" && (
+        <p style={{ margin: guest.voted ? "-8px 0 0" : 0, textAlign: "center", fontSize: 13, color: "rgba(251,243,236,0.7)" }}>
+          {guest.voted ? "Voting has closed. Your picks are locked in." : "People's Choice voting has closed for this show."}
+        </p>
       )}
 
       <section aria-label="Show details" style={{ background: CREAM, color: INK, borderRadius: 14, padding: "4px 16px" }}>
