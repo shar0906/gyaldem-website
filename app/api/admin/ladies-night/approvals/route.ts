@@ -19,7 +19,7 @@ export async function GET() {
   const { data, error } = await serviceClient()
     .from("ln_artist_profile_revisions")
     .select(
-      "id, artist_id, display_name, photo_url, cover_url, bio, instagram_handle, primary_color, accent_color, " +
+      "id, artist_id, display_name, photo_url, cover_url, logo_url, bio, instagram_handle, website_url, primary_color, accent_color, " +
         `submitted_by, submitted_at, live:ln_artists(${ARTIST_COLUMNS})`
     )
     .eq("status", "pending")

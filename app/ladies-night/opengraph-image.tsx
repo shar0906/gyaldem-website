@@ -6,7 +6,7 @@ import { currentShareData } from "../lib/ln/share-data";
 
 export const runtime = "nodejs";
 export const revalidate = 600;
-export const alt = "Ladies Night at Brooklyn Chop House, hosted by Gyal Dem Social Club";
+export const alt = "Ladies Night, hosted by Gyal Dem Social Club";
 export const size = SHARE_SIZE;
 export const contentType = "image/png";
 

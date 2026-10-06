@@ -16,6 +16,13 @@ export const MIN_CONTRAST_ACCENT = 3; // large, bold button text
 
 export const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
 export const COVER_MAX_BYTES = 10 * 1024 * 1024;
+export const LOGO_MAX_BYTES = 2 * 1024 * 1024;
+// Logos sit on dark backgrounds, so PNG or WebP (both allow transparency).
+// SVG is left out on purpose: SVG files can carry code.
+export const LOGO_TYPES: Record<string, string> = {
+  "image/png": "png",
+  "image/webp": "webp",
+};
 export const IMAGE_TYPES: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -63,6 +70,8 @@ export type ProfileInput = {
   accent_color: string;
   photo_url: string | null;
   cover_url: string | null;
+  logo_url: string | null;
+  website_url: string | null;
 };
 
 function cleanText(v: unknown): string | null {
@@ -104,9 +113,15 @@ export function parseProfile(
   const problem = colorProblem(primary_color, accent_color);
   if (problem) return { ok: false, field: "colors", error: problem };
 
+  const website_url = cleanText(body.website_url);
+  if (website_url && (website_url.length > 300 || !/^https:\/\/[^\s]+\.[^\s]+/.test(website_url))) {
+    return { ok: false, field: "website_url", error: "Use a full web address starting with https://" };
+  }
+
   const photo_url = cleanText(body.photo_url);
   const cover_url = cleanText(body.cover_url);
-  for (const [field, url] of [["photo_url", photo_url], ["cover_url", cover_url]] as const) {
+  const logo_url = cleanText(body.logo_url);
+  for (const [field, url] of [["photo_url", photo_url], ["cover_url", cover_url], ["logo_url", logo_url]] as const) {
     if (url && !url.startsWith(ownFolderUrl)) {
       return { ok: false, field, error: "Upload photos through the Profile tab." };
     }
@@ -114,6 +129,6 @@ export function parseProfile(
 
   return {
     ok: true,
-    value: { display_name, bio, instagram_handle, primary_color, accent_color, photo_url, cover_url },
+    value: { display_name, bio, instagram_handle, primary_color, accent_color, photo_url, cover_url, logo_url, website_url },
   };
 }

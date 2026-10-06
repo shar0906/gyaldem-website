@@ -13,10 +13,19 @@ export type Artist = {
   display_name: string;
   photo_url: string | null;
   cover_url: string | null;
+  logo_url: string | null;
   bio: string | null;
   instagram_handle: string | null;
+  website_url: string | null;
   primary_color: string | null;
   accent_color: string | null;
+};
+export type Venue = {
+  name: string;
+  address: string | null;
+  logo_url: string | null;
+  website_url: string | null;
+  instagram_handle: string | null;
 };
 export type Vip =
   | { enabled: false }
@@ -40,6 +49,7 @@ export type Current =
         voting_closes_at: string;
         opentable_url: string | null;
       };
+      venue: Venue | null;
       artist: Artist | null;
       songs: Song[];
       vip: Vip;
@@ -147,8 +157,45 @@ export function Chip({ children }: { children: ReactNode }) {
   );
 }
 
-export function Footer() {
-  return <p style={{ margin: "8px 0 0", textAlign: "center", fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(251,243,236,0.5)" }}>Gyal Dem Social Club</p>;
+function linkFor(website: string | null, instagram: string | null): string | null {
+  if (website) return website;
+  if (instagram) return `https://instagram.com/${instagram}`;
+  return null;
+}
+
+// Venue, artist, and Gyal Dem, each linking to their own site. Venue and
+// artist appear when known; without a logo they show their name instead.
+export function Footer({ venue, artist }: { venue?: Venue | null; artist?: Artist | null }) {
+  const items: { key: string; name: string; logo: string | null; href: string | null; external: boolean }[] = [];
+  if (venue) items.push({ key: "venue", name: venue.name, logo: venue.logo_url, href: linkFor(venue.website_url, venue.instagram_handle), external: true });
+  if (artist) items.push({ key: "artist", name: artist.display_name, logo: artist.logo_url, href: linkFor(artist.website_url, artist.instagram_handle), external: true });
+  items.push({ key: "gyaldem", name: "Gyal Dem Social Club", logo: "/gyaldem_red_wl_transparent.png", href: "https://gyaldemsocialclub.com", external: false });
+
+  return (
+    <footer style={{ margin: "14px 0 4px", display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: "12px 22px" }}>
+      {items.map((it) => {
+        const mark = it.logo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={it.logo} alt={it.name} style={{ maxWidth: 96, objectFit: "contain", display: "block" }} />
+        ) : (
+          <span style={{ fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(251,243,236,0.7)" }}>{it.name}</span>
+        );
+        return it.href ? (
+          <a
+            key={it.key}
+            href={it.href}
+            {...(it.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+            aria-label={`Visit ${it.name}`}
+            style={{ display: "flex", alignItems: "center", minHeight: 44, textDecoration: "none", opacity: 0.9 }}
+          >
+            {mark}
+          </a>
+        ) : (
+          <span key={it.key} style={{ display: "flex", alignItems: "center", minHeight: 44, opacity: 0.9 }}>{mark}</span>
+        );
+      })}
+    </footer>
+  );
 }
 
 export function ErrorText({ children }: { children: ReactNode }) {

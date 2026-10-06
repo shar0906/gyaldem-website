@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { formatDateTime } from "../artist/ui";
-import { FAINT, GREEN, H1, LINE, MUTED, Notice, PANEL, RED, Stat, StageChip, api, button, errorText, inputStyle, showLabel } from "./kit";
+import { FAINT, GREEN, H1, LINE, MUTED, Notice, PANEL, RED, Stat, StageChip, api, button, errorText, showLabel, selectStyle } from "./kit";
 import { useShows } from "./useShows";
 
 type Song = { rank: number; song_id: string; title: string; artist: string; votes: number; share: number };
@@ -84,7 +84,7 @@ export default function ResultsSection() {
       <H1 action={selected ? <a href={`/api/admin/ladies-night/results?event_id=${selected}&format=csv`} style={button("primary")}>Export results (CSV)</a> : null}>Results</H1>
       <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 18 }}>
         <label htmlFor="r-show" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Show</label>
-        <select id="r-show" value={selected ?? ""} onChange={(e) => setSelected(e.target.value)} style={{ ...inputStyle, width: "auto", minWidth: 240 }}>
+        <select id="r-show" value={selected ?? ""} onChange={(e) => setSelected(e.target.value)} style={{ ...selectStyle, height: 40, width: "auto", minWidth: 240 }}>
           {shows.map((s) => <option key={s.id} value={s.id}>{showLabel(s)}</option>)}
         </select>
         {data && <StageChip stage={data.show.stage} />}

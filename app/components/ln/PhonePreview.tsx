@@ -17,6 +17,8 @@ export type PreviewProfile = {
   accent_color: string | null;
   photo_url: string | null;
   cover_url: string | null;
+  logo_url?: string | null;
+  website_url?: string | null;
 };
 
 const SAMPLE_SONGS = ["No Scrubs", "Sweet Love", "At Last"];

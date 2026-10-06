@@ -15,9 +15,10 @@ export const revalidate = 600;
 export async function generateMetadata(): Promise<Metadata> {
   const d = await currentShareData();
   const title = d.artistName ? `${d.title} with ${d.artistName}` : d.title;
+  const where = d.venueName ? ` at ${d.venueName}` : "";
   const description = d.dateText
-    ? `${d.dateText} at Brooklyn Chop House. RSVP, vote the set list, and reserve your table.`
-    : "RSVP, vote the artist's set list, and reserve your table for Ladies Night at Brooklyn Chop House.";
+    ? `${d.dateText}${where}. RSVP, vote the set list, and reserve your table.`
+    : `RSVP, vote the artist's set list, and reserve your table for Ladies Night${where}.`;
   return {
     title: `${title} | Gyal Dem Social Club`,
     description,

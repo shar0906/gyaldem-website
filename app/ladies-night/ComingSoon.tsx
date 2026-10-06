@@ -60,7 +60,7 @@ export default function ComingSoon({ opensAt, onOpen }: { opensAt: string | null
         </>
       )}
       <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: "rgba(251,243,236,0.8)" }}>
-        A new artist every show, and a set the audience picks. Live at Brooklyn Chop House.
+        A new artist every show, and a set the audience picks.
       </p>
       <Footer />
     </main>

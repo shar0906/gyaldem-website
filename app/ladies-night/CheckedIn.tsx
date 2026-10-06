@@ -39,11 +39,11 @@ export default function CheckedIn({ current, guest }: { current: OpenCurrent; gu
         <span style={{ fontSize: 10.5, letterSpacing: "0.16em", textTransform: "uppercase", color: GOLD }}>About the series</span>
         <h2 style={{ margin: 0, fontFamily: SERIF, fontStyle: "italic", fontWeight: 700, fontSize: 22, lineHeight: 1.15 }}>A new artist every show, and a set the audience picks.</h2>
         <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: "rgba(251,243,236,0.8)" }}>
-          Ladies Night is a recurring night of live music at Brooklyn Chop House. You&apos;re on the list, so you&apos;ll hear about the next one first.
+          Ladies Night is a recurring night of live music{current.venue ? ` at ${current.venue.name}` : ""}. You&apos;re on the list, so you&apos;ll hear about the next one first.
         </p>
       </section>
       <div style={{ flex: 1 }} />
-      <Footer />
+      <Footer venue={current.venue} artist={artist} />
     </main>
   );
 }

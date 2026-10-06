@@ -21,7 +21,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireStaffUser, serviceClient, ARTIST_COLUMNS } from "../../../../../lib/admin/staff-auth";
 import { parseShowPatch } from "../../../../../lib/ln/show-rules";
 import { showStage } from "../../../../../lib/ln/show-status";
-import { SHOW_COLUMNS, ShowRow, checkBookableArtist, syncPublicEvent } from "../../../../../lib/ln/shows";
+import { SHOW_COLUMNS, ShowRow, checkBookableArtist, checkVenue, syncPublicEvent } from "../../../../../lib/ln/shows";
 
 export const dynamic = "force-dynamic";
 
@@ -107,6 +107,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     );
   }
 
+  if (patch.venue_id && patch.venue_id !== current.venue_id) {
+    const check = await checkVenue(db, patch.venue_id);
+    if (check === "error") return NextResponse.json({ error: "server_error" }, { status: 500 });
+    if (check !== "ok") {
+      return NextResponse.json({ error: "invalid", field: "venue_id", message: "That venue isn't available." }, { status: 400 });
+    }
+  }
+
   let draftsCleared = 0;
   const artistChanging = "artist_id" in patch && patch.artist_id !== current.artist_id;
   if (artistChanging) {
@@ -153,7 +161,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (clearError) console.error("clearing old artist drafts failed:", clearError);
   }
 
-  const mirrored = ["title", "gate_description", "event_date", "event_start_time", "event_end_time"];
+  const mirrored = ["title", "gate_description", "event_date", "event_start_time", "event_end_time", "venue_id"];
   if (mirrored.some((k) => k in patch)) await syncPublicEvent(db, show);
 
   return NextResponse.json({ success: true, show: { ...show, stage: showStage(show) }, drafts_cleared: draftsCleared });

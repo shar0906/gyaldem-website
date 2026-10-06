@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireStaffUser, serviceClient } from "../../../../lib/admin/staff-auth";
 import { getTonightShow } from "../../../../lib/ln/tonight";
 import { publicArtist } from "../../../../lib/ln/public-show";
+import { getVenue } from "../../../../lib/ln/venues";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,7 @@ export async function GET() {
     const show = await getTonightShow(db);
     if (!show) return NextResponse.json({ show: null }, { headers: { "Cache-Control": "no-store" } });
 
-    const [rsvpRes, vipRes, artist] = await Promise.all([
+    const [rsvpRes, vipRes, artist, venue] = await Promise.all([
       db
         .from("ln_rsvps")
         .select("id, source, checked_in_at, checked_in_by, ln_voters(first_name, last_name, name, email)")
@@ -42,6 +43,7 @@ export async function GET() {
         .returns<Row[]>(),
       db.from("ln_vip_orders").select("rsvp_id, quantity").eq("event_id", show.id).eq("status", "paid"),
       publicArtist(db, show.artist_id),
+      getVenue(db, show.venue_id),
     ]);
     if (rsvpRes.error || vipRes.error) throw rsvpRes.error ?? vipRes.error;
 
@@ -79,6 +81,7 @@ export async function GET() {
           event_date: show.event_date,
           event_start_time: show.event_start_time,
           artist_name: artist?.display_name ?? null,
+          venue_name: venue?.name ?? null,
         },
         counts,
         guests,

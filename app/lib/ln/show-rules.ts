@@ -10,6 +10,7 @@ export type ShowPatch = Partial<{
   event_start_time: string; // HH:MM
   event_end_time: string; // HH:MM
   artist_id: string | null;
+  venue_id: string | null;
   gate_headline: string | null;
   gate_description: string | null;
   rsvp_opens_at: string | null; // ISO timestamp
@@ -90,6 +91,11 @@ export function parseShowPatch(body: Record<string, unknown>): Result {
     if (body.artist_id === null || body.artist_id === "") out.artist_id = null;
     else if (typeof body.artist_id === "string" && UUID.test(body.artist_id)) out.artist_id = body.artist_id;
     else return { ok: false, field: "artist_id", error: "Pick an artist from the list." };
+  }
+  if ("venue_id" in body) {
+    if (body.venue_id === null || body.venue_id === "") out.venue_id = null;
+    else if (typeof body.venue_id === "string" && UUID.test(body.venue_id)) out.venue_id = body.venue_id;
+    else return { ok: false, field: "venue_id", error: "Pick a venue from the list." };
   }
   if ("gate_headline" in body) {
     const v = text(body.gate_headline, 120);

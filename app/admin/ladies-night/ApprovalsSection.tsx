@@ -24,8 +24,10 @@ const FIELDS: { key: keyof Profile; label: string }[] = [
   { key: "display_name", label: "Name" },
   { key: "bio", label: "Bio" },
   { key: "instagram_handle", label: "Instagram" },
+  { key: "website_url", label: "Website" },
   { key: "photo_url", label: "Profile photo" },
   { key: "cover_url", label: "Cover photo" },
+  { key: "logo_url", label: "Logo" },
   { key: "primary_color", label: "Primary color" },
   { key: "accent_color", label: "Accent color" },
 ];
@@ -142,11 +144,11 @@ export default function ApprovalsSection({ onChange }: { onChange?: () => void }
                     <EditForm value={editing} onChange={setEditing} />
                   ) : (
                     <dl style={{ margin: 0 }}>
-                      {FIELDS.filter((f) => !current.live?.approved_at || current.live?.[f.key] !== current[f.key]).map((f) => (
+                      {FIELDS.filter((f) => !current.live?.approved_at || (current.live?.[f.key] ?? null) !== (current[f.key] ?? null)).map((f) => (
                         <div key={f.key} style={{ display: "grid", gridTemplateColumns: "120px minmax(0,1fr)", gap: 14, padding: "12px 0", borderTop: LINE }}>
                           <dt style={{ fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: RED, paddingTop: 2 }}>{f.label}</dt>
                           <dd style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>
-                            <Diff field={f.key} before={current.live?.approved_at ? current.live?.[f.key] ?? null : null} after={current[f.key]} />
+                            <Diff field={f.key} before={current.live?.approved_at ? current.live?.[f.key] ?? null : null} after={current[f.key] ?? null} />
                           </dd>
                         </div>
                       ))}
@@ -195,13 +197,24 @@ export default function ApprovalsSection({ onChange }: { onChange?: () => void }
 }
 
 function changedSummary(p: Pending): string {
-  const changed = FIELDS.filter((f) => p.live?.[f.key] !== p[f.key]).map((f) => f.label.toLowerCase());
+  const changed = FIELDS.filter((f) => (p.live?.[f.key] ?? null) !== (p[f.key] ?? null)).map((f) => f.label.toLowerCase());
   if (!changed.length) return "No visible changes";
   const joined = changed.length > 2 ? `${changed.slice(0, 2).join(", ")}, +${changed.length - 2} more` : changed.join(", ");
   return joined.charAt(0).toUpperCase() + joined.slice(1);
 }
 
 function Diff({ field, before, after }: { field: keyof Profile; before: string | null; after: string | null }) {
+  if (field === "logo_url") {
+    const box = (url: string | null, highlight: boolean) => (
+      <span style={{ display: "inline-block", width: 96, height: 48, background: url ? `center / contain no-repeat url("${url}"), #1a1a1a` : "#E8E1D6", outline: highlight ? `2px solid ${RED}` : "none", opacity: highlight ? 1 : 0.5 }} />
+    );
+    return (
+      <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        {before !== null && (<>{box(before, false)}<span style={{ color: FAINT }}>→</span></>)}
+        {after ? box(after, true) : <span style={{ color: MUTED }}>Removed</span>}
+      </span>
+    );
+  }
   if (field === "photo_url" || field === "cover_url") {
     const tall = field === "cover_url";
     const box = (url: string | null, highlight: boolean) => (
@@ -260,6 +273,9 @@ function EditForm({ value, onChange }: { value: Profile; onChange: (p: Profile) 
       <Field id="e-ig" label="Instagram (without @)">
         <input id="e-ig" value={value.instagram_handle ?? ""} maxLength={30} onChange={(e) => set("instagram_handle", e.target.value.replace(/^@/, ""))} style={inputStyle} />
       </Field>
+      <Field id="e-web" label="Website (https://, optional)">
+        <input id="e-web" value={value.website_url ?? ""} maxLength={300} onChange={(e) => set("website_url", e.target.value.trim())} style={inputStyle} />
+      </Field>
       <Field id="e-bio" label={`Bio (${(value.bio ?? "").length}/${BIO_MAX})`}>
         <textarea id="e-bio" rows={4} maxLength={BIO_MAX} value={value.bio ?? ""} onChange={(e) => set("bio", e.target.value)} style={{ ...inputStyle, resize: "vertical" }} />
       </Field>
@@ -275,7 +291,7 @@ function EditForm({ value, onChange }: { value: Profile; onChange: (p: Profile) 
         const problem = colorProblem(value.primary_color ?? "", value.accent_color ?? "");
         return problem ? <Notice tone="error">{problem}</Notice> : <span style={{ fontSize: 12, color: GREEN }}>Colors pass the contrast check.</span>;
       })()}
-      <span style={{ fontSize: 12, color: MUTED }}>Photos can be changed from the Artists screen after approving.</span>
+      <span style={{ fontSize: 12, color: MUTED }}>Photos and logo can be changed from the Artists screen after approving.</span>
     </div>
   );
 }

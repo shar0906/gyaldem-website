@@ -10,8 +10,8 @@
 //                rejected, so the tab can show the admin's note
 //
 // POST -> submit changes for review
-//   Body: { display_name, bio, instagram_handle, primary_color,
-//           accent_color, photo_url, cover_url }
+//   Body: { display_name, bio, instagram_handle, website_url,
+//           primary_color, accent_color, photo_url, cover_url, logo_url }
 //   Replaces any earlier pending submission. Nothing changes on the
 //   ballot page until an admin approves.
 //   200 { success: true, pending }
@@ -25,7 +25,7 @@ import { artistFolderPublicUrl } from "../../../../lib/ln/storage";
 export const dynamic = "force-dynamic";
 
 const REVISION_COLUMNS =
-  "id, display_name, photo_url, cover_url, bio, instagram_handle, primary_color, accent_color, status, submitted_at, reviewed_at, review_note";
+  "id, display_name, photo_url, cover_url, logo_url, bio, instagram_handle, website_url, primary_color, accent_color, status, submitted_at, reviewed_at, review_note";
 
 export async function GET() {
   const auth = await requireArtist();

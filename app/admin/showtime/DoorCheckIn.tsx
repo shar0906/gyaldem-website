@@ -21,7 +21,7 @@ type Guest = {
   checked_in_at: string | null;
 };
 type CheckinData = {
-  show: { id: string; title: string; event_date: string; event_start_time: string; artist_name: string | null } | null;
+  show: { id: string; title: string; event_date: string; event_start_time: string; artist_name: string | null; venue_name: string | null } | null;
   counts?: { rsvps: number; checked_in: number; vip_passes: number; vip_passes_in: number };
   guests?: Guest[];
 };
@@ -151,7 +151,7 @@ export default function DoorCheckIn({ onLogout }: { onLogout?: () => void }) {
         <h1 style={{ margin: 0, fontFamily: "Georgia, serif", fontStyle: "italic", fontWeight: 400, fontSize: 26, lineHeight: 1.15 }}>{data.show.title}</h1>
         <span style={{ fontSize: 13, color: MUTED }}>
           {data.show.artist_name ? `with ${data.show.artist_name} · ` : ""}
-          {dateText} · Brooklyn Chop House
+          {dateText}{data.show.venue_name ? ` · ${data.show.venue_name}` : ""}
         </span>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, padding: "0 20px 14px" }}>

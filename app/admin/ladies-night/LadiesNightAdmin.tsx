@@ -12,9 +12,10 @@ import BingoDeckSection from "./BingoDeckSection";
 import GuestsSection from "./GuestsSection";
 import ResultsSection from "./ResultsSection";
 import ShowsSection from "./ShowsSection";
+import VenuesSection from "./VenuesSection";
 import { INK, LINE, RED } from "./kit";
 
-const SECTIONS = ["Shows", "Approvals", "Artists", "Guests", "Results", "Bingo deck"] as const;
+const SECTIONS = ["Shows", "Approvals", "Artists", "Venues", "Guests", "Results", "Bingo deck"] as const;
 type Section = (typeof SECTIONS)[number];
 
 export default function LadiesNightAdmin({ pending, onPendingChange }: { pending: number; onPendingChange: () => void }) {
@@ -66,6 +67,7 @@ export default function LadiesNightAdmin({ pending, onPendingChange }: { pending
         {section === "Shows" && <ShowsSection />}
         {section === "Approvals" && <ApprovalsSection onChange={onPendingChange} />}
         {section === "Artists" && <ArtistsSection onReviewChanges={() => setSection("Approvals")} />}
+        {section === "Venues" && <VenuesSection />}
         {section === "Guests" && <GuestsSection />}
         {section === "Results" && <ResultsSection />}
         {section === "Bingo deck" && <BingoDeckSection />}

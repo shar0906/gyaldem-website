@@ -26,6 +26,7 @@ import {
   showStage,
   vipStatus,
 } from "../../../lib/ln/public-show";
+import { getVenue, publicVenue } from "../../../lib/ln/venues";
 
 export const dynamic = "force-dynamic";
 
@@ -45,10 +46,11 @@ export async function GET(req: NextRequest) {
     }
 
     const showsSongs = stage === "voting_open" || stage === "voting_closed";
-    const [artist, songs, vip] = await Promise.all([
+    const [artist, songs, vip, venue] = await Promise.all([
       publicArtist(db, show.artist_id),
       showsSongs ? publishedSongs(db, show.id) : Promise.resolve([]),
       vipStatus(db, show),
+      getVenue(db, show.venue_id),
     ]);
 
     // The voting window can open before the ballot is published. Until it
@@ -69,8 +71,10 @@ export async function GET(req: NextRequest) {
           gate_description: show.gate_description,
           voting_opens_at: show.voting_opens_at,
           voting_closes_at: show.voting_closes_at,
-          opentable_url: show.opentable_widget,
+          // The show's own OpenTable code wins; otherwise the venue's.
+          opentable_url: show.opentable_widget ?? venue?.opentable_widget ?? null,
         },
+        venue: publicVenue(venue),
         artist,
         songs,
         vip,

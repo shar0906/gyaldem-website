@@ -23,13 +23,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireStaffUser, serviceClient } from "../../../../lib/admin/staff-auth";
 import { parseShowPatch } from "../../../../lib/ln/show-rules";
 import { showStage } from "../../../../lib/ln/show-status";
-import { SHOW_COLUMNS, ShowRow, checkBookableArtist } from "../../../../lib/ln/shows";
+import { SHOW_COLUMNS, ShowRow, checkBookableArtist, checkVenue, syncPublicEvent } from "../../../../lib/ln/shows";
 import { todayEastern } from "../../../../lib/ln/dates";
 import { stripeMode } from "../../../../lib/ln/stripe";
 
 export const dynamic = "force-dynamic";
 
 type ArtistLite = { id: string; display_name: string; approved_at: string | null; active: boolean };
+type VenueLite = { id: string; name: string };
 
 export async function GET() {
   const user = await requireStaffUser(["admin"]);
@@ -51,6 +52,12 @@ export async function GET() {
 
   const showIds = (shows ?? []).map((s) => s.id);
   const artistIds = [...new Set((shows ?? []).flatMap((s) => (s.artist_id ? [s.artist_id] : [])))];
+
+  const venueIds = [...new Set((shows ?? []).flatMap((s) => (s.venue_id ? [s.venue_id] : [])))];
+  const venuesRes = venueIds.length
+    ? await db.from("ln_venues").select("id, name").in("id", venueIds).returns<VenueLite[]>()
+    : { data: [] as VenueLite[], error: null };
+  const venueById = new Map((venuesRes.data ?? []).map((v) => [v.id, v]));
 
   const [songsRes, artistsRes] = await Promise.all([
     showIds.length
@@ -78,6 +85,7 @@ export async function GET() {
   const list = (shows ?? []).map((s) => ({
     ...s,
     artist: s.artist_id ? artistById.get(s.artist_id) ?? null : null,
+    venue: s.venue_id ? venueById.get(s.venue_id) ?? null : null,
     stage: showStage(s),
     ballot: counts.get(s.id) ?? { draft: 0, published: 0 },
   }));
@@ -139,6 +147,14 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  if (v.venue_id) {
+    const check = await checkVenue(db, v.venue_id);
+    if (check === "error") return NextResponse.json({ error: "server_error" }, { status: 500 });
+    if (check !== "ok") {
+      return NextResponse.json({ error: "invalid", field: "venue_id", message: "That venue isn't available." }, { status: 400 });
+    }
+  }
+
   // ln_create_event creates the show and its public Events-page entry
   // together, and fills in the voting window when it's left out.
   const rpcArgs: Record<string, unknown> = {
@@ -166,6 +182,7 @@ export async function POST(req: NextRequest) {
 
   const extras = {
     artist_id: v.artist_id ?? null,
+    venue_id: v.venue_id ?? null,
     gate_headline: v.gate_headline ?? null,
     gate_description: v.gate_description ?? null,
     rsvp_opens_at: v.rsvp_opens_at ?? null,
@@ -187,6 +204,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "settings_not_saved", show_id: newId }, { status: 500 });
   }
 
+  await syncPublicEvent(db, show);
   return NextResponse.json({ success: true, show: { ...show, stage: showStage(show) } });
 }
 

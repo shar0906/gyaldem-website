@@ -25,6 +25,7 @@ import {
   button,
   errorText,
   inputStyle,
+  selectStyle,
   sectionLabel,
   showLabel,
 } from "./kit";
@@ -45,6 +46,7 @@ type ShowRow = {
   event_start_time: string;
   event_end_time: string;
   artist_id: string | null;
+  venue_id: string | null;
   gate_headline: string | null;
   gate_description: string | null;
   rsvp_opens_at: string | null;
@@ -72,6 +74,7 @@ type Form = {
   event_start_time: string;
   event_end_time: string;
   artist_id: string;
+  venue_id: string;
   gate_headline: string;
   gate_description: string;
   rsvp_opens_at: string;
@@ -100,6 +103,7 @@ function toForm(s: ShowRow): Form {
     event_start_time: s.event_start_time.slice(0, 5),
     event_end_time: s.event_end_time.slice(0, 5),
     artist_id: s.artist_id ?? "",
+    venue_id: s.venue_id ?? "",
     gate_headline: s.gate_headline ?? "",
     gate_description: s.gate_description ?? "",
     rsvp_opens_at: isoToEasternInput(s.rsvp_opens_at),
@@ -120,6 +124,7 @@ function blankForm(suggestion: { event_date: string; voting_opens_at: string | n
     event_start_time: "18:00",
     event_end_time: "22:00",
     artist_id: "",
+    venue_id: "",
     gate_headline: DEFAULT_TITLE,
     gate_description: "",
     rsvp_opens_at: "",
@@ -141,6 +146,7 @@ function toBody(f: Form) {
     event_start_time: f.event_start_time,
     event_end_time: f.event_end_time,
     artist_id: f.artist_id || null,
+    venue_id: f.venue_id || null,
     gate_headline: f.gate_headline || null,
     gate_description: f.gate_description || null,
     rsvp_opens_at: easternInputToIso(f.rsvp_opens_at),
@@ -165,18 +171,21 @@ export default function ShowsSection() {
   const [paymentsMode, setPaymentsMode] = useState<"test" | "live" | null | undefined>(undefined);
   const [suggestion, setSuggestion] = useState<{ event_date: string; voting_opens_at: string | null; voting_closes_at: string | null } | null>(null);
   const [artists, setArtists] = useState<ArtistFull[]>([]);
+  const [venues, setVenues] = useState<{ id: string; name: string; active: boolean; opentable_widget: string | null }[]>([]);
   const [selected, setSelected] = useState<string | "new" | null>(null);
   const [show, setShow] = useState<ShowRow | null>(null);
   const [songs, setSongs] = useState<BallotSong[]>([]);
   const [form, setForm] = useState<Form | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [defaultVenue, setDefaultVenue] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ tone: "ok" | "error"; text: string; field?: string } | null>(null);
 
   const loadList = useCallback(async () => {
-    const [list, people] = await Promise.all([
+    const [list, people, places] = await Promise.all([
       api<{ shows: ShowRow[]; suggestion: typeof suggestion; payments_mode?: "test" | "live" | null; error?: string }>("/api/admin/ladies-night/shows"),
       api<{ artists: ArtistFull[] }>("/api/admin/ladies-night/artists"),
+      api<{ venues: { id: string; name: string; active: boolean; opentable_widget: string | null }[] }>("/api/admin/ladies-night/venues"),
     ]);
     if (!list.ok) {
       setLoadError(errorText(list.data));
@@ -186,6 +195,12 @@ export default function ShowsSection() {
     setSuggestion(list.data.suggestion);
     setPaymentsMode(list.data.payments_mode ?? null);
     if (people.ok) setArtists(people.data.artists);
+    if (places.ok) {
+      setVenues(places.data.venues);
+      // New shows start at the only active venue, if there's just one.
+      const active = places.data.venues.filter((v) => v.active);
+      if (active.length === 1) setDefaultVenue(active[0].id);
+    }
     return list.data.shows;
   }, []);
 
@@ -213,7 +228,7 @@ export default function ShowsSection() {
     setSelected("new");
     setShow(null);
     setSongs([]);
-    setForm(blankForm(suggestion));
+    setForm({ ...blankForm(suggestion), venue_id: defaultVenue });
     setNotice(null);
   };
 
@@ -348,7 +363,7 @@ export default function ShowsSection() {
                 {show && <StageChip stage={show.stage} />}
               </div>
               <Field id="s-artist" label="Artist" hint={selectedArtist && !selectedArtist.approved_at ? "This artist's profile isn't approved yet. You can book them, but publishing waits for approval." : undefined}>
-                <select id="s-artist" value={form.artist_id} onChange={(e) => set("artist_id", e.target.value)} style={inputStyle}>
+                <select id="s-artist" value={form.artist_id} onChange={(e) => set("artist_id", e.target.value)} style={selectStyle}>
                   <option value="">Leave unassigned</option>
                   {artists
                     .filter((a) => a.active || a.id === form.artist_id)
@@ -360,6 +375,17 @@ export default function ShowsSection() {
                 </select>
               </Field>
               {fieldErr("artist_id")}
+              <Field id="s-venue" label="Venue" hint={venues.length === 0 ? "Add venues under Ladies Night, Venues." : undefined}>
+                <select id="s-venue" value={form.venue_id} onChange={(e) => set("venue_id", e.target.value)} style={selectStyle}>
+                  <option value="">No venue yet</option>
+                  {venues
+                    .filter((v) => v.active || v.id === form.venue_id)
+                    .map((v) => (
+                      <option key={v.id} value={v.id}>{v.name}</option>
+                    ))}
+                </select>
+              </Field>
+              {fieldErr("venue_id")}
               <Field id="s-title" label="Title">
                 <input id="s-title" value={form.title} onChange={(e) => set("title", e.target.value)} style={inputStyle} />
               </Field>
@@ -412,7 +438,19 @@ export default function ShowsSection() {
 
             <section style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 20, borderTop: LINE }}>
               <p style={sectionLabel}>OpenTable</p>
-              <Field id="s-ot" label="Widget code from BCH" hint={show?.opentable_widget ? <span style={{ color: GREEN }}>Saved. Only the OpenTable link is kept from what you paste.</span> : "Paste the code OpenTable gives BCH. Only the opentable.com link inside it is kept."}>
+              <Field
+                id="s-ot"
+                label="Override for this show (optional)"
+                hint={
+                  show?.opentable_widget ? (
+                    <span style={{ color: GREEN }}>This show uses its own widget. Clear the box to use the venue&apos;s.</span>
+                  ) : venues.find((v) => v.id === form.venue_id)?.opentable_widget ? (
+                    "Using the venue's widget. Paste a different code here only if this show needs its own, like a special-event widget."
+                  ) : (
+                    "Neither this show nor its venue has a widget yet. Add it on the venue, or paste one here for this show only."
+                  )
+                }
+              >
                 <textarea id="s-ot" rows={2} value={form.opentable_widget} onChange={(e) => set("opentable_widget", e.target.value)} placeholder="Paste the special-event widget code" style={{ ...inputStyle, fontFamily: "Menlo, Consolas, monospace", fontSize: 12, resize: "vertical" }} />
               </Field>
               {fieldErr("opentable_widget")}

@@ -9,7 +9,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import { BallotPreview, GatePreview, PreviewProfile } from "../../components/ln/PhonePreview";
-import { BIO_MAX, COVER_MAX_BYTES, IMAGE_TYPES, PHOTO_MAX_BYTES, colorProblem } from "../../lib/ln/profile-rules";
+import { BIO_MAX, COVER_MAX_BYTES, IMAGE_TYPES, LOGO_MAX_BYTES, LOGO_TYPES, PHOTO_MAX_BYTES, colorProblem } from "../../lib/ln/profile-rules";
 import { DEFAULT_ACCENT, DEFAULT_PRIMARY } from "../../lib/ln/theme";
 import { FAINT, GOLD, GREEN, MUTED, SOFT_RED, formatDateTime, heading, input, label, primaryButton, textButton } from "./ui";
 
@@ -24,7 +24,11 @@ type Form = {
   accent_color: string;
   photo_url: string | null;
   cover_url: string | null;
+  logo_url: string | null;
+  website_url: string;
 };
+
+type UploadKind = "photo" | "cover" | "logo";
 
 const BUCKET = "artist-photos";
 
@@ -37,6 +41,8 @@ function toForm(p: PreviewProfile): Form {
     accent_color: (p.accent_color ?? DEFAULT_ACCENT).toUpperCase(),
     photo_url: p.photo_url,
     cover_url: p.cover_url,
+    logo_url: p.logo_url ?? null,
+    website_url: p.website_url ?? "",
   };
 }
 
@@ -49,7 +55,7 @@ export default function ArtistProfile() {
   const [form, setForm] = useState<Form | null>(null);
   const [songs, setSongs] = useState<string[]>([]);
 
-  const [uploading, setUploading] = useState<"photo" | "cover" | null>(null);
+  const [uploading, setUploading] = useState<UploadKind | null>(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [fieldError, setFieldError] = useState<{ field: string; text: string } | null>(null);
@@ -105,12 +111,12 @@ export default function ArtistProfile() {
   const nameMissing = !form.display_name.trim();
   const canSubmit = !colorIssue && !nameMissing && !uploading && !saving;
 
-  async function upload(kind: "photo" | "cover", file: File | undefined) {
+  async function upload(kind: UploadKind, file: File | undefined) {
     if (!file) return;
     setMessage(null);
-    const max = kind === "photo" ? PHOTO_MAX_BYTES : COVER_MAX_BYTES;
-    if (!IMAGE_TYPES[file.type]) {
-      setFieldError({ field: kind, text: "Use a JPG, PNG, or WebP image." });
+    const max = kind === "photo" ? PHOTO_MAX_BYTES : kind === "logo" ? LOGO_MAX_BYTES : COVER_MAX_BYTES;
+    if (!(kind === "logo" ? LOGO_TYPES : IMAGE_TYPES)[file.type]) {
+      setFieldError({ field: kind, text: kind === "logo" ? "Use a PNG or WebP logo, ideally with a transparent background." : "Use a JPG, PNG, or WebP image." });
       return;
     }
     if (file.size > max) {
@@ -129,7 +135,7 @@ export default function ArtistProfile() {
       if (!res.ok) throw new Error(link.message ?? "upload_failed");
       const { error } = await storage.uploadToSignedUrl(link.path, link.token, file, { contentType: file.type });
       if (error) throw error;
-      set(kind === "photo" ? "photo_url" : "cover_url", link.public_url);
+      set(kind === "photo" ? "photo_url" : kind === "logo" ? "logo_url" : "cover_url", link.public_url);
     } catch (e) {
       setFieldError({ field: kind, text: e instanceof Error && e.message !== "upload_failed" ? e.message : "Upload didn't go through. Try again." });
     }
@@ -170,6 +176,8 @@ export default function ArtistProfile() {
     accent_color: form.accent_color,
     photo_url: form.photo_url,
     cover_url: form.cover_url,
+    logo_url: form.logo_url,
+    website_url: form.website_url || null,
   };
 
   const errorFor = (field: string) =>
@@ -260,6 +268,32 @@ export default function ArtistProfile() {
                 />
               </div>
               {errorFor("instagram_handle")}
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, alignItems: "start" }}>
+            <div>
+              <label htmlFor="ln-web" style={label}>Website (optional)</label>
+              <input id="ln-web" type="url" inputMode="url" placeholder="https://" value={form.website_url} maxLength={300} onChange={(e) => set("website_url", e.target.value.trim())} style={input} />
+              <p style={{ fontSize: 11, color: FAINT, margin: "6px 0 0" }}>Your logo on the ballot page links here, or to your Instagram if this is empty.</p>
+              {errorFor("website_url")}
+            </div>
+            <div>
+              <span style={label}>Logo (optional)</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <div style={{ width: 96, height: 56, flexShrink: 0, border: "1px dashed rgba(255,255,255,0.2)", background: form.logo_url ? `center / contain no-repeat url("${form.logo_url}")` : "transparent", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: FAINT }}>
+                  {!form.logo_url && "No logo"}
+                </div>
+                <div>
+                  <UploadButton id="ln-logo" kind="logo" busy={uploading === "logo"} hasImage={!!form.logo_url} onFile={upload} />
+                  {form.logo_url && (
+                    <button onClick={() => set("logo_url", null)} style={{ ...textButton, color: FAINT, display: "block" }}>Remove logo</button>
+                  )}
+                </div>
+              </div>
+              <p style={{ fontSize: 11, color: FAINT, margin: "6px 0 0" }}>PNG or WebP with a transparent background, up to 2 MB. Shown in the ballot page footer.</p>
+              {errorFor("logo")}
+              {errorFor("logo_url")}
             </div>
           </div>
 
@@ -361,20 +395,20 @@ function UploadButton({
   onFile,
 }: {
   id: string;
-  kind: "photo" | "cover";
+  kind: UploadKind;
   busy: boolean;
   hasImage: boolean;
-  onFile: (kind: "photo" | "cover", file: File | undefined) => void;
+  onFile: (kind: UploadKind, file: File | undefined) => void;
 }) {
   return (
     <>
       <label htmlFor={id} style={{ ...textButton, display: "inline-block", cursor: busy ? "default" : "pointer" }}>
-        {busy ? "Uploading…" : hasImage ? `Replace ${kind === "photo" ? "photo" : "cover"}` : `Upload ${kind === "photo" ? "photo" : "cover"}`}
+        {busy ? "Uploading…" : `${hasImage ? "Replace" : "Upload"} ${kind}`}
       </label>
       <input
         id={id}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept={kind === "logo" ? "image/png,image/webp" : "image/jpeg,image/png,image/webp"}
         disabled={busy}
         onChange={(e) => {
           onFile(kind, e.target.files?.[0]);

@@ -3,12 +3,13 @@
 // GET /api/ladies-night/calendar
 // Public. "Add to calendar": a calendar file for the current show that
 // Apple, Google, and Outlook calendars all open. Title includes the
-// artist; location comes from the show's Events page entry.
+// artist; location comes from the show's venue.
 
 import { NextResponse } from "next/server";
 import { serviceClient } from "../../../lib/admin/staff-auth";
 import { getCurrentShow, publicArtist } from "../../../lib/ln/public-show";
 import { easternToUtcIso } from "../../../lib/ln/dates";
+import { getVenue, venueLocation } from "../../../lib/ln/venues";
 
 export const dynamic = "force-dynamic";
 
@@ -27,16 +28,11 @@ export async function GET() {
     const show = await getCurrentShow(db);
     if (!show) return NextResponse.json({ error: "no_show" }, { status: 404 });
 
-    const [artist, { data: pub }] = await Promise.all([
-      publicArtist(db, show.artist_id),
-      show.public_event_id
-        ? db.from("events").select("location").eq("id", show.public_event_id).maybeSingle()
-        : Promise.resolve({ data: null }),
-    ]);
+    const [artist, venue] = await Promise.all([publicArtist(db, show.artist_id), getVenue(db, show.venue_id)]);
 
     const site = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://gyaldemsocialclub.com").replace(/\/$/, "");
     const title = artist ? `${show.title} with ${artist.display_name}` : show.title;
-    const location = (pub?.location as string | undefined) ?? "Brooklyn Chop House, Miami";
+    const location = venueLocation(venue) ?? "Miami";
     const description = [show.gate_description, `${site}/ladies-night`].filter(Boolean).join("\n\n");
 
     const ics = [

@@ -69,8 +69,10 @@ export type PublicArtist = {
   display_name: string;
   photo_url: string | null;
   cover_url: string | null;
+  logo_url: string | null;
   bio: string | null;
   instagram_handle: string | null;
+  website_url: string | null;
   primary_color: string | null;
   accent_color: string | null;
 };
@@ -79,7 +81,7 @@ export async function publicArtist(db: SupabaseClient, artistId: string | null):
   if (!artistId) return null;
   const { data, error } = await db
     .from("ln_artists")
-    .select("display_name, photo_url, cover_url, bio, instagram_handle, primary_color, accent_color, approved_at, active")
+    .select("display_name, photo_url, cover_url, logo_url, bio, instagram_handle, website_url, primary_color, accent_color, approved_at, active")
     .eq("id", artistId)
     .maybeSingle();
   if (error) throw error;
@@ -88,8 +90,10 @@ export async function publicArtist(db: SupabaseClient, artistId: string | null):
     display_name: data.display_name,
     photo_url: data.photo_url,
     cover_url: data.cover_url,
+    logo_url: data.logo_url,
     bio: data.bio,
     instagram_handle: data.instagram_handle,
+    website_url: data.website_url,
     primary_color: data.primary_color,
     accent_color: data.accent_color,
   };

@@ -12,6 +12,7 @@ export const SHARE_SIZE = { width: 1200, height: 630 };
 export type ShareCardData = {
   title: string;
   artistName: string | null;
+  venueName: string | null;
   dateText: string | null;
   coverUrl: string | null;
   primary: string | null;
@@ -53,7 +54,7 @@ export async function renderShareCard(d: ShareCardData): Promise<ImageResponse> 
           {d.artistName && (
             <div style={{ display: "flex", fontSize: 40, color: theme.accentSoft, fontWeight: 700 }}>with {d.artistName}</div>
           )}
-          {d.dateText && <div style={{ display: "flex", fontSize: 28, color: "rgba(251,243,236,0.85)" }}>{d.dateText} · Brooklyn Chop House</div>}
+          {d.dateText && <div style={{ display: "flex", fontSize: 28, color: "rgba(251,243,236,0.85)" }}>{[d.dateText, d.venueName].filter(Boolean).join(" · ")}</div>}
           <div
             style={{
               display: "flex",

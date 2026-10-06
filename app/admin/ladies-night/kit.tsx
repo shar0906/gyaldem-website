@@ -38,6 +38,19 @@ export const inputStyle: CSSProperties = {
   color: INK,
 };
 
+// Dropdowns: our own arrow, set in from the right edge.
+export const selectStyle: CSSProperties = {
+  ...inputStyle,
+  appearance: "none",
+  WebkitAppearance: "none",
+  paddingRight: 38,
+  backgroundImage:
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%230A0A0A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")",
+  backgroundRepeat: "no-repeat",
+  backgroundPosition: "right 14px center",
+  cursor: "pointer",
+};
+
 export const sectionLabel: CSSProperties = {
   fontSize: 10,
   letterSpacing: "0.2em",

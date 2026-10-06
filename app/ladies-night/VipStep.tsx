@@ -94,7 +94,7 @@ export default function VipStep({
       </section>
       <button onClick={onSkip} style={{ ...textLink, color: "rgba(251,243,236,0.8)" }}>{justVoted ? "No thanks, continue" : "Not now"}</button>
       <div style={{ flex: 1 }} />
-      <Footer />
+      <Footer venue={current.venue} artist={current.artist} />
     </main>
   );
 }

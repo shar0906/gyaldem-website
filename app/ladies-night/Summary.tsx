@@ -111,7 +111,7 @@ export default function Summary({
           <Glow />
           <span style={{ fontSize: 10.5, letterSpacing: "0.16em", textTransform: "uppercase", color: GOLD }}>Save your seat</span>
           <h2 style={{ margin: 0, fontFamily: SERIF, fontStyle: "italic", fontWeight: 700, fontSize: 24, lineHeight: 1.15 }}>Reserve through OpenTable to guarantee your seat.</h2>
-          <p style={{ ...sub, fontSize: 13.5 }}>Your RSVP doesn&apos;t guarantee a table. Book the Ladies Night reservation at Brooklyn Chop House to lock yours in.</p>
+          <p style={{ ...sub, fontSize: 13.5 }}>Your RSVP doesn&apos;t guarantee a table. Book the Ladies Night reservation{current.venue ? ` at ${current.venue.name}` : ""} to lock yours in.</p>
           {show.opentable_url ? (
             widgetOpen ? (
               <OpenTableWidget url={show.opentable_url} />
@@ -152,7 +152,7 @@ export default function Summary({
       <section aria-label="Show details" style={{ background: CREAM, color: INK, borderRadius: 14, padding: "4px 16px" }}>
         {[
           ["When", `${prettyDate(show.event_date)} · ${prettyTime(show.event_start_time)}`],
-          ["Where", "Brooklyn Chop House"],
+          ...(current.venue ? [["Where", current.venue.address ? `${current.venue.name}, ${current.venue.address}` : current.venue.name]] : []),
           ...(artist ? [["Artist", artist.display_name]] : []),
         ].map(([k, v], i) => (
           <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "12px 0", borderTop: i ? "1px solid #EBD9CE" : "none", fontSize: 14 }}>
@@ -175,7 +175,7 @@ export default function Summary({
         <button onClick={() => setShowReserve(true)} style={textLink}>Still need your table?</button>
       )}
       <div style={{ flex: 1 }} />
-      <Footer />
+      <Footer venue={current.venue} artist={artist} />
     </main>
   );
 }

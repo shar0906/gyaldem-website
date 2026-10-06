@@ -28,6 +28,8 @@ const PROFILE_KEYS = [
   "accent_color",
   "photo_url",
   "cover_url",
+  "logo_url",
+  "website_url",
 ] as const;
 
 export async function PATCH(req: NextRequest, { params }: Params) {
@@ -64,6 +66,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       accent_color: current.accent_color ?? "#C81E3A",
       photo_url: current.photo_url,
       cover_url: current.cover_url,
+      logo_url: current.logo_url,
+      website_url: current.website_url,
     };
     for (const k of PROFILE_KEYS) if (k in body) merged[k] = body[k];
     const parsed = parseProfile(merged, artistFolderPublicUrl(id));

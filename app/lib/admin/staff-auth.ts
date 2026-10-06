@@ -27,8 +27,10 @@ export type ArtistRow = {
   display_name: string;
   photo_url: string | null;
   cover_url: string | null;
+  logo_url: string | null;
   bio: string | null;
   instagram_handle: string | null;
+  website_url: string | null;
   primary_color: string | null;
   accent_color: string | null;
   approved_at: string | null;
@@ -36,7 +38,7 @@ export type ArtistRow = {
 };
 
 export const ARTIST_COLUMNS =
-  "id, staff_email, display_name, photo_url, cover_url, bio, instagram_handle, primary_color, accent_color, approved_at, active";
+  "id, staff_email, display_name, photo_url, cover_url, logo_url, bio, instagram_handle, website_url, primary_color, accent_color, approved_at, active";
 
 // Bypasses RLS. Server-side only. Never import this into client code.
 export function serviceClient() {

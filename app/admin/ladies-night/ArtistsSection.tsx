@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import { BallotPreview, GatePreview, PreviewProfile } from "../../components/ln/PhonePreview";
-import { BIO_MAX, COVER_MAX_BYTES, IMAGE_TYPES, PHOTO_MAX_BYTES, colorProblem } from "../../lib/ln/profile-rules";
+import { BIO_MAX, COVER_MAX_BYTES, IMAGE_TYPES, LOGO_MAX_BYTES, LOGO_TYPES, PHOTO_MAX_BYTES, colorProblem } from "../../lib/ln/profile-rules";
 import { DEFAULT_ACCENT, DEFAULT_PRIMARY } from "../../lib/ln/theme";
 import { FAINT, Field, GREEN, H1, LINE, MUTED, Notice, PANEL, RED, api, button, errorText, inputStyle } from "./kit";
 
@@ -214,6 +214,8 @@ function EditArtist({ artist, onSaved }: { artist: Artist; onSaved: (text: strin
     accent_color: artist.accent_color ?? DEFAULT_ACCENT,
     photo_url: artist.photo_url,
     cover_url: artist.cover_url,
+    logo_url: artist.logo_url ?? null,
+    website_url: artist.website_url ?? "",
   });
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -225,10 +227,10 @@ function EditArtist({ artist, onSaved }: { artist: Artist; onSaved: (text: strin
   const set = (k: keyof PreviewProfile, v: string | null) => setForm((f) => ({ ...f, [k]: v }));
   const colorIssue = colorProblem(form.primary_color ?? "", form.accent_color ?? "");
 
-  async function upload(kind: "photo" | "cover", file: File | undefined) {
+  async function upload(kind: "photo" | "cover" | "logo", file: File | undefined) {
     if (!file) return;
-    const max = kind === "photo" ? PHOTO_MAX_BYTES : COVER_MAX_BYTES;
-    if (!IMAGE_TYPES[file.type]) return setError("Use a JPG, PNG, or WebP image.");
+    const max = kind === "photo" ? PHOTO_MAX_BYTES : kind === "logo" ? LOGO_MAX_BYTES : COVER_MAX_BYTES;
+    if (!(kind === "logo" ? LOGO_TYPES : IMAGE_TYPES)[file.type]) return setError(kind === "logo" ? "Use a PNG or WebP logo." : "Use a JPG, PNG, or WebP image.");
     if (file.size > max) return setError(`That image is over ${max / 1024 / 1024} MB.`);
     setBusy(kind);
     setError(null);
@@ -243,7 +245,7 @@ function EditArtist({ artist, onSaved }: { artist: Artist; onSaved: (text: strin
     const { error: upErr } = await storage.uploadToSignedUrl(res.data.path, res.data.token, file, { contentType: file.type });
     setBusy(null);
     if (upErr) return setError("Upload didn't go through. Try again.");
-    set(kind === "photo" ? "photo_url" : "cover_url", res.data.public_url);
+    set(kind === "photo" ? "photo_url" : kind === "logo" ? "logo_url" : "cover_url", res.data.public_url);
   }
 
   async function save() {
@@ -264,12 +266,16 @@ function EditArtist({ artist, onSaved }: { artist: Artist; onSaved: (text: strin
           <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
             <UploadLink label={form.photo_url ? "Replace profile photo" : "Upload profile photo"} busy={busy === "photo"} onFile={(f) => upload("photo", f)} />
             <UploadLink label={form.cover_url ? "Replace cover photo" : "Upload cover photo"} busy={busy === "cover"} onFile={(f) => upload("cover", f)} />
+            <UploadLink label={form.logo_url ? "Replace logo" : "Upload logo"} busy={busy === "logo"} onFile={(f) => upload("logo", f)} accept="image/png,image/webp" />
           </div>
           <Field id="ed-name" label="Name">
             <input id="ed-name" value={form.display_name} maxLength={80} onChange={(e) => set("display_name", e.target.value)} style={inputStyle} />
           </Field>
           <Field id="ed-ig" label="Instagram (without @)">
             <input id="ed-ig" value={form.instagram_handle ?? ""} maxLength={30} onChange={(e) => set("instagram_handle", e.target.value.replace(/^@/, ""))} style={inputStyle} />
+          </Field>
+          <Field id="ed-web" label="Website (https://, optional)">
+            <input id="ed-web" value={form.website_url ?? ""} maxLength={300} onChange={(e) => set("website_url", e.target.value.trim())} style={inputStyle} />
           </Field>
           <Field id="ed-bio" label={`Bio (${(form.bio ?? "").length}/${BIO_MAX})`}>
             <textarea id="ed-bio" rows={4} maxLength={BIO_MAX} value={form.bio ?? ""} onChange={(e) => set("bio", e.target.value)} style={{ ...inputStyle, resize: "vertical" }} />
@@ -299,13 +305,13 @@ function EditArtist({ artist, onSaved }: { artist: Artist; onSaved: (text: strin
   );
 }
 
-function UploadLink({ label, busy, onFile }: { label: string; busy: boolean; onFile: (f: File | undefined) => void }) {
+function UploadLink({ label, busy, onFile, accept = "image/jpeg,image/png,image/webp" }: { label: string; busy: boolean; onFile: (f: File | undefined) => void; accept?: string }) {
   return (
     <label style={{ fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", cursor: busy ? "default" : "pointer", padding: "8px 0", color: busy ? FAINT : RED }}>
       {busy ? "Uploading…" : label}
       <input
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept={accept}
         disabled={busy}
         onChange={(e) => {
           onFile(e.target.files?.[0]);
