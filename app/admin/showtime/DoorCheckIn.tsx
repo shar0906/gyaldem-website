@@ -18,6 +18,7 @@ type Guest = {
   email: string;
   vip_passes: number;
   walk_in: boolean;
+  party_size?: number | null;
   checked_in_at: string | null;
 };
 type CheckinData = {
@@ -186,6 +187,7 @@ export default function DoorCheckIn({ onLogout }: { onLogout?: () => void }) {
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                   <span style={{ fontSize: 16 }}>{name}</span>
                   {g.vip_passes > 0 && <span style={{ fontSize: 11, fontWeight: 600, color: "#c86b6b", border: "1px solid #c86b6b", borderRadius: 999, padding: "2px 8px" }}>VIP × {g.vip_passes}</span>}
+                  {g.party_size ? <span style={{ fontSize: 11, color: MUTED, border: "1px solid rgba(245,240,232,0.25)", borderRadius: 999, padding: "2px 8px" }}>Table for {g.party_size}</span> : null}
                   {g.walk_in && <span style={{ fontSize: 11, color: MUTED, border: "1px solid rgba(245,240,232,0.25)", borderRadius: 999, padding: "2px 8px" }}>Walk-in</span>}
                 </div>
                 <span style={{ fontSize: 12, color: MUTED, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.email}</span>

@@ -20,6 +20,10 @@ type RsvpRow = {
   consented_at: string;
   share_with_artist: boolean;
   table_reserved_at: string | null;
+  table_reserved_source: string | null;
+  table_party_size: number | null;
+  table_reserved_for: string | null;
+  table_confirmation: string | null;
   checked_in_at: string | null;
   checked_in_by: string | null;
   ln_voters: { first_name: string | null; last_name: string | null; name: string; email: string } | null;
@@ -46,7 +50,7 @@ export async function GET(req: NextRequest) {
     db
       .from("ln_rsvps")
       .select(
-        "id, voter_id, source, consented_at, share_with_artist, table_reserved_at, checked_in_at, checked_in_by, ln_voters(first_name, last_name, name, email)"
+        "id, voter_id, source, consented_at, share_with_artist, table_reserved_at, table_reserved_source, table_party_size, table_reserved_for, table_confirmation, checked_in_at, checked_in_by, ln_voters(first_name, last_name, name, email)"
       )
       .eq("event_id", eventId)
       .order("consented_at", { ascending: true })
@@ -81,6 +85,10 @@ export async function GET(req: NextRequest) {
       rsvp_at: r.consented_at,
       voted: voted.has(r.voter_id),
       table_reserved: !!r.table_reserved_at,
+      table_via_opentable: r.table_reserved_source === "opentable",
+      table_party_size: r.table_party_size,
+      table_time: r.table_reserved_for ? r.table_reserved_for.slice(11, 16) : null,
+      table_confirmation: r.table_confirmation,
       vip_passes: vipByRsvp.get(r.id) ?? 0,
       share_with_artist: r.share_with_artist,
       checked_in_at: r.checked_in_at,
@@ -104,7 +112,10 @@ export async function GET(req: NextRequest) {
       SOURCE_LABEL[g.source],
       g.rsvp_at,
       g.voted ? "Yes" : "No",
-      g.table_reserved ? "Yes" : "No",
+      g.table_reserved ? (g.table_via_opentable ? "Yes (OpenTable)" : "Yes (self-reported)") : "No",
+      g.table_party_size ?? "",
+      g.table_time ?? "",
+      g.table_confirmation ?? "",
       g.vip_passes,
       g.share_with_artist ? "Yes" : "No",
       g.checked_in_at ?? "",
@@ -112,7 +123,7 @@ export async function GET(req: NextRequest) {
     return csvResponse(
       `${base}-rsvps.csv`,
       toCsv(
-        ["First name", "Last name", "Email", "Arrived via", "RSVP time", "Voted", "Table reserved", "VIP passes", "Shares with artist", "Checked in"],
+        ["First name", "Last name", "Email", "Arrived via", "RSVP time", "Voted", "Table reserved", "Party size", "Table time", "OpenTable confirmation", "VIP passes", "Shares with artist", "Checked in"],
         rows
       )
     );

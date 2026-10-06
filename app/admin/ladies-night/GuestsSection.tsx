@@ -6,7 +6,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { FAINT, H1, LINE, MUTED, Notice, PANEL, RED, Stat, api, button, errorText, inputStyle, selectStyle, showLabel } from "./kit";
+import { FAINT, H1, LINE, MUTED, Notice, PANEL, RED, Stat, api, button, errorText, inputStyle, showLabel } from "./kit";
 import { useShows } from "./useShows";
 
 type Guest = {
@@ -17,6 +17,10 @@ type Guest = {
   rsvp_at: string;
   voted: boolean;
   table_reserved: boolean;
+  table_via_opentable?: boolean;
+  table_party_size?: number | null;
+  table_time?: string | null;
+  table_confirmation?: string | null;
   vip_passes: number;
   share_with_artist: boolean;
   checked_in_at: string | null;
@@ -81,11 +85,11 @@ export default function GuestsSection() {
       </H1>
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 18 }}>
         <label htmlFor="g-show" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Show</label>
-        <select id="g-show" value={selected ?? ""} onChange={(e) => setSelected(e.target.value)} style={{ ...selectStyle, height: 40, width: "auto", minWidth: 240 }}>
+        <select id="g-show" value={selected ?? ""} onChange={(e) => setSelected(e.target.value)} style={{ ...inputStyle, width: "auto", minWidth: 240 }}>
           {shows.map((s) => <option key={s.id} value={s.id}>{showLabel(s)}</option>)}
         </select>
         <label htmlFor="g-search" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Search guests</label>
-        <input id="g-search" type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search name or email" style={{ ...inputStyle, height: 40, width: "auto", minWidth: 240 }} />
+        <input id="g-search" type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search name or email" style={{ ...inputStyle, width: "auto", minWidth: 240 }} />
       </div>
 
       {error && <Notice tone="error">{error}</Notice>}
@@ -95,7 +99,7 @@ export default function GuestsSection() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 18 }}>
             <Stat name="RSVPs" value={data.summary.rsvps} />
             <Stat name="Voted" value={data.summary.voted} />
-            <Stat name="Tables reserved" value={data.summary.tables_reserved} note="Self-reported" />
+            <Stat name="Tables reserved" value={data.summary.tables_reserved} note="Booked here or self-reported" />
             <Stat name="VIP passes sold" value={data.summary.vip_passes_sold} />
             <Stat name="Sharing with artist" value={data.summary.sharing_with_artist} />
             <Stat name="Checked in" value={data.summary.checked_in} />
@@ -111,7 +115,7 @@ export default function GuestsSection() {
                 <span style={{ color: MUTED, overflowWrap: "anywhere" }}>{g.email}</span>
                 <span><span className="ln-m">Arrived</span>{SOURCE[g.source]}</span>
                 <span style={{ color: g.voted ? undefined : FAINT }}><span className="ln-m">Voted</span>{g.voted ? "Yes" : "No"}</span>
-                <span style={{ color: g.table_reserved ? undefined : FAINT }}><span className="ln-m">Table</span>{g.table_reserved ? "Reserved" : "Not yet"}</span>
+                <span style={{ color: g.table_reserved ? undefined : FAINT }}><span className="ln-m">Table</span>{g.table_reserved ? (g.table_party_size ? `Party of ${g.table_party_size}${g.table_time ? ` · ${new Date(`2000-01-01T${g.table_time}:00Z`).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "UTC" })}` : ""}` : "Reserved") : "Not yet"}</span>
                 <span style={{ color: g.vip_passes ? RED : FAINT }}><span className="ln-m">VIP</span>{g.vip_passes ? `× ${g.vip_passes}` : "None"}</span>
                 <span style={{ color: g.share_with_artist ? undefined : FAINT }}><span className="ln-m">Shares</span>{g.share_with_artist ? "Yes" : "No"}</span>
                 <span style={{ color: g.checked_in_at ? undefined : FAINT }}><span className="ln-m">Checked in</span>{g.checked_in_at ? time(g.checked_in_at) : "Not yet"}</span>

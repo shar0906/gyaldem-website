@@ -8,7 +8,7 @@
 "use client";
 
 import { useState } from "react";
-import OpenTableWidget from "./OpenTableWidget";
+import OpenTableInline, { OpenTableBooking } from "./OpenTableInline";
 import {
   CREAM,
   CalendarIcon,
@@ -34,6 +34,7 @@ import {
   prettyDate,
   prettyTime,
   sub,
+  tableTime,
   textLink,
 } from "./shared";
 
@@ -63,10 +64,28 @@ export default function Summary({
   const [widgetOpen, setWidgetOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [wrongDate, setWrongDate] = useState<OpenTableBooking | null>(null);
 
   const vipAvailable = vip.enabled && !vip.closed && !vip.sold_out && passes < 5;
   const titleById = new Map(songs.map((s) => [s.song_id, s]));
   const picks = guest.picks.map((id) => titleById.get(id)).filter(Boolean) as typeof songs;
+
+  // OpenTable reported a booking from inside the frame: save it and move on.
+  async function bookedOnOpenTable(b: OpenTableBooking) {
+    setWrongDate(null);
+    setBusy(true);
+    const res = await post<{ guest: Guest }>("/api/ladies-night/table", {
+      source: "opentable",
+      confirmation_number: b.confirmationNumber,
+      party_size: b.partySize,
+      reservation_datetime: b.reservationDateTime,
+    });
+    setBusy(false);
+    if (!res.ok) return setError("Your table is booked with OpenTable, but we couldn't save it here. Tap “I've reserved my table” below.");
+    onGuest(res.data.guest);
+    setShowReserve(false);
+    setWidgetOpen(false);
+  }
 
   async function markReserved() {
     setBusy(true);
@@ -97,7 +116,13 @@ export default function Summary({
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <Chip>RSVP&apos;d</Chip>
           {guest.voted && <Chip>Voted</Chip>}
-          {reserved && <Chip>Table booked</Chip>}
+          {reserved && (
+            <Chip>
+              {guest.rsvp?.table?.party_size
+                ? `Table for ${guest.rsvp.table.party_size}${tableTime(guest.rsvp.table.reserved_for) ? ` · ${tableTime(guest.rsvp.table.reserved_for)}` : ""}`
+                : "Table booked"}
+            </Chip>
+          )}
           {passes > 0 && <Chip>VIP × {passes}</Chip>}
           {stage === "voting_closed" && <Chip>Voting closed</Chip>}
         </div>
@@ -112,9 +137,14 @@ export default function Summary({
           <span style={{ fontSize: 10.5, letterSpacing: "0.16em", textTransform: "uppercase", color: GOLD }}>Save your seat</span>
           <h2 style={{ margin: 0, fontFamily: SERIF, fontStyle: "italic", fontWeight: 700, fontSize: 24, lineHeight: 1.15 }}>Reserve through OpenTable to guarantee your seat.</h2>
           <p style={{ ...sub, fontSize: 13.5 }}>Your RSVP doesn&apos;t guarantee a table. Book the Ladies Night reservation{current.venue ? ` at ${current.venue.name}` : ""} to lock yours in.</p>
+          {wrongDate && (
+            <p role="alert" style={{ margin: 0, fontSize: 13.5, color: "#FFC9CF" }}>
+              That booking is for {new Date(`${wrongDate.reservationDateTime.slice(0, 10)}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" })}, not the show on {prettyDate(show.event_date)}. Book again for show night, and cancel the other one from your OpenTable confirmation.
+            </p>
+          )}
           {show.opentable_url ? (
             widgetOpen ? (
-              <OpenTableWidget url={show.opentable_url} />
+              <OpenTableInline url={show.opentable_url} eventDate={show.event_date} onBooked={bookedOnOpenTable} onWrongDate={setWrongDate} />
             ) : (
               <button onClick={() => setWidgetOpen(true)} style={{ ...cta(), marginTop: 6 }}>Reserve on OpenTable →</button>
             )
@@ -154,6 +184,7 @@ export default function Summary({
           ["When", `${prettyDate(show.event_date)} · ${prettyTime(show.event_start_time)}`],
           ...(current.venue ? [["Where", current.venue.address ? `${current.venue.name}, ${current.venue.address}` : current.venue.name]] : []),
           ...(artist ? [["Artist", artist.display_name]] : []),
+          ...(guest.rsvp?.table ? [["OpenTable confirmation", `#${guest.rsvp.table.confirmation}`]] : []),
         ].map(([k, v], i) => (
           <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "12px 0", borderTop: i ? "1px solid #EBD9CE" : "none", fontSize: 14 }}>
             <span style={{ color: "#6B4B4F" }}>{k}</span>
