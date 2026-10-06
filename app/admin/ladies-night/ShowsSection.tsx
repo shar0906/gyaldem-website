@@ -471,6 +471,9 @@ export default function ShowsSection() {
                     )}
                   </div>
                 </div>
+                {!published && show.stage === "voting_open" && (
+                  <Notice tone="error">Voting is open but the ballot isn&apos;t published, so guests can only RSVP for now. Publish to let them vote.</Notice>
+                )}
                 {!published && !canPublish && (
                   <span style={{ fontSize: 12, color: MUTED }}>
                     {!show.artist_id

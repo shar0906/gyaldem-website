@@ -12,6 +12,9 @@
 //
 // door is true when ?door= matches tonight's show (the door QR), which
 // also opens the gate on show night even before RSVP would otherwise.
+//
+// Voting only counts as open once the ballot is published; before that,
+// the stage reads rsvp_open so guests never see an empty ballot.
 
 import { NextRequest, NextResponse } from "next/server";
 import { serviceClient } from "../../../lib/admin/staff-auth";
@@ -48,9 +51,13 @@ export async function GET(req: NextRequest) {
       vipStatus(db, show),
     ]);
 
+    // The voting window can open before the ballot is published. Until it
+    // is, guests see the RSVP-only flow instead of an empty ballot.
+    const publicStage = stage === "voting_open" && songs.length === 0 ? "rsvp_open" : stage;
+
     return NextResponse.json(
       {
-        stage,
+        stage: publicStage,
         door,
         show: {
           id: show.id,

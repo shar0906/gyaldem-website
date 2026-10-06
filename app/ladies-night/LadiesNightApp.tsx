@@ -24,6 +24,10 @@ import { ballotTheme } from "../lib/ln/theme";
 
 type Step = "loading" | "error" | "none" | "coming_soon" | "gate" | "checked_in" | "ballot" | "vip" | "summary";
 
+function canVote(current: OpenCurrent, guest: Guest): boolean {
+  return current.stage === "voting_open" && current.songs.length > 0 && !guest.voted;
+}
+
 function vipOpen(current: OpenCurrent, guest: Guest): boolean {
   const v = current.vip;
   return v.enabled && !v.closed && !v.sold_out && (guest.rsvp?.vip_passes ?? 0) < 5;
@@ -107,7 +111,7 @@ export default function LadiesNightApp() {
         return setStep("summary");
       }
 
-      setStep(cur.stage === "voting_open" && !me.guest.voted ? "ballot" : "summary");
+      setStep(canVote(cur as OpenCurrent, me.guest) ? "ballot" : "summary");
     } catch {
       setStep("error");
     }
@@ -124,7 +128,7 @@ export default function LadiesNightApp() {
     setWelcome(false);
     if (!open) return;
     if (open.door) return setStep("checked_in");
-    if (open.stage === "voting_open" && !g.voted) return setStep("ballot");
+    if (canVote(open, g)) return setStep("ballot");
     if (vipOpen(open, g)) return setStep("vip");
     setStep("summary");
   }
