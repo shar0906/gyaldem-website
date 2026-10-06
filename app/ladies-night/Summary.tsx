@@ -144,7 +144,7 @@ export default function Summary({
           )}
           {show.opentable_url ? (
             widgetOpen ? (
-              <OpenTableInline url={show.opentable_url} eventDate={show.event_date} onBooked={bookedOnOpenTable} onWrongDate={setWrongDate} />
+              <OpenTableInline url={show.opentable_url} eventDate={show.event_date} startTime={show.event_start_time} onBooked={bookedOnOpenTable} onWrongDate={setWrongDate} />
             ) : (
               <button onClick={() => setWidgetOpen(true)} style={{ ...cta(), marginTop: 6 }}>Reserve on OpenTable →</button>
             )

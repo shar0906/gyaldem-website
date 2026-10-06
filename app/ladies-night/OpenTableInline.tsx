@@ -19,17 +19,19 @@ export type OpenTableBooking = {
   reservationDateTime: string; // "2026-11-04T19:30", restaurant local time
 };
 
-function bookingUrls(saved: string): { embed: string; open: string; rid: string | null } {
+function bookingUrls(saved: string, dateTime: string): { embed: string; open: string; rid: string | null } {
   try {
     const u = new URL(saved);
     const rid = u.searchParams.get("rid");
     // The widget loader is only a search box; for inline booking, use
-    // OpenTable's full booking page for the same restaurant.
+    // OpenTable's full booking page for the same restaurant, opened on the
+    // show's date and start time.
     if (u.pathname.startsWith("/widget/") && rid) {
-      const page = `https://www.opentable.com/restref/client/?rid=${encodeURIComponent(rid)}&restref=${encodeURIComponent(rid)}&lang=en-US&ot_source=Restaurant%20website`;
+      const page = `https://www.opentable.com/restref/client/?rid=${encodeURIComponent(rid)}&restref=${encodeURIComponent(rid)}&datetime=${encodeURIComponent(dateTime)}&lang=en-US&ot_source=Restaurant%20website`;
       return { embed: page, open: page, rid };
     }
-    return { embed: saved, open: saved, rid };
+    if (u.pathname.startsWith("/restref/") && !u.searchParams.has("datetime")) u.searchParams.set("datetime", dateTime);
+    return { embed: u.toString(), open: u.toString(), rid };
   } catch {
     return { embed: saved, open: saved, rid: null };
   }
@@ -38,15 +40,17 @@ function bookingUrls(saved: string): { embed: string; open: string; rid: string 
 export default function OpenTableInline({
   url,
   eventDate,
+  startTime,
   onBooked,
   onWrongDate,
 }: {
   url: string;
   eventDate: string;
+  startTime: string; // "18:00:00"
   onBooked: (b: OpenTableBooking) => void;
   onWrongDate: (b: OpenTableBooking) => void;
 }) {
-  const { embed, open, rid } = useMemo(() => bookingUrls(url), [url]);
+  const { embed, open, rid } = useMemo(() => bookingUrls(url, `${eventDate}T${startTime.slice(0, 5)}`), [url, eventDate, startTime]);
 
   useEffect(() => {
     function onMessage(e: MessageEvent) {
