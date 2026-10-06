@@ -25,6 +25,7 @@ import { parseShowPatch } from "../../../../lib/ln/show-rules";
 import { showStage } from "../../../../lib/ln/show-status";
 import { SHOW_COLUMNS, ShowRow, checkBookableArtist } from "../../../../lib/ln/shows";
 import { todayEastern } from "../../../../lib/ln/dates";
+import { stripeMode } from "../../../../lib/ln/stripe";
 
 export const dynamic = "force-dynamic";
 
@@ -100,7 +101,7 @@ export async function GET() {
     };
   }
 
-  return NextResponse.json({ shows: [...upcoming, ...rest], suggestion });
+  return NextResponse.json({ shows: [...upcoming, ...rest], suggestion, payments_mode: stripeMode() });
 }
 
 export async function POST(req: NextRequest) {

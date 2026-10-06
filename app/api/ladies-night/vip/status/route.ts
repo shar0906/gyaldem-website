@@ -11,7 +11,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { serviceClient } from "../../../../lib/admin/staff-auth";
 import { readGuestId } from "../../../../lib/ln/guest-session";
-import { markOrderPaid, stripe } from "../../../../lib/ln/stripe";
+import { markOrderPaid, stripeForSession } from "../../../../lib/ln/stripe";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     if (!order || order.ln_rsvps.voter_id !== voterId) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
     if (order.status === "pending") {
-      const client = stripe();
+      const client = stripeForSession(sessionId);
       if (client) {
         const session = await client.checkout.sessions.retrieve(sessionId);
         if (await markOrderPaid(db, session)) {

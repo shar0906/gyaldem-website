@@ -162,6 +162,7 @@ function toBody(f: Form) {
 
 export default function ShowsSection() {
   const [shows, setShows] = useState<ShowRow[] | null>(null);
+  const [paymentsMode, setPaymentsMode] = useState<"test" | "live" | null | undefined>(undefined);
   const [suggestion, setSuggestion] = useState<{ event_date: string; voting_opens_at: string | null; voting_closes_at: string | null } | null>(null);
   const [artists, setArtists] = useState<ArtistFull[]>([]);
   const [selected, setSelected] = useState<string | "new" | null>(null);
@@ -174,7 +175,7 @@ export default function ShowsSection() {
 
   const loadList = useCallback(async () => {
     const [list, people] = await Promise.all([
-      api<{ shows: ShowRow[]; suggestion: typeof suggestion; error?: string }>("/api/admin/ladies-night/shows"),
+      api<{ shows: ShowRow[]; suggestion: typeof suggestion; payments_mode?: "test" | "live" | null; error?: string }>("/api/admin/ladies-night/shows"),
       api<{ artists: ArtistFull[] }>("/api/admin/ladies-night/artists"),
     ]);
     if (!list.ok) {
@@ -183,6 +184,7 @@ export default function ShowsSection() {
     }
     setShows(list.data.shows);
     setSuggestion(list.data.suggestion);
+    setPaymentsMode(list.data.payments_mode ?? null);
     if (people.ok) setArtists(people.data.artists);
     return list.data.shows;
   }, []);
@@ -435,6 +437,13 @@ export default function ShowsSection() {
                     </Field>
                   </div>
                   <span style={{ fontSize: 12, color: MUTED }}>Up to 5 per guest. Sales close 48 hours before the show or at the cap, whichever comes first.</span>
+                  {paymentsMode === "test" && (
+                    <Notice tone="error">Stripe is in test mode: guests can&apos;t really pay. Set STRIPE_MODE to live in Railway before sharing the link.</Notice>
+                  )}
+                  {paymentsMode === null && (
+                    <Notice tone="error">Stripe isn&apos;t set up, so VIP checkout won&apos;t open. Add the Stripe keys in Railway.</Notice>
+                  )}
+                  {paymentsMode === "live" && <span style={{ fontSize: 12, color: GREEN }}>Stripe is live: payments are real.</span>}
                 </>
               )}
               {fieldErr("vip_price_cents")}

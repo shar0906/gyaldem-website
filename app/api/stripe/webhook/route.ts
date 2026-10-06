@@ -11,28 +11,26 @@
 //                                 (refund in Stripe's dashboard)
 // Every handler is safe to receive twice; Stripe retries on failure.
 //
-// In Stripe's dashboard, add an endpoint pointing here with those four
-// events selected. Copy its signing secret into STRIPE_WEBHOOK_SECRET.
+// Set up one endpoint in Sandbox and one in live mode, both pointing
+// here with those four events. Their signing secrets go in
+// STRIPE_WEBHOOK_SECRET_TEST and STRIPE_WEBHOOK_SECRET_LIVE; events from
+// either are accepted, each checked against its own secret.
 
 import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { serviceClient } from "../../../lib/admin/staff-auth";
-import { markOrderPaid, stripe } from "../../../lib/ln/stripe";
+import { markOrderPaid, verifyWebhook, webhookSecrets } from "../../../lib/ln/stripe";
 
 export async function POST(req: NextRequest) {
-  const client = stripe();
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!client || !secret) {
-    console.error("Stripe webhook not configured");
+  if (!webhookSecrets().length) {
+    console.error("Stripe webhook not configured: no STRIPE_WEBHOOK_SECRET_TEST/_LIVE");
     return NextResponse.json({ error: "not_configured" }, { status: 503 });
   }
 
   const signature = req.headers.get("stripe-signature");
   const payload = await req.text();
-  let event: Stripe.Event;
-  try {
-    event = client.webhooks.constructEvent(payload, signature ?? "", secret);
-  } catch {
+  const event: Stripe.Event | null = signature ? verifyWebhook(payload, signature) : null;
+  if (!event) {
     return NextResponse.json({ error: "bad_signature" }, { status: 400 });
   }
 

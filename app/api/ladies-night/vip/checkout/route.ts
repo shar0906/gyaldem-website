@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
   const stripeClient = stripe();
   if (!stripeClient) {
-    console.error("STRIPE_SECRET_KEY is missing");
+    console.error("Stripe isn't configured: set STRIPE_MODE and STRIPE_SECRET_KEY_TEST / STRIPE_SECRET_KEY_LIVE");
     return NextResponse.json({ error: "not_configured" }, { status: 503 });
   }
 
