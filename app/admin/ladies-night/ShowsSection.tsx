@@ -366,7 +366,7 @@ export default function ShowsSection() {
             return (
               <button
                 key={s.id}
-                onClick={() => openShow(s.id)}
+                onClick={() => { if (s.id !== selected) setForm(null); openShow(s.id); }}
                 aria-current={active}
                 style={{ ...PANEL, border: active ? `1px solid ${RED}` : PANEL.border, padding: "12px 14px", textAlign: "left", display: "flex", flexDirection: "column", gap: 6, cursor: "pointer", opacity: s.archived ? 0.6 : 1, fontFamily: "sans-serif", color: INK }}
               >
@@ -623,7 +623,9 @@ export default function ShowsSection() {
             )}
           </div>
         ) : (
-          <div style={{ ...PANEL, padding: 24, color: MUTED, fontSize: 14 }}>Pick a show, or create a new one.</div>
+          <div style={{ ...PANEL, padding: 24, color: MUTED, fontSize: 14 }}>
+            {selected ? "Loading show…" : "Pick a show, or create a new one."}
+          </div>  
         )}
 
         {form && (

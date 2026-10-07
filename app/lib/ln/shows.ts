@@ -3,7 +3,6 @@
 // Shared reads and checks for the admin Shows routes.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { easternToUtcIso } from "./dates";
 import { getVenue, venueLocation } from "./venues";
 
 export const SHOW_COLUMNS =
@@ -83,8 +82,8 @@ export async function syncPublicEvent(db: SupabaseClient, show: ShowRow): Promis
       ...(venue && { location: venueLocation(venue) }),
       name: show.title,
       description: show.gate_description,
-      date: easternToUtcIso(show.event_date, show.event_start_time),
-      end_date: easternToUtcIso(show.event_date, show.event_end_time),
+      date: `${show.event_date}T12:00:00.000Z`,
+      end_date: null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", show.public_event_id);
