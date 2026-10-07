@@ -7,10 +7,11 @@
 
 "use client";
 
-import { useState } from "react";
-import OpenTableInline, { OpenTableBooking } from "./OpenTableInline";
+import { useCallback, useState } from "react";
+import OpenTableSheet, { OpenTableBooking } from "./OpenTableInline";
 import {
   CREAM,
+  CREAM_DIM,
   CalendarIcon,
   CheckIcon,
   Chip,
@@ -62,6 +63,7 @@ export default function Summary({
   const passes = guest.rsvp?.vip_passes ?? 0;
   const [showReserve, setShowReserve] = useState(!reserved);
   const [widgetOpen, setWidgetOpen] = useState(false);
+  const [party, setParty] = useState(2);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [wrongDate, setWrongDate] = useState<OpenTableBooking | null>(null);
@@ -71,6 +73,12 @@ export default function Summary({
   const picks = guest.picks.map((id) => titleById.get(id)).filter(Boolean) as typeof songs;
 
   // OpenTable reported a booking from inside the frame: save it and move on.
+  const closeSheet = useCallback(() => setWidgetOpen(false), []);
+  const wrongDateBooked = useCallback((b: OpenTableBooking) => {
+    setWrongDate(b);
+    setWidgetOpen(false);
+  }, []);
+
   async function bookedOnOpenTable(b: OpenTableBooking) {
     setWrongDate(null);
     setBusy(true);
@@ -142,11 +150,23 @@ export default function Summary({
             </p>
           )}
           {show.opentable_url ? (
-            widgetOpen ? (
-              <OpenTableInline url={show.opentable_url} eventDate={show.event_date} startTime={show.event_start_time} onBooked={bookedOnOpenTable} onWrongDate={setWrongDate} />
-            ) : (
-              <button onClick={() => setWidgetOpen(true)} style={{ ...cta(), marginTop: 6 }}>Reserve on OpenTable →</button>
-            )
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, background: CREAM, color: INK, borderRadius: 14, padding: "8px 8px 8px 16px" }}>
+                <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                  <span style={{ fontSize: 15, fontWeight: 700 }}>How many in your party?</span>
+                  <span style={{ fontSize: 12, color: "#6B4B4F" }}>
+                    {new Date(`${show.event_date}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" })} · {prettyTime(show.event_start_time.slice(0, 5))}
+                  </span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 4, flex: "none" }}>
+                  <button onClick={() => setParty((n) => Math.max(1, n - 1))} disabled={party <= 1} aria-label="Fewer people" style={{ width: 44, height: 44, borderRadius: 999, border: 0, background: CREAM_DIM, color: INK, fontSize: 20, cursor: "pointer", opacity: party <= 1 ? 0.4 : 1 }}>−</button>
+                  <span aria-live="polite" aria-label={`${party} ${party === 1 ? "person" : "people"}`} style={{ minWidth: 28, textAlign: "center", fontFamily: SERIF, fontStyle: "italic", fontWeight: 700, fontSize: 21 }}>{party}</span>
+                  <button onClick={() => setParty((n) => Math.min(20, n + 1))} disabled={party >= 20} aria-label="More people" style={{ width: 44, height: 44, borderRadius: 999, border: 0, background: V.accent, color: CREAM, fontSize: 20, cursor: "pointer", opacity: party >= 20 ? 0.4 : 1 }}>+</button>
+                </div>
+              </div>
+              <button onClick={() => { setWrongDate(null); setWidgetOpen(true); }} style={cta()}>Find my table →</button>
+              <span style={{ fontSize: 11.5, textAlign: "center", color: "rgba(251,243,236,0.6)" }}>Booking opens OpenTable right here. You can change the time there.</span>
+            </div>
           ) : (
             <p style={{ margin: "4px 0 0", fontSize: 13.5, color: GOLD }}>Reservations open soon. Check back here.</p>
           )}
@@ -155,6 +175,25 @@ export default function Summary({
           </button>
           {error && <ErrorText>{error}</ErrorText>}
         </section>
+      )}
+
+      {widgetOpen && show.opentable_url && (
+        <OpenTableSheet
+          url={show.opentable_url}
+          eventDate={show.event_date}
+          startTime={show.event_start_time}
+          partySize={party}
+          subtitle={[
+            current.venue?.name,
+            new Date(`${show.event_date}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }),
+            `Party of ${party}`,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+          onClose={closeSheet}
+          onBooked={bookedOnOpenTable}
+          onWrongDate={wrongDateBooked}
+        />
       )}
 
       {picks.length > 0 && (
@@ -177,7 +216,6 @@ export default function Summary({
           <span style={{ fontSize: 12, color: "rgba(251,243,236,0.65)" }}>You can change them until voting closes.</span>
         </div>
       )}
-
       {stage === "voting_closed" && (
         <p style={{ margin: guest.voted ? "-8px 0 0" : 0, textAlign: "center", fontSize: 13, color: "rgba(251,243,236,0.7)" }}>
           {guest.voted ? "Voting has closed. Your picks are locked in." : "People's Choice voting has closed for this show."}
@@ -193,7 +231,7 @@ export default function Summary({
         ].map(([k, v], i) => (
           <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "12px 0", borderTop: i ? "1px solid #EBD9CE" : "none", fontSize: 14 }}>
             <span style={{ color: "#6B4B4F" }}>{k}</span>
-            { k === "Where" && current.venue ? (
+            {k === "Where" && current.venue ? (
               <a
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
                   [current.venue.name, current.venue.address].filter(Boolean).join(", ")

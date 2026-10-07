@@ -6,7 +6,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { FAINT, H1, LINE, MUTED, Notice, PANEL, RED, Stat, api, button, errorText, inputStyle, showLabel } from "./kit";
+import { FAINT, H1, LINE, MUTED, Notice, PANEL, RED, Stat, api, button, errorText, inputStyle, selectStyle, showLabel } from "./kit";
 import { useShows } from "./useShows";
 
 type Guest = {
@@ -85,7 +85,7 @@ export default function GuestsSection() {
       </H1>
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 18 }}>
         <label htmlFor="g-show" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Show</label>
-        <select id="g-show" value={selected ?? ""} onChange={(e) => setSelected(e.target.value)} style={{ ...inputStyle, width: "auto", minWidth: 240 }}>
+        <select id="g-show" value={selected ?? ""} onChange={(e) => setSelected(e.target.value)} style={{ ...selectStyle, width: "auto", minWidth: 240 }}>
           {shows.map((s) => <option key={s.id} value={s.id}>{showLabel(s)}</option>)}
         </select>
         <label htmlFor="g-search" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Search guests</label>

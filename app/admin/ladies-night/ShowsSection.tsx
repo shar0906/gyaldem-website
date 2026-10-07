@@ -27,6 +27,7 @@ import {
   button,
   errorText,
   inputStyle,
+  selectStyle,
   sectionLabel,
   showLabel,
 } from "./kit";
@@ -366,7 +367,10 @@ export default function ShowsSection() {
             return (
               <button
                 key={s.id}
-                onClick={() => { if (s.id !== selected) setForm(null); openShow(s.id); }}
+                onClick={() => {
+                  if (s.id !== selected) setForm(null);
+                  openShow(s.id);
+                }}
                 aria-current={active}
                 style={{ ...PANEL, border: active ? `1px solid ${RED}` : PANEL.border, padding: "12px 14px", textAlign: "left", display: "flex", flexDirection: "column", gap: 6, cursor: "pointer", opacity: s.archived ? 0.6 : 1, fontFamily: "sans-serif", color: INK }}
               >
@@ -389,7 +393,7 @@ export default function ShowsSection() {
                 {show && <StageChip stage={show.stage} />}
               </div>
               <Field id="s-artist" label="Artist" hint={selectedArtist && !selectedArtist.approved_at ? "This artist's profile isn't approved yet. You can book them, but publishing waits for approval." : undefined}>
-                <select id="s-artist" value={form.artist_id} onChange={(e) => set("artist_id", e.target.value)} style={inputStyle}>
+                <select id="s-artist" value={form.artist_id} onChange={(e) => set("artist_id", e.target.value)} style={selectStyle}>
                   <option value="">Leave unassigned</option>
                   {artists
                     .filter((a) => a.active || a.id === form.artist_id)
@@ -402,7 +406,7 @@ export default function ShowsSection() {
               </Field>
               {fieldErr("artist_id")}
               <Field id="s-venue" label="Venue" hint={venues.length === 0 ? "Add venues under Ladies Night, Venues." : undefined}>
-                <select id="s-venue" value={form.venue_id} onChange={(e) => set("venue_id", e.target.value)} style={inputStyle}>
+                <select id="s-venue" value={form.venue_id} onChange={(e) => set("venue_id", e.target.value)} style={selectStyle}>
                   <option value="">No venue yet</option>
                   {venues
                     .filter((v) => v.active || v.id === form.venue_id)
@@ -625,7 +629,7 @@ export default function ShowsSection() {
         ) : (
           <div style={{ ...PANEL, padding: 24, color: MUTED, fontSize: 14 }}>
             {selected ? "Loading show…" : "Pick a show, or create a new one."}
-          </div>  
+          </div>
         )}
 
         {form && (
