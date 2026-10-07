@@ -9,7 +9,7 @@ import { NextResponse } from "next/server";
 import { serviceClient } from "../../../lib/admin/staff-auth";
 import { getCurrentShow, publicArtist } from "../../../lib/ln/public-show";
 import { easternToUtcIso } from "../../../lib/ln/dates";
-import { getVenue, venueLocation } from "../../../lib/ln/venues";
+import { getVenue } from "../../../lib/ln/venues";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +32,7 @@ export async function GET() {
 
     const site = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://gyaldemsocialclub.com").replace(/\/$/, "");
     const title = artist ? `${show.title} with ${artist.display_name}` : show.title;
-    const location = venueLocation(venue) ?? "Miami";
+    const location = venue?.name ?? "";
     const description = [show.gate_description, `${site}/ladies-night`].filter(Boolean).join("\n\n");
 
     const ics = [

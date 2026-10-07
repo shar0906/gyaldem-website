@@ -187,13 +187,27 @@ export default function Summary({
       <section aria-label="Show details" style={{ background: CREAM, color: INK, borderRadius: 14, padding: "4px 16px" }}>
         {[
           ["When", `${prettyDate(show.event_date)} · ${prettyTime(show.event_start_time)}`],
-          ...(current.venue ? [["Where", current.venue.address ? `${current.venue.name}, ${current.venue.address}` : current.venue.name]] : []),
+          ...(current.venue ? [["Where", current.venue.name]] : []),
           ...(artist ? [["Artist", artist.display_name]] : []),
           ...(guest.rsvp?.table ? [["OpenTable confirmation", `#${guest.rsvp.table.confirmation}`]] : []),
         ].map(([k, v], i) => (
           <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "12px 0", borderTop: i ? "1px solid #EBD9CE" : "none", fontSize: 14 }}>
             <span style={{ color: "#6B4B4F" }}>{k}</span>
-            <span style={{ fontWeight: 700, textAlign: "right" }}>{v}</span>
+            { k === "Where" && current.venue ? (
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                  [current.venue.name, current.venue.address].filter(Boolean).join(", ")
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Open ${current.venue.name} in Google Maps`}
+                style={{ fontWeight: 700, textAlign: "right", color: INK, textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: "#C9A9A0" }}
+              >
+                {v} ↗
+              </a>
+            ) : (
+              <span style={{ fontWeight: 700, textAlign: "right" }}>{v}</span>
+            )}
           </div>
         ))}
       </section>

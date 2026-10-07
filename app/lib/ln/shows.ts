@@ -3,7 +3,7 @@
 // Shared reads and checks for the admin Shows routes.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getVenue, venueLocation } from "./venues";
+import { getVenue } from "./venues";
 
 export const SHOW_COLUMNS =
   "id, slug, title, event_date, event_start_time, event_end_time, artist_id, venue_id, gate_headline, gate_description, " +
@@ -79,7 +79,7 @@ export async function syncPublicEvent(db: SupabaseClient, show: ShowRow): Promis
   const { error } = await db
     .from("events")
     .update({
-      ...(venue && { location: venueLocation(venue) }),
+      ...(venue && { location: venue.name }),
       name: show.title,
       description: show.gate_description,
       date: `${show.event_date}T12:00:00.000Z`,
