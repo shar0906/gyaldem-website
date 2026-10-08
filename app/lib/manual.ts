@@ -2,7 +2,8 @@
 //
 // The staff manual: Markdown files in content/manual, rendered to HTML on
 // the server. Each role sees only its own sections; admins see all of
-// them, and the Technical section additionally asks for their password.
+// them. Technical is for super admins only, and also asks for their
+// password.
 // The Markdown is ours (it lives in the repo), so its HTML is trusted.
 
 import { readFile } from "node:fs/promises";
@@ -23,6 +24,7 @@ export const SECTION_TITLES: Record<ManualSectionId, string> = {
 
 // What each role can open (Technical is unlocked separately).
 export const SECTIONS_BY_ROLE: Record<StaffRole, ManualSectionId[]> = {
+  super_admin: ["admin", "guests", "artist", "door", "host"],
   admin: ["admin", "guests", "artist", "door", "host"],
   artist: ["artist"],
   door: ["door"],

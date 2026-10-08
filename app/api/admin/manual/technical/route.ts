@@ -1,6 +1,6 @@
 // app/api/admin/manual/technical/route.ts
 //
-// POST { password } -> the Technical section, for admins who re-enter
+// POST { password } -> the Technical section, for super admins who re-enter
 // their own login password. The password is checked against Supabase in
 // a throwaway session that's signed out right after, so the admin's real
 // login is untouched. A few tries per 10 minutes.
@@ -16,7 +16,7 @@ import { rateLimit } from "../../../../lib/ln/rate-limit";
 import { renderSection } from "../../../../lib/manual";
 
 export async function POST(req: NextRequest) {
-  const user = await requireStaffUser(["admin"]);
+  const user = await requireStaffUser(["super_admin"]);
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!rateLimit(req, `manual-tech:${user.email}`, 5, 10 * 60 * 1000)) {
     return NextResponse.json({ error: "too_many_requests" }, { status: 429 });

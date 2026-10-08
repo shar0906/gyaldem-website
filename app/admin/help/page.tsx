@@ -17,7 +17,7 @@ const RED = "#8B1A1A";
 const INK = "#0A0A0A";
 const MUTED = "rgba(10,10,10,0.55)";
 
-const ROLE_LABEL: Record<string, string> = { admin: "Admin", artist: "Artist", door: "Door", host: "Host" };
+const ROLE_LABEL: Record<string, string> = { super_admin: "Super admin", admin: "Admin", artist: "Artist", door: "Door", host: "Host" };
 
 export default function HelpPage() {
   const [manual, setManual] = useState<Manual | null>(null);
@@ -80,7 +80,7 @@ export default function HelpPage() {
                   ))}
                 </div>
               ))}
-              {manual.technical && !technical && <a href="#technical" className="ln-help-nav-section">Technical</a>}
+              {manual.technical && !technical && <a href="#technical" className="ln-help-nav-section">Technical 🔒</a>}
             </details>
           </nav>
 

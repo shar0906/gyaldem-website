@@ -24,6 +24,8 @@ type Artist = PreviewProfile & {
 const INVITE_ERRORS: Record<string, string> = {
   bad_email: "Check the email address.",
   rate_limited: "Too many emails sent this hour. Try again in a little while.",
+  protected_account: "That email belongs to an admin. Only a super admin can change it.",
+  own_role: "That's your own email.",
 };
 
 export default function ArtistsSection({ onReviewChanges }: { onReviewChanges: () => void }) {

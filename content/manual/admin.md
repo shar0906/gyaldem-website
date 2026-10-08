@@ -27,12 +27,15 @@ Everyone logs in at **gyaldemsocialclub.com/admin** with their own email and pas
 
 | Role | Sees |
 |---|---|
-| **Admin** | Everything, including this whole manual |
+| **Admin** | All of Ladies Night, Events, and The Room. Can invite artist, door, and host logins |
 | **Artist** | Their own Propose, Profile, and Results tabs |
 | **Door** | Only the check-in screen, on show night |
 | **Host** | Only the bingo caller, on show night |
 
 **Inviting staff:** open **Tools → Staff Tools**, enter their email and name, pick a role, and click **Send Invite**. They get an email to set their password. Artists can also be invited from **Ladies Night → Artists**.
+
+**Admins** can invite artist, door, and host logins.
+<!-- - Only **super admins** can invite or change admins and super admins. An admin who enters the email of an existing admin gets a message instead of changing them. -->
 
 **Forgot password:** send the invite again from Staff Tools. Someone who already has a login gets a password-reset email instead.
 
@@ -175,4 +178,14 @@ The lines the host reads aloud. Each line has the **song** and the **artist**, a
 Under **Tools** in the admin header:
 
 - **Invite Staff:** see Logging in and staff above.
-- **Sync Staff Metadata:** pushes names and roles to everyone's login profile. Run it if a name or role looks out of date.
+- **Sync Staff Metadata** (super admins): pushes names and roles to everyone's login profile in Supabase. Run it if a name or role looks out of date there.
+
+The **Railway** and **Supabase** links in Tools appear for super admins only.
+
+## Staff (super admins)
+
+The **Staff** tab lists everyone with a staff login: their role, and when they last signed in, or **Invited, hasn't signed in yet**.
+
+- **Change a role** with the dropdown. You'll be asked to confirm.
+- **Remove access:** their login stops opening any staff screen right away. Removing an artist also deactivates their profile so they can't be booked; their past shows and results stay. To bring someone back, invite them again.
+- Nobody can change or remove their own account, and the **last super admin can't be demoted or removed**. To hand over super admin, make someone else a super admin first.

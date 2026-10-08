@@ -21,7 +21,7 @@ import ArtistDashboard from "./artist/ArtistDashboard";
 import DoorCheckIn from "./showtime/DoorCheckIn";
 import HostBingo from "./showtime/HostBingo";
 
-type StaffRole = "admin" | "artist" | "door" | "host";
+type StaffRole = "super_admin" | "admin" | "artist" | "door" | "host";
 type StaffUser = { email: string; role: StaffRole };
 
 function supabaseBrowser() {
@@ -106,13 +106,13 @@ export default function AdminPage() {
 
   if (!mounted || checking) return null;
 
-  if (staffUser?.role === "admin") {
+  if (staffUser?.role === "admin" || staffUser?.role === "super_admin") {
     // Admins can also open the show-night screens: /admin?screen=checkin
     // or /admin?screen=bingo (linked from the Ladies Night menu).
     const screen = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("screen") : null;
     if (screen === "checkin") return <DoorCheckIn onLogout={handleLogout} />;
     if (screen === "bingo") return <HostBingo onLogout={handleLogout} />;
-    return <AdminDashboard onLogout={handleLogout} />;
+    return <AdminDashboard onLogout={handleLogout} isSuper={staffUser.role === "super_admin"} />;
   }
 
   if (staffUser?.role === "artist") {

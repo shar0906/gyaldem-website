@@ -1,6 +1,6 @@
 # Technical
 
-How the site is put together, where every setting lives, and what to check when something breaks. Admins only.
+How the site is put together, where every setting lives, and what to check when something breaks. Super admins only.
 
 ## The pieces
 
@@ -98,10 +98,17 @@ Reminder emails are created in Kit as scheduled broadcasts; you'll see them unde
 6. `2026-10-06_ln_phase4_reminders.sql`
 7. `2026-10-06_ln_phase5_opentable_details.sql`
 8. `2026-10-05_ln_cron_schedule_v2.sql` (needs pg_cron and pg_net turned on under Database → Extensions)
+9. `2026-10-08_ln_phase6_super_admin.sql` (with your login email filled in)
 
 **Photo storage:** artist photos and logos in the `artist-photos` bucket; venue logos in `ln-brand`. Both are public to read; uploads only go through the site.
 
 **Security:** every Ladies Night table is locked to the server. The public key can't read guests, votes, or orders.
+
+**Roles** live in the `ln_staff` table. The database refuses to demote or delete the last super admin. If you're ever locked out of the super admin role, promote yourself in the SQL Editor:
+
+```sql
+update ln_staff set role = 'super_admin' where email = 'you@example.com';
+```
 
 ## Email
 

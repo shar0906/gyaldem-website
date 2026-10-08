@@ -8,11 +8,12 @@ import AdminGallery from "./AdminGallery";
 import LadiesNightAdmin from "./ladies-night/LadiesNightAdmin";
 import AdminStaffTools from "./AdminStaffTools";
 import StaffHeader from "./StaffHeader";
+import StaffSection from "./StaffSection";
 
-export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
+export default function AdminDashboard({ onLogout, isSuper = false }: { onLogout: () => void; isSuper?: boolean }) {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"events" | "gallery" | "ladiesNight" | "add" | "edit">("events");
+  const [view, setView] = useState<"events" | "gallery" | "ladiesNight" | "staff" | "add" | "edit">("events");
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [showTools, setShowTools] = useState(false);
   const [showStaffTools, setShowStaffTools] = useState(false);
@@ -83,7 +84,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     <div style={{ minHeight: "100vh", backgroundColor: "#F5F0E8" }}>
 
       <StaffHeader
-        label="Admin"
+        label={isSuper ? "Super admin" : "Admin"}
         onLogout={onLogout}
         right={
           view === "events" ? (
@@ -123,6 +124,11 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               </span>
             )}
           </button>
+          {isSuper && (
+            <button onClick={() => setView("staff")} style={{ background: "none", border: "none", borderBottom: view === "staff" ? "2px solid #8B1A1A" : "2px solid transparent", padding: "14px 20px", fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "sans-serif", color: view === "staff" ? "#8B1A1A" : "rgba(10,10,10,0.5)", cursor: "pointer" }}>
+              Staff
+            </button>
+          )}
         </div>
         {/* Quick Access Tools */}
         <div style={{ position: "relative" }}>
@@ -135,7 +141,9 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           {showTools && (
             <div style={{ position: "absolute", right: 0, top: "100%", backgroundColor: "white", border: "0.5px solid rgba(10,10,10,0.15)", zIndex: 50, minWidth: "140px", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
               <a href="https://docs.google.com/spreadsheets/d/1KN1wO26rutpuS83LdLsHRp48QJSaamJEdY0C-q8b4yY/edit?usp=sharing" target="_blank" style={{ display: "block", padding: "10px 16px", fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", color: "rgba(10,10,10,0.6)", textDecoration: "none", borderBottom: "0.5px solid rgba(10,10,10,0.08)" }}>Brand/Member Form Responses</a>
-              <a href="https://railway.com/project/5e4d2ecc-24db-406c-94ac-f52150327896/service/66890aeb-1052-47d6-81f8-f673ceb24c53?environmentId=43290ffa-474e-491f-9d99-6a19dd41e1e9" target="_blank" style={{ display: "block", padding: "10px 16px", fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", color: "rgba(10,10,10,0.6)", textDecoration: "none", borderBottom: "0.5px solid rgba(10,10,10,0.08)" }}>Railway</a>
+              {isSuper && (
+  <a href="https://railway.com/project/5e4d2ecc-24db-406c-94ac-f52150327896/service/66890aeb-1052-47d6-81f8-f673ceb24c53?environmentId=43290ffa-474e-491f-9d99-6a19dd41e1e9" target="_blank" style={{ display: "block", padding: "10px 16px", fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", color: "rgba(10,10,10,0.6)", textDecoration: "none", borderBottom: "0.5px solid rgba(10,10,10,0.08)" }}>Railway</a>
+              )}
               <button
                 onClick={() => { setShowTools(false); setShowStaffTools(true); }}
                 style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", padding: "10px 16px", fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", color: "rgba(10,10,10,0.6)", cursor: "pointer", borderTop: "0.5px solid rgba(10,10,10,0.08)" }}
@@ -143,7 +151,9 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 Staff Tools
               </button>
               <a href="https://app.kit.com/dashboard" target="_blank" style={{ display: "block", padding: "10px 16px", fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", color: "rgba(10,10,10,0.6)", textDecoration: "none" }}>Subscribers</a>
-              <a href="https://supabase.com/dashboard/project/xuobimjrtzstgwvumckt" target="_blank" style={{ display: "block", padding: "10px 16px", fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", color: "rgba(10,10,10,0.6)", textDecoration: "none", borderBottom: "0.5px solid rgba(10,10,10,0.08)" }}>Supabase</a>
+              {isSuper && (
+  <a href="https://supabase.com/dashboard/project/xuobimjrtzstgwvumckt" target="_blank" style={{ display: "block", padding: "10px 16px", fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", color: "rgba(10,10,10,0.6)", textDecoration: "none", borderBottom: "0.5px solid rgba(10,10,10,0.08)" }}>Supabase</a>
+              )}
             </div>
           )}
         </div>
@@ -153,6 +163,8 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         <AdminGallery />
       ) : view === "ladiesNight" ? (
         <LadiesNightAdmin pending={pendingApprovals} onPendingChange={fetchPending} />
+      ) : view === "staff" && isSuper ? (
+        <StaffSection />
       ) : (
         <div style={{ maxWidth: "1152px", margin: "0 auto", padding: "32px 20px"}}>
           <h1 style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: "32px", color: "#0A0A0A", margin: "0 0 24px" }}>Events</h1>
@@ -203,7 +215,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           )}
         </div>
       )}
-      {showStaffTools && <AdminStaffTools onClose={() => setShowStaffTools(false)} />}
+      {showStaffTools && <AdminStaffTools isSuper={isSuper} onClose={() => setShowStaffTools(false)} />}
     </div>
   );
 }

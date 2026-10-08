@@ -5,7 +5,11 @@
 // is NOT enough; the email also has to be in ln_staff.
 //
 // Roles:
-//   admin  - everything (you and Rin)
+//   super_admin - everything admins have, plus technical tools and staff
+//                 management (Railway/Supabase links, metadata sync, the
+//                 Technical manual, changing roles and removing access)
+//   admin  - all of Ladies Night, Events, The Room; can invite artist,
+//            door, and host logins only
 //   artist - Propose, Profile, Results for their own shows only
 //   door   - check-in screen only
 //   host   - bingo caller only
@@ -17,7 +21,7 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 
-export const STAFF_ROLES = ["admin", "artist", "door", "host"] as const;
+export const STAFF_ROLES = ["super_admin", "admin", "artist", "door", "host"] as const;
 export type StaffRole = (typeof STAFF_ROLES)[number];
 export type StaffUser = { email: string; role: StaffRole; name: string | null };
 
@@ -47,6 +51,21 @@ export function serviceClient() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { persistSession: false } }
   );
+}
+
+// Roles a regular admin may hand out or change. Admin and super admin
+// accounts are managed by super admins only.
+export const ADMIN_ASSIGNABLE_ROLES: readonly StaffRole[] = ["artist", "door", "host"];
+
+export function canAssign(by: StaffRole, role: StaffRole): boolean {
+  if (by === "super_admin") return true;
+  return by === "admin" && ADMIN_ASSIGNABLE_ROLES.includes(role);
+}
+
+// Does this role pass a check for these roles? A super admin passes
+// anything an admin passes; nothing else is implied.
+export function roleAllows(role: StaffRole, allowed: readonly StaffRole[]): boolean {
+  return allowed.includes(role) || (role === "super_admin" && allowed.includes("admin"));
 }
 
 export function isStaffRole(value: unknown): value is StaffRole {
@@ -84,7 +103,8 @@ export async function requireStaffUser(
     return null;
   }
 
-  if (!row || !isStaffRole(row.role) || !allowed.includes(row.role)) return null;
+  if (!row || !isStaffRole(row.role)) return null;
+  if (!roleAllows(row.role, allowed)) return null;
   return { email, role: row.role, name: row.name };
 }
 

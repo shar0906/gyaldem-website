@@ -1,7 +1,13 @@
 // app/api/admin/staff/invite/route.ts
 //
 // POST /api/admin/staff/invite
-// Body: { email: string, name?: string, role: "admin" | "artist" | "door" | "host" }
+// Body: { email: string, name?: string, role: "super_admin" | "admin" | "artist" | "door" | "host" }
+//
+// Who can invite whom:
+//   super admins: any role
+//   admins: artist, door, and host only, and never someone who's already
+//           an admin or super admin (inviting an existing email changes
+//           their role, so that would be a way to demote them)
 // Admin-only.
 //
 // 1. Adds or updates the person in ln_staff, so they're authorized the
@@ -15,6 +21,10 @@
 //
 //   200 { success: true, email_sent: "invite" | "reset" }
 //   400 missing_fields | bad_role | bad_email
+//   403 forbidden_role (admins inviting an admin or super admin)
+//       protected_account (admins re-inviting an admin or super admin)
+//       own_role (changing your own role)
+//   409 last_super_admin
 //   429 rate_limited (too many auth emails this hour)
 //   502 email_failed { message }
 //
@@ -24,7 +34,7 @@
 //   Reset Password: {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/admin/set-password
 
 import { NextRequest, NextResponse } from "next/server";
-import { isStaffRole, requireStaffUser, serviceClient } from "../../../../lib/admin/staff-auth";
+import { canAssign, isStaffRole, requireStaffUser, serviceClient } from "../../../../lib/admin/staff-auth";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -59,12 +69,35 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "bad_role" }, { status: 400 });
   }
 
+  if (!canAssign(user.role, role)) {
+    return NextResponse.json({ error: "forbidden_role" }, { status: 403 });
+  }
+
   const db = serviceClient();
+
+  const { data: existing, error: existingError } = await db
+    .from("ln_staff")
+    .select("role, name")
+    .eq("email", email)
+    .maybeSingle();
+  if (existingError) {
+    console.error("ln_staff lookup failed:", existingError);
+    return NextResponse.json({ error: "server_error" }, { status: 500 });
+  }
+  if (existing && isStaffRole(existing.role) && !canAssign(user.role, existing.role)) {
+    return NextResponse.json({ error: "protected_account" }, { status: 403 });
+  }
+  if (existing && email === user.email && existing.role !== role) {
+    return NextResponse.json({ error: "own_role" }, { status: 403 });
+  }
 
   const { error: staffError } = await db
     .from("ln_staff")
-    .upsert({ email, name, role }, { onConflict: "email" });
+    .upsert({ email, name: name ?? existing?.name ?? null, role }, { onConflict: "email" });
   if (staffError) {
+    if (staffError.message?.includes("last_super_admin")) {
+      return NextResponse.json({ error: "last_super_admin" }, { status: 409 });
+    }
     console.error("ln_staff upsert failed:", staffError);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }

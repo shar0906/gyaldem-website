@@ -1,7 +1,7 @@
 // app/api/admin/staff/sync-staff-metadata/route.ts
 //
 // POST /api/admin/staff/sync-staff-metadata
-// Admin-only, one-off/occasional use. For every ln_staff row, finds the
+// Super admin only, one-off/occasional use. For every ln_staff row, finds the
 // matching Supabase Auth user by email and sets user_metadata to include
 // full_name and role — this is what backfills the Supabase dashboard's
 // own Users screen for accounts created before invites set this
@@ -19,7 +19,7 @@ import { NextResponse } from "next/server";
 import { requireStaffUser, serviceClient } from "../../../../lib/admin/staff-auth";
 
 export async function POST() {
-  const user = await requireStaffUser(["admin"]);
+  const user = await requireStaffUser(["super_admin"]);
   if (!user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 403 });
   }
