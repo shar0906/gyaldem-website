@@ -124,14 +124,14 @@ export default function AdminDashboard({ onLogout, isSuper = false }: { onLogout
               </span>
             )}
           </button>
+        </div>
+        {/* Staff & Quick Access Tools */}
+        <div style={{ position: "relative" }}>
           {isSuper && (
             <button onClick={() => setView("staff")} style={{ background: "none", border: "none", borderBottom: view === "staff" ? "2px solid #8B1A1A" : "2px solid transparent", padding: "14px 20px", fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "sans-serif", color: view === "staff" ? "#8B1A1A" : "rgba(10,10,10,0.5)", cursor: "pointer" }}>
               Staff
             </button>
           )}
-        </div>
-        {/* Quick Access Tools */}
-        <div style={{ position: "relative" }}>
           <button
             onClick={() => setShowTools((v) => !v)}
             style={{ background: "none", border: "0.5px solid rgba(10,10,10,0.15)", padding: "6px 12px", fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", color: "rgba(10,10,10,0.5)", cursor: "pointer", whiteSpace: "nowrap" }}
