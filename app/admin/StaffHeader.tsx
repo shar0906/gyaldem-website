@@ -14,11 +14,13 @@ export default function StaffHeader({
   onLogout,
   right,
   compact = false,
+  showHelp = true,
 }: {
   label: string;
   onLogout?: () => void;
   right?: ReactNode;
   compact?: boolean;
+  showHelp?: boolean;
 }) {
   return (
     <header
@@ -50,6 +52,32 @@ export default function StaffHeader({
       </div>
       <div style={{ display: "flex", gap: 8, alignItems: "center", minWidth: 0 }}>
         {right}
+        {showHelp && (
+          // Opens in a new tab so the dashboard, door list, or bingo game
+          // stays exactly where it was.
+          <a
+            href="/admin/help"
+            target="_blank"
+            rel="noopener"
+            style={{
+              color: "rgba(255,255,255,0.6)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              padding: "8px 12px",
+              minHeight: 36,
+              boxSizing: "border-box",
+              display: "inline-flex",
+              alignItems: "center",
+              fontSize: 10,
+              letterSpacing: "0.15em",
+              textTransform: "uppercase",
+              fontFamily: "sans-serif",
+              textDecoration: "none",
+              flexShrink: 0,
+            }}
+          >
+            Help
+          </a>
+        )}
         {onLogout && (
           <button
             onClick={onLogout}
