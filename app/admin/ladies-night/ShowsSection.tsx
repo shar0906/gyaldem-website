@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GatePreview } from "../../components/ln/PhonePreview";
 import { easternInputToIso, isoToEasternInput, todayEastern } from "../../lib/ln/dates";
+import { RUN_PLACEHOLDER, runToText, textToRun } from "../../lib/ln/run-text";
 import { defaultSendAt, defaultTemplate } from "../../lib/ln/reminder-template";
 import { formatDateTime } from "../artist/ui";
 import {
@@ -72,6 +73,7 @@ type ShowRow = {
   dj_name: string | null;
   theme_name: string | null;
   bingo_deck_id: string | null;
+  has_bingo: boolean;
   running_order: RunItem[];
   gallery_url: string | null;
   vip_closes_at: string | null;
@@ -86,6 +88,11 @@ type SeriesOpt = {
   slug: string;
   name: string;
   primary_color: string | null;
+  default_running_order: RunItem[];
+  default_start_time: string | null;
+  default_end_time: string | null;
+  default_dj_name: string | null;
+  default_bingo_deck_id: string | null;
   default_venue_id: string | null;
   feat_voting: boolean;
   feat_vip: boolean;
@@ -128,25 +135,12 @@ type Form = {
   dj_name: string;
   theme_name: string;
   bingo_deck_id: string;
+  has_bingo: boolean;
   running_order: string; // one per line: "21:30 Bingo, round 1"
   gallery_url: string;
   vip_closes_at: string;
 };
 
-function runToText(items: RunItem[]): string {
-  return (items ?? []).map((i) => `${i.time ? `${i.time} ` : ""}${i.label}`).join("\n");
-}
-
-function textToRun(text: string): RunItem[] {
-  return text
-    .split("\n")
-    .map((l) => l.trim())
-    .filter(Boolean)
-    .map((l) => {
-      const m = l.match(/^([01]?\d|2[0-3]):([0-5]\d)\s+(.+)$/);
-      return m ? { time: `${m[1].padStart(2, "0")}:${m[2]}`, label: m[3].trim() } : { time: null, label: l };
-    });
-}
 
 const MIN_SONGS = 10;
 const DEFAULT_TITLE = "Ladies Night: An Ode To Her";
@@ -184,6 +178,7 @@ function toForm(s: ShowRow, featVoting: boolean): Form {
     dj_name: s.dj_name ?? "",
     theme_name: s.theme_name ?? "",
     bingo_deck_id: s.bingo_deck_id ?? "",
+    has_bingo: s.has_bingo,
     running_order: runToText(s.running_order),
     gallery_url: s.gallery_url ?? "",
     vip_closes_at: isoToEasternInput(s.vip_closes_at),
@@ -200,8 +195,8 @@ function blankForm(
   return {
     title,
     event_date: suggestion?.event_date ?? "",
-    event_start_time: voting ? "18:00" : "20:00",
-    event_end_time: voting ? "22:00" : "00:00",
+    event_start_time: series?.default_start_time?.slice(0, 5) ?? (voting ? "18:00" : "20:00"),
+    event_end_time: series?.default_end_time?.slice(0, 5) ?? (voting ? "22:00" : "00:00"),
     artist_id: "",
     venue_id: series?.default_venue_id ?? "",
     gate_headline: voting ? DEFAULT_TITLE : "",
@@ -219,10 +214,11 @@ function blankForm(
     reminder_subject: t.subject,
     reminder_body: t.body,
     series_id: series?.id ?? "",
-    dj_name: "",
+    dj_name: series?.default_dj_name ?? "",
     theme_name: "",
-    bingo_deck_id: "",
-    running_order: "",
+    bingo_deck_id: series?.default_bingo_deck_id ?? "",
+    has_bingo: !!series?.default_bingo_deck_id,
+    running_order: runToText(series?.default_running_order),
     gallery_url: "",
     vip_closes_at: "",
   };
@@ -255,6 +251,7 @@ function toBody(f: Form, featVoting: boolean) {
     theme_name: f.theme_name || null,
     bingo_deck_id: f.bingo_deck_id || null,
     running_order: textToRun(f.running_order),
+    has_bingo: f.has_bingo,
     gallery_url: f.gallery_url || null,
     vip_closes_at: easternInputToIso(f.vip_closes_at),
   };
@@ -273,7 +270,7 @@ function toBody(f: Form, featVoting: boolean) {
 export default function ShowsSection() {
   const [shows, setShows] = useState<ShowRow[] | null>(null);
   const [paymentsMode, setPaymentsMode] = useState<"test" | "live" | null | undefined>(undefined);
-  const [suggestion, setSuggestion] = useState<{ event_date: string; voting_opens_at: string | null; voting_closes_at: string | null } | null>(null);
+  const [suggestions, setSuggestions] = useState<Record<string, { event_date: string; voting_opens_at: string | null; voting_closes_at: string | null }>>({});
   const [artists, setArtists] = useState<ArtistFull[]>([]);
   const [venues, setVenues] = useState<{ id: string; name: string; active: boolean; opentable_widget: string | null }[]>([]);
   const [selected, setSelected] = useState<string | "new" | null>(null);
@@ -294,7 +291,7 @@ export default function ShowsSection() {
 
   const loadList = useCallback(async () => {
     const [list, people, places, deckRes] = await Promise.all([
-      api<{ shows: ShowRow[]; series: SeriesOpt[]; suggestion: typeof suggestion; payments_mode?: "test" | "live" | null; error?: string }>("/api/admin/ladies-night/shows"),
+      api<{ shows: ShowRow[]; series: SeriesOpt[]; suggestions?: typeof suggestions; payments_mode?: "test" | "live" | null; error?: string }>("/api/admin/ladies-night/shows"),
       api<{ artists: ArtistFull[] }>("/api/admin/ladies-night/artists"),
       api<{ venues: { id: string; name: string; active: boolean; opentable_widget: string | null }[] }>("/api/admin/ladies-night/venues"),
       api<{ decks: DeckOpt[] }>("/api/admin/ladies-night/bingo/decks"),
@@ -307,7 +304,7 @@ export default function ShowsSection() {
     setShows(list.data.shows);
     setSeriesList(list.data.series ?? []);
     seriesRef.current = list.data.series ?? [];
-    setSuggestion(list.data.suggestion);
+    setSuggestions(list.data.suggestions ?? {});
     setPaymentsMode(list.data.payments_mode ?? null);
     if (people.ok) setArtists(people.data.artists);
     if (places.ok) {
@@ -362,9 +359,13 @@ export default function ShowsSection() {
     }
   };
 
+  const suggestionFor = (series: SeriesOpt | null) => (series?.feat_voting ? suggestions[series.id] ?? null : null);
+
+  // Under "All series" a new show starts blank until a series is picked,
+  // so nothing carries over from another series.
   const startNew = () => {
-    const series = seriesList.find((x) => x.id === filter) ?? seriesList.find((x) => x.active) ?? null;
-    const f = blankForm(series?.feat_voting ? suggestion : null, series);
+    const series = filter === "all" ? null : seriesList.find((x) => x.id === filter) ?? null;
+    const f = blankForm(suggestionFor(series), series);
     setSelected("new");
     setShow(null);
     setSongs([]);
@@ -379,8 +380,11 @@ export default function ShowsSection() {
     setForm((f) => {
       if (!f) return f;
       if (selected !== "new") return { ...f, series_id: id };
-      const fresh = blankForm(series?.feat_voting ? suggestion : null, series);
-      return { ...fresh, event_date: f.event_date || fresh.event_date, venue_id: fresh.venue_id || defaultVenue };
+      const fresh = blankForm(suggestionFor(series), series);
+      // Keep a date typed by hand, but not one suggested for the old series.
+      const prev = seriesList.find((x) => x.id === f.series_id) ?? null;
+      const typed = f.event_date && f.event_date !== suggestionFor(prev)?.event_date ? f.event_date : "";
+      return { ...fresh, event_date: typed || fresh.event_date, venue_id: fresh.venue_id || defaultVenue };
     });
   };
 
@@ -521,6 +525,9 @@ export default function ShowsSection() {
             const prevPast = i > 0 && (visibleShows[i - 1].archived || visibleShows[i - 1].event_date < today);
             const heading = i === 0 ? (isPast ? "Past" : "Upcoming") : isPast && !prevPast ? "Past" : null;
             const color = seriesOf(s.series_id)?.primary_color ?? RED;
+            // Sides set one by one: mixing the border shorthand with
+            // borderLeft makes React drop the stripe when a card is deselected.
+            const edge = active ? `1px solid ${RED}` : String(PANEL.border);
             return (
               <div key={s.id} style={{ display: "contents" }}>
               {heading && <span style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: MUTED, marginTop: i === 0 ? 0 : 10 }}>{heading}</span>}
@@ -530,7 +537,7 @@ export default function ShowsSection() {
                   openShow(s.id);
                 }}
                 aria-current={active}
-                style={{ ...PANEL, border: active ? `1px solid ${RED}` : PANEL.border, borderLeft: `4px solid ${color}`, padding: "12px 14px", textAlign: "left", display: "flex", flexDirection: "column", gap: 6, cursor: "pointer", opacity: s.archived ? 0.6 : 1, fontFamily: "sans-serif", color: INK }}
+                style={{ ...PANEL, border: undefined, borderTop: edge, borderRight: edge, borderBottom: edge, borderLeft: `4px solid ${color}`, padding: "12px 14px", textAlign: "left", display: "flex", flexDirection: "column", gap: 6, cursor: "pointer", opacity: s.archived ? 0.6 : 1, fontFamily: "sans-serif", color: INK }}
               >
                 {s.series && seriesList.length > 1 && (
                   <span style={{ fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color, fontWeight: 600 }}>{s.series.name}</span>
@@ -553,7 +560,21 @@ export default function ShowsSection() {
           )}
         </nav>
 
-        {form ? (
+        {form && selected === "new" && !form.series_id ? (
+          <div style={{ ...PANEL, padding: 24, display: "flex", flexDirection: "column", gap: 14 }}>
+            <p style={sectionLabel}>New show</p>
+            <Field id="s-series-pick" label="Which series is it for?" hint="The show starts from that series' venue, times, DJ, bingo deck, and run of show.">
+              <select id="s-series-pick" value="" onChange={(e) => changeSeries(e.target.value)} style={selectStyle}>
+                <option value="">Pick a series…</option>
+                {seriesList
+                  .filter((x) => x.active)
+                  .map((x) => (
+                    <option key={x.id} value={x.id}>{x.name}</option>
+                  ))}
+              </select>
+            </Field>
+          </div>
+        ) : form ? (
           <div style={{ ...PANEL, padding: 24, display: "flex", flexDirection: "column", gap: 22 }}>
             <section style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
@@ -660,20 +681,53 @@ export default function ShowsSection() {
 
             <section style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 20, borderTop: LINE }}>
               <p style={sectionLabel}>Show night</p>
-              <Field id="s-deck" label="Bingo deck" hint={form.bingo_deck_id ? "The host calls from this deck. 3 rounds, any line." : "No bingo tonight. Pick a deck to switch it on."}>
-                <select id="s-deck" value={form.bingo_deck_id} onChange={(e) => set("bingo_deck_id", e.target.value)} style={selectStyle}>
-                  <option value="">No bingo</option>
-                  {decks
-                    .filter((d) => d.active || d.id === form.bingo_deck_id)
-                    .map((d) => (
-                      <option key={d.id} value={d.id}>{d.name} · {d.lines} lines</option>
-                    ))}
-                </select>
-              </Field>
+              <label style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={form.has_bingo}
+                  onChange={(e) => {
+                    const on = e.target.checked;
+                    setForm((f) => (f ? { ...f, has_bingo: on, bingo_deck_id: on ? f.bingo_deck_id || formSeries?.default_bingo_deck_id || "" : "" } : f));
+                  }}
+                  style={{ width: 18, height: 18, marginTop: 2, accentColor: RED, flex: "none" }}
+                />
+                <span>
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>Bingo tonight</span>
+                  <span style={{ display: "block", fontSize: 12, color: MUTED }}>3 rounds, any line. The host calls from the deck below.</span>
+                </span>
+              </label>
+              {form.has_bingo && (
+                <Field id="s-deck" label="Bingo deck">
+                  <select id="s-deck" value={form.bingo_deck_id} onChange={(e) => set("bingo_deck_id", e.target.value)} style={selectStyle}>
+                    <option value="">Pick a deck…</option>
+                    {decks
+                      .filter((d) => d.active || d.id === form.bingo_deck_id)
+                      .map((d) => (
+                        <option key={d.id} value={d.id}>{d.name} · {d.lines} lines</option>
+                      ))}
+                  </select>
+                </Field>
+              )}
+              {form.has_bingo && !form.bingo_deck_id && (
+                <Notice tone="error">Pick a deck. The host can&apos;t tap We&apos;re live until this show has one.</Notice>
+              )}
               {fieldErr("bingo_deck_id")}
               {(formSeries?.feat_live ?? true) && (
-                <Field id="s-run" label="Running order (optional)" hint="One per line, with a time if you like: “21:30 Bingo, round 1”. The host can change it and mark what's on now from the console.">
-                  <textarea id="s-run" rows={4} value={form.running_order} onChange={(e) => set("running_order", e.target.value)} placeholder={"20:00 Doors and dinner\n21:30 Bingo\n22:30 DJ set"} style={{ ...inputStyle, lineHeight: 1.45, resize: "vertical" }} />
+                <Field
+                  id="s-run"
+                  label="Run of show"
+                  hint={
+                    <>
+                      One per line, with a 24-hour time in front if you like: “21:30 Bingo, round 1”. Shown on the live page; the host can edit it and mark what&apos;s on now. Leave it blank to use the series&apos; master run of show.{" "}
+                      {!!formSeries?.default_running_order?.length && (
+                        <button type="button" onClick={() => set("running_order", runToText(formSeries.default_running_order))} style={{ ...button("quiet"), padding: 0, textDecoration: "underline" }}>
+                          Use the series default
+                        </button>
+                      )}
+                    </>
+                  }
+                >
+                  <textarea id="s-run" rows={5} value={form.running_order} onChange={(e) => set("running_order", e.target.value)} placeholder={RUN_PLACEHOLDER} style={{ ...inputStyle, lineHeight: 1.45, resize: "vertical" }} />
                 </Field>
               )}
               {fieldErr("running_order")}
@@ -890,7 +944,7 @@ export default function ShowsSection() {
             <a href={`/ladies-night/${formSeries.slug}/live`} target="_blank" rel="noopener" style={button("quiet")}>Open the live page ↗</a>
           </aside>
         )}
-        {form && voting && (
+        {form && voting && formSeries && (
           <aside className="ln-shows-preview" style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "center" }}>
             <span style={{ alignSelf: "flex-start", fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: MUTED }}>Live preview · sign-in page</span>
             <GatePreview

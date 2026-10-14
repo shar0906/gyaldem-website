@@ -7,6 +7,8 @@
 // footer next to the venue and Gyal Dem.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { parseRunningOrder } from "./show-rules";
+import type { RunItem } from "./shows";
 
 export const DEFAULT_SERIES_SLUG = "an-ode-to-her";
 export const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -14,7 +16,8 @@ export const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 export const SERIES_COLUMNS =
   "id, slug, name, client_id, default_venue_id, title_logo_url, presents_logo_url, cover_url, primary_color, accent_color, " +
   "tagline, schedule_note, feat_voting, feat_vip, feat_opentable, feat_door, feat_posh, feat_live, feat_reminder, posh_url, " +
-  "call_delay_seconds, sort_order, active, created_at";
+  "call_delay_seconds, sort_order, active, created_at, " +
+  "default_running_order, default_start_time, default_end_time, default_dj_name, default_bingo_deck_id";
 
 export type SeriesRow = {
   id: string;
@@ -41,6 +44,12 @@ export type SeriesRow = {
   sort_order: number;
   active: boolean;
   created_at: string;
+  // What every new show in the series starts from.
+  default_running_order: RunItem[];
+  default_start_time: string | null;
+  default_end_time: string | null;
+  default_dj_name: string | null;
+  default_bingo_deck_id: string | null;
 };
 
 export const CLIENT_COLUMNS = "id, name, instagram_handle, website_url, logo_url, contact_email, active";
@@ -194,7 +203,7 @@ export function parseSeriesPatch(
     if (["live", "api", "admin"].includes(v)) return { ok: false, field: "slug", message: "That link is reserved. Pick another." };
     out.slug = v;
   }
-  for (const key of ["client_id", "default_venue_id"] as const) {
+  for (const key of ["client_id", "default_venue_id", "default_bingo_deck_id"] as const) {
     if (key in body) {
       const v = body[key];
       if (v === null || v === "") out[key] = null;
@@ -218,6 +227,24 @@ export function parseSeriesPatch(
     const v = text(body.schedule_note, 80);
     if (v === undefined) return { ok: false, field: "schedule_note", message: "Keep the schedule note under 80 characters." };
     out.schedule_note = v;
+  }
+  if ("default_running_order" in body) {
+    const v = parseRunningOrder(body.default_running_order);
+    if (typeof v === "string") return { ok: false, field: "default_running_order", message: v };
+    out.default_running_order = v;
+  }
+  for (const key of ["default_start_time", "default_end_time"] as const) {
+    if (key in body) {
+      const v = body[key];
+      if (v === null || v === "") out[key] = null;
+      else if (typeof v === "string" && /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(v)) out[key] = v.slice(0, 5);
+      else return { ok: false, field: key, message: "Pick a time." };
+    }
+  }
+  if ("default_dj_name" in body) {
+    const v = text(body.default_dj_name, 80);
+    if (v === undefined) return { ok: false, field: "default_dj_name", message: "Keep the DJ name under 80 characters." };
+    out.default_dj_name = v;
   }
   if ("posh_url" in body) {
     const v = text(body.posh_url, 500);

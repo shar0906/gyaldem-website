@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
       show ? getVenue(db, show.venue_id) : Promise.resolve(null),
       show && series.feat_voting ? publicArtist(db, show.artist_id) : Promise.resolve(null),
     ]);
-    const live = show ? await publicLive(db, show, series.call_delay_seconds) : null;
+    const live = show ? await publicLive(db, show, series) : null;
     // A next show that hasn't happened yet always reads "before".
     if (live && show && show === upcoming && !tonight) live.state = "before";
 

@@ -22,6 +22,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireStaffUser, serviceClient } from "../../../../lib/admin/staff-auth";
 import { readShowId, staffTonight } from "../../../../lib/ln/staff-show";
 import { parseRunningOrder } from "../../../../lib/ln/show-rules";
+import { runningOrder } from "../../../../lib/ln/live";
 
 const ACTIONS = ["go_live", "wrap", "reopen", "announce", "delete_post", "running_order", "now"] as const;
 type Action = (typeof ACTIONS)[number];
@@ -43,6 +44,12 @@ export async function POST(req: NextRequest) {
     const now = new Date().toISOString();
 
     if (action === "go_live") {
+      if (show.has_bingo && !show.bingo_deck_id) {
+        return NextResponse.json(
+          { error: "no_deck", message: "This show is set for bingo but has no deck yet. Ask an admin to pick one in Shows." },
+          { status: 409 }
+        );
+      }
       const { error } = await update({ live_started_at: show.live_started_at ?? now, live_ended_at: null });
       if (error) throw error;
     } else if (action === "wrap") {
@@ -71,12 +78,15 @@ export async function POST(req: NextRequest) {
       const { error } = await update({ running_order: items, run_now: runNow });
       if (error) throw error;
     } else if (action === "now") {
-      const items = Array.isArray(show.running_order) ? show.running_order : [];
+      const items = runningOrder(show, current.series);
       const index = body.index;
       if (index !== null && (typeof index !== "number" || !Number.isInteger(index) || index < 0 || index >= items.length)) {
         return NextResponse.json({ error: "invalid", message: "Pick an item from the running order." }, { status: 400 });
       }
-      const { error } = await update({ run_now: index });
+      // Marking an item on the series' master run of show saves it to the
+      // show, so the two stay in step if the master changes later.
+      const own = Array.isArray(show.running_order) && show.running_order.length > 0;
+      const { error } = await update(own ? { run_now: index } : { run_now: index, running_order: items });
       if (error) throw error;
     }
 

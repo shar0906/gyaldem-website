@@ -8,7 +8,7 @@ The console has three tabs: **Live**, **Bingo**, and **Guests**.
 
 ### Going live
 
-Tap **We're live** when the night starts. Every guest who has the series page open switches to the live view on its own, and anyone who scans the table QR lands there too. Before that, guests see a countdown, then "Starting soon".
+Tap **We're live** when the night starts. If tonight is set for bingo but has no deck yet, the button stays off with a red note; ask an admin to pick a deck in Shows, then refresh. Every guest who has the series page open switches to the live view on its own, and anyone who scans the table QR lands there too. Before that, guests see a countdown, then "Starting soon".
 
 At the end of the night tap **Wrap the night**. The live page turns into a recap with the winners, a countdown to the next date, and the photo gallery link if there is one. Tapped it too early? **Reopen** puts the page back live.
 
@@ -16,9 +16,16 @@ At the end of the night tap **Wrap the night**. The live page turns into a recap
 
 Type a short update (up to 280 characters) and tap **Post**. It goes to the top of **Updates** on the live page within a few seconds. **Remove** takes one down. Winners are posted here automatically when you announce them.
 
-### Running order
+### Run of show
 
-The night's plan, shown on the live page under **Tonight**. Tap the circle next to an item to mark it as **on now**; it's highlighted for guests. Tap it again to clear. You can edit the items and times, add, or remove, then **Save**.
+The night's plan, shown on the live page under **Tonight**. It starts as the series' usual run of show unless an admin set one for this show.
+
+- Each item has a name ("Bingo, round 1") and a start time.
+- Tap the quick-add buttons (Doors, Dinner, Bingo rounds, DJ set, Last call) or **+ Add your own**, change names and times, remove with ×, then **Save**.
+- **Use series default** puts the series' usual run of show back.
+- Tap the circle next to an item to mark it as **on now**; it's highlighted for guests. Tap it again to clear.
+
+You can open the console and prep the run of show any time on show day.
 
 ## Bingo
 

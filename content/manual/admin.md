@@ -11,13 +11,13 @@ Work through this in order. Most steps take a minute once the venue and artist a
 1. **Series ready.** In **Series**, the series has its logos, cover photo, usual venue, and the right switches on (and its Posh link, if it uses Posh).
 2. **Venue ready.** In **Venues**, the restaurant has its **full address**, logo, website or Instagram, and OpenTable widget code.
 3. **Artist ready** (People's Choice series only). In **Artists**, the artist is invited and their profile is **Approved**. Profile changes wait in **Approvals**.
-4. **Create the show.** In **Shows**, click **+ New show**, pick the series, and set the date, times, DJ, theme, sign-in page copy, and timing (see below).
+4. **Create the show.** In **Shows**, click **+ New show** and pick the series (from a series tab it's picked for you). The show starts from the series' defaults; set the date, theme, sign-in page copy, and timing (see below).
 5. **Set RSVP opens.** Until it's set and reached, the series page shows a countdown and no one can RSVP.
 6. **Songs and ballot** (People's Choice only). The artist submits at least 10 songs; **publish the ballot** before voting opens.
 7. **VIP.** Check **Offer VIP** if you're selling passes, set when sales close, and confirm the green "Stripe is live" note.
 8. **Reminder email.** On by default. Check its status line says "Scheduled in Kit" in the week before the show.
-9. **Bingo.** Pick the show's **Bingo deck** and export the cards for Canva (see Bingo decks).
-10. **Running order.** Optional, but it shows on the live page.
+9. **Bingo.** With **Bingo tonight** checked, the show needs a **Bingo deck**, or the host can't go live. Export the cards for Canva (see Bingo decks).
+10. **Run of show.** Shows on the live page. Leave it blank to use the series' master run of show.
 11. **Show-night staff.** Door and host logins invited from **Tools → Staff Tools**. A host login can be tied to one series.
 12. **Table placards.** Printed once per series from **Series → Print table placard**; the QR never changes.
 
@@ -78,8 +78,8 @@ If voting opens before you've published the ballot, guests can still RSVP but se
 
 ### Show night
 
-- **Bingo deck:** the deck the host calls from. 3 rounds, any line.
-- **Running order:** one item per line, with a time if you like ("21:30 Bingo, rounds 1–3"). The host can change it and mark what's on now from the console.
+- **Bingo tonight:** 3 rounds, any line. When it's checked, pick the **Bingo deck** the host calls from. Until there's a deck, a red note shows here and the host's **We're live** button stays off. Unchecking it removes the deck from the show.
+- **Run of show:** one item per line, with a 24-hour time in front if you like ("21:30 Bingo, round 1"). **Use the series default** copies the series' master run of show. Left blank, the live page uses the master. The host can change it and mark what's on now from the console.
 - **Photo gallery link:** shown on the live page's recap after the night.
 
 ### OpenTable
@@ -188,6 +188,7 @@ Each series has its own page at `/ladies-night/<link>` and its own live page at 
 - **What this series uses:** People's Choice + artist, VIP, OpenTable, Posh step, Door check-in, Live page, Reminder email.
 - **Posh link:** when the Posh step is on, guests are sent here after RSVPing. Use the client's Posh tracking link named "Gyal Dem". Clicks and "I'm on Posh" taps are counted for the recap.
 - **Bingo call delay:** seconds between the host tapping Called and guests seeing the line (5 by default).
+- **Show defaults:** start and end times, DJ, bingo deck, and the **master run of show**. Every new show in the series starts with them; change them per show in Shows. A show with no run of show of its own uses the master on the live page.
 - **Order on the hub** and **Live on the site** (unchecked hides the series from the hub and its page).
 - **Title logo, "Presents" line, Cover photo:** save the series first, then upload. Logos white on transparent PNG.
 - **Print table placard ↗:** four QR placards per page, pointing at the series' live page.

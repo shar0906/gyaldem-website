@@ -42,6 +42,8 @@ export type LiveData = {
     running_order: { label: string; time: string | null }[];
     run_now: number | null;
     gallery_url: string | null;
+    has_bingo: boolean;
+    rounds_per_night: number;
   } | null;
   next: {
     event_date: string;
@@ -333,7 +335,25 @@ export default function LiveView({
           </h1>
           {startMs && startMs > Date.now() && <Countdown targetMs={startMs} label={`Starts ${prettyTime(show.event_start_time.slice(0, 5))}`} />}
           {show.theme_name && <div style={{ fontSize: 13, color: GOLD, letterSpacing: "0.08em", textTransform: "uppercase" }}>✦ {show.theme_name}</div>}
-          <p style={{ margin: 0, fontSize: 13.5, color: "rgba(251,243,236,0.75)" }}>Keep this page open. Bingo calls, updates, and winners show up here once the night starts.</p>
+          {(live?.has_bingo || show.dj_name) && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 14.5 }}>
+              {live?.has_bingo && (
+                <span>
+                  <strong style={{ fontWeight: 600 }}>{show.theme_name ? `${show.theme_name} bingo` : "Bingo"}</strong> · {live.rounds_per_night} rounds, any line
+                </span>
+              )}
+              {show.dj_name && (
+                <span>
+                  Music by <strong style={{ fontWeight: 600 }}>{show.dj_name}</strong>
+                </span>
+              )}
+            </div>
+          )}
+          <p style={{ margin: 0, fontSize: 13.5, color: "rgba(251,243,236,0.75)" }}>
+            {live?.has_bingo
+              ? "Keep this page open. Bingo calls, updates, and winners show up here once the night starts."
+              : "Keep this page open. Updates from the host show up here once the night starts."}
+          </p>
         </section>
       )}
 

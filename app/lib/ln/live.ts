@@ -24,11 +24,24 @@ export async function livePosts(db: SupabaseClient, showId: string, limit = 50):
   return data ?? [];
 }
 
-export function runningOrder(show: Pick<ShowRow, "running_order">): RunItem[] {
-  return Array.isArray(show.running_order) ? show.running_order : [];
+// The show's own run of show, or the series' master one when the show
+// has none, so the live page is never left without a plan.
+export function runningOrder(
+  show: Pick<ShowRow, "running_order">,
+  series?: { default_running_order?: RunItem[] | null } | null
+): RunItem[] {
+  const own = Array.isArray(show.running_order) ? show.running_order : [];
+  if (own.length) return own;
+  return Array.isArray(series?.default_running_order) ? series!.default_running_order! : [];
 }
 
-export async function publicLive(db: SupabaseClient, show: ShowRow, delaySeconds: number, now: Date = new Date()) {
+export async function publicLive(
+  db: SupabaseClient,
+  show: ShowRow,
+  series: { call_delay_seconds: number; default_running_order?: RunItem[] | null },
+  now: Date = new Date()
+) {
+  const delaySeconds = series.call_delay_seconds;
   const state = liveState(show, now);
   const [posts, bingo] = await Promise.all([
     livePosts(db, show.id),
@@ -55,7 +68,9 @@ export async function publicLive(db: SupabaseClient, show: ShowRow, delaySeconds
     started_at: show.live_started_at,
     posts,
     bingo: bingoView,
-    running_order: runningOrder(show),
+    running_order: runningOrder(show, series),
+    has_bingo: show.has_bingo && !!show.bingo_deck_id,
+    rounds_per_night: ROUNDS_PER_NIGHT,
     run_now: show.run_now,
     gallery_url: show.gallery_url,
   };

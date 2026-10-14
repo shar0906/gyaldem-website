@@ -110,24 +110,29 @@ export async function GET() {
   const upcoming = list.filter((s) => !s.archived && s.event_date >= today);
   const rest = list.filter((s) => s.archived || s.event_date < today).reverse();
 
-  // Default for the next show: two weeks after the latest one.
-  let suggestion = null;
-  const latest = [...(shows ?? [])].filter((s) => !s.archived).pop();
-  if (latest) {
+  // Default date for a series' next show: two weeks after its latest one.
+  // Only People's Choice series follow that rhythm; the others are booked
+  // date by date.
+  type Suggestion = { event_date: string; voting_opens_at: string | null; voting_closes_at: string | null };
+  const suggestions: Record<string, Suggestion> = {};
+  for (const sr of seriesList ?? []) {
+    if (!sr.feat_voting) continue;
+    const latest = (shows ?? []).filter((s) => !s.archived && s.series_id === sr.id).pop();
+    if (!latest) continue;
     const next = new Date(`${latest.event_date}T00:00:00Z`);
     next.setUTCDate(next.getUTCDate() + 14);
     const nextDate = next.toISOString().slice(0, 10);
     const { data: win, error: winError } = await db.rpc("ln_suggest_next_event_window", { p_event_date: nextDate });
     if (winError) console.error("window suggestion failed:", winError);
     const w = Array.isArray(win) ? win[0] : win;
-    suggestion = {
+    suggestions[sr.id] = {
       event_date: nextDate,
       voting_opens_at: w?.voting_opens_at ?? null,
       voting_closes_at: w?.voting_closes_at ?? null,
     };
   }
 
-  return NextResponse.json({ shows: [...upcoming, ...rest], series: seriesList ?? [], suggestion, payments_mode: stripeMode() });
+  return NextResponse.json({ shows: [...upcoming, ...rest], series: seriesList ?? [], suggestions, payments_mode: stripeMode() });
 }
 
 export async function POST(req: NextRequest) {
@@ -231,6 +236,7 @@ export async function POST(req: NextRequest) {
     dj_name: v.dj_name ?? null,
     theme_name: v.theme_name ?? null,
     bingo_deck_id: v.bingo_deck_id ?? null,
+    has_bingo: v.has_bingo ?? !!v.bingo_deck_id,
     gallery_url: v.gallery_url ?? null,
     ...(v.running_order !== undefined && { running_order: v.running_order }),
     ...(v.vip_closes_at !== undefined && { vip_closes_at: v.vip_closes_at }),

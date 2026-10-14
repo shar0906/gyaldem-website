@@ -102,6 +102,7 @@ Reminder emails are created in Kit as scheduled broadcasts; you'll see them unde
 8. `2026-10-05_ln_cron_schedule_v2.sql` (needs pg_cron and pg_net turned on under Database → Extensions)
 9. `2026-10-08_ln_phase6_super_admin.sql` (with your login email filled in)
 10. `2026-10-14_ln_phase7_series.sql` (series, clients, bingo decks, live page, Posh)
+11. `2026-10-14_ln_phase7b_series_defaults.sql` (series show defaults, Bingo tonight)
 
 **Photo storage:** artist photos and logos in the `artist-photos` bucket; venue, series, and client logos and series cover photos in `ln-brand`. Both are public to read; uploads only go through the site.
 

@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import ImageSlot from "./ImageSlot";
+import { RUN_PLACEHOLDER, runToText, textToRun } from "../../lib/ln/run-text";
 import { FAINT, Field, GREEN, H1, LINE, MUTED, Notice, PANEL, RED, api, button, errorText, inputStyle, sectionLabel, selectStyle } from "./kit";
 
 type Series = {
@@ -37,6 +38,11 @@ type Series = {
   sort_order: number;
   active: boolean;
   upcoming_shows: number;
+  default_running_order: { label: string; time: string | null }[];
+  default_start_time: string | null;
+  default_end_time: string | null;
+  default_dj_name: string | null;
+  default_bingo_deck_id: string | null;
 };
 type Option = { id: string; name: string; active?: boolean };
 
@@ -72,26 +78,42 @@ const blank: Form = {
   call_delay_seconds: 5,
   sort_order: 10,
   active: true,
+  default_running_order: [],
+  default_start_time: "20:00",
+  default_end_time: "00:00",
+  default_dj_name: "",
+  default_bingo_deck_id: null,
 };
 
 function toForm(s: Series): Form {
   const { id: _id, title_logo_url: _t, presents_logo_url: _p, cover_url: _c, upcoming_shows: _u, ...rest } = s;
-  return { ...rest, tagline: s.tagline ?? "", schedule_note: s.schedule_note ?? "", posh_url: s.posh_url ?? "" };
+  return {
+    ...rest,
+    tagline: s.tagline ?? "",
+    schedule_note: s.schedule_note ?? "",
+    posh_url: s.posh_url ?? "",
+    default_dj_name: s.default_dj_name ?? "",
+    default_start_time: s.default_start_time?.slice(0, 5) ?? "",
+    default_end_time: s.default_end_time?.slice(0, 5) ?? "",
+  };
 }
 
 export default function SeriesSection() {
   const [series, setSeries] = useState<Series[] | null>(null);
   const [clients, setClients] = useState<Option[]>([]);
   const [venues, setVenues] = useState<Option[]>([]);
+  const [decks, setDecks] = useState<Option[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | "new" | null>(null);
   const [notice, setNotice] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
 
   const load = useCallback(async () => {
-    const [s, v] = await Promise.all([
+    const [s, v, d] = await Promise.all([
       api<{ series: Series[]; clients: Option[] }>("/api/admin/ladies-night/series"),
       api<{ venues: Option[] }>("/api/admin/ladies-night/venues"),
+      api<{ decks: Option[] }>("/api/admin/ladies-night/bingo/decks"),
     ]);
+    if (d.ok) setDecks(d.data.decks);
     if (!s.ok) return setLoadError(errorText(s.data as unknown as { error?: string }));
     setSeries(s.data.series);
     setClients(s.data.clients);
@@ -122,6 +144,7 @@ export default function SeriesSection() {
           series={null}
           clients={clients}
           venues={venues}
+          decks={decks}
           onSaved={(text, id) => {
             setNotice({ tone: "ok", text });
             load().then(() => setEditing(id ?? null));
@@ -157,6 +180,7 @@ export default function SeriesSection() {
           series={current}
           clients={clients}
           venues={venues}
+          decks={decks}
           onSaved={(text) => {
             setNotice({ tone: "ok", text });
             load();
@@ -172,12 +196,14 @@ function SeriesForm({
   series,
   clients,
   venues,
+  decks,
   onSaved,
   onImage,
 }: {
   series: Series | null;
   clients: Option[];
   venues: Option[];
+  decks: Option[];
   onSaved: (text: string, id?: string) => void;
   onImage?: () => void;
 }) {
@@ -187,6 +213,7 @@ function SeriesForm({
     presents_logo_url: series?.presents_logo_url ?? null,
     cover_url: series?.cover_url ?? null,
   });
+  const [runText, setRunText] = useState(runToText(series?.default_running_order));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ field?: string; text: string } | null>(null);
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => ({ ...f, [k]: v }));
@@ -210,6 +237,11 @@ function SeriesForm({
       posh_url: form.posh_url || null,
       client_id: form.client_id || null,
       default_venue_id: form.default_venue_id || null,
+      default_running_order: textToRun(runText),
+      default_start_time: form.default_start_time || null,
+      default_end_time: form.default_end_time || null,
+      default_dj_name: form.default_dj_name || null,
+      default_bingo_deck_id: form.default_bingo_deck_id || null,
     };
     const res = series
       ? await api<{ error?: string; field?: string; message?: string; series?: { id: string } }>(`/api/admin/ladies-night/series/${series.id}`, { method: "PATCH", body })
@@ -295,6 +327,35 @@ function SeriesForm({
       )}
       {poshMissing && <Notice tone="error">Add the Posh link, or the Posh step stays hidden.</Notice>}
       {err("posh_url")}
+
+      <section style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 16, borderTop: LINE }}>
+        <p style={sectionLabel}>Show defaults</p>
+        <span style={{ fontSize: 13, color: MUTED, marginTop: -6 }}>Every new show in this series starts with these. Change them per show in Shows.</span>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
+          <Field id="sr-start" label="Starts (Eastern)">
+            <input id="sr-start" type="time" value={form.default_start_time ?? ""} onChange={(e) => set("default_start_time", e.target.value)} style={inputStyle} />
+          </Field>
+          <Field id="sr-end" label="Ends (Eastern)">
+            <input id="sr-end" type="time" value={form.default_end_time ?? ""} onChange={(e) => set("default_end_time", e.target.value)} style={inputStyle} />
+          </Field>
+          <Field id="sr-dj" label="DJ / Music by">
+            <input id="sr-dj" value={form.default_dj_name ?? ""} maxLength={80} onChange={(e) => set("default_dj_name", e.target.value)} style={inputStyle} />
+          </Field>
+          <Field id="sr-deck" label="Bingo deck" hint="Pick one to make every new show a bingo night.">
+            <select id="sr-deck" value={form.default_bingo_deck_id ?? ""} onChange={(e) => set("default_bingo_deck_id", e.target.value || null)} style={selectStyle}>
+              <option value="">No bingo by default</option>
+              {decks.filter((d) => d.active !== false || d.id === form.default_bingo_deck_id).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </Field>
+        </div>
+        {err("default_start_time")}{err("default_end_time")}{err("default_dj_name")}{err("default_bingo_deck_id")}
+        {form.feat_live && (
+          <Field id="sr-run" label="Master run of show" hint="One per line, with a 24-hour time in front: “21:30 Bingo, round 1”. New shows copy it; a show with no run of show of its own uses this on the live page.">
+            <textarea id="sr-run" rows={5} value={runText} onChange={(e) => setRunText(e.target.value)} placeholder={RUN_PLACEHOLDER} style={{ ...inputStyle, lineHeight: 1.45, resize: "vertical" }} />
+          </Field>
+        )}
+        {err("default_running_order")}
+      </section>
 
       <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
         <Field id="sr-delay" label="Bingo call delay (seconds)" hint="How long after Called before guests see a line.">

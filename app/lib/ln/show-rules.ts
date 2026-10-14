@@ -32,6 +32,7 @@ export type ShowPatch = Partial<{
   dj_name: string | null;
   theme_name: string | null;
   bingo_deck_id: string | null;
+  has_bingo: boolean;
   running_order: RunItem[];
   gallery_url: string | null;
   vip_closes_at: string | null;
@@ -249,10 +250,18 @@ export function parseShowPatch(body: Record<string, unknown>): Result {
     if (typeof v === "string") return { ok: false, field: "running_order", error: v };
     out.running_order = v;
   }
+  if ("has_bingo" in body) {
+    if (typeof body.has_bingo !== "boolean") return { ok: false, field: "has_bingo", error: "Invalid bingo setting." };
+    out.has_bingo = body.has_bingo;
+  }
   if ("archived" in body) {
     if (typeof body.archived !== "boolean") return { ok: false, field: "archived", error: "Invalid archive setting." };
     out.archived = body.archived;
   }
+
+  // No bingo tonight means no deck, so the host console and live page
+  // never show a half-set-up game.
+  if (out.has_bingo === false) out.bingo_deck_id = null;
 
   return { ok: true, value: out };
 }

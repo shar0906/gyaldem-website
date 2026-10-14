@@ -63,9 +63,11 @@ type HostData = {
     series_slug: string;
     live_path: string;
     live_enabled: boolean;
+    has_bingo: boolean;
+    bingo_ready: boolean;
   } | null;
   shows?: { id: string; label: string }[];
-  live?: { state: "before" | "live" | "after"; started_at: string | null; ended_at: string | null; posts: Post[]; running_order: RunItem[]; run_now: number | null };
+  live?: { state: "before" | "live" | "after"; started_at: string | null; ended_at: string | null; posts: Post[]; running_order: RunItem[]; run_now: number | null; run_is_default: boolean; series_running_order: RunItem[] };
   bingo?: {
     deck: { id: string; name: string; kind: "match" | "callout_answer"; card_face: "answer" | "artist"; size: number } | null;
     rounds_per_night: number;
@@ -298,6 +300,8 @@ function LiveBadge({ state }: { state: "before" | "live" | "after" }) {
 
 // ---------------- Live ----------------
 
+const QUICK_ADD = ["Doors", "Dinner", "Bingo, round 1", "Bingo, round 2", "Bingo, round 3", "DJ set", "Last call"];
+
 function LiveTab({
   show,
   live,
@@ -321,7 +325,7 @@ function LiveTab({
   }
   async function saveOrder() {
     const clean = items.filter((i) => i.label.trim());
-    if (await act("running_order", { items: clean }, "Running order saved.")) setOrder(null);
+    if (await act("running_order", { items: clean }, "Run of show saved.")) setOrder(null);
   }
 
   return (
@@ -332,7 +336,12 @@ function LiveTab({
           <span style={{ fontSize: 14, lineHeight: 1.5, color: CREAM }}>
             Tap We&apos;re live and every guest&apos;s page switches to the live view: bingo calls, your updates, and winners.
           </span>
-          <button onClick={() => act("go_live", {}, "You're live.")} disabled={!!busy || !online} style={bigButton(!busy && online, "gold")}>
+          {!show.bingo_ready && (
+            <span role="alert" style={{ fontSize: 13, lineHeight: 1.5, color: SOFT_RED }}>
+              Tonight is set for bingo but there&apos;s no deck yet. Ask an admin to pick one in Shows, then refresh.
+            </span>
+          )}
+          <button onClick={() => act("go_live", {}, "You're live.")} disabled={!!busy || !online || !show.bingo_ready} style={bigButton(!busy && online && show.bingo_ready, "gold")}>
             {busy === "go_live" ? "Going live…" : "We're live"}
           </button>
         </div>
@@ -384,7 +393,14 @@ function LiveTab({
       </div>
 
       <div style={{ ...panel, padding: 16, display: "flex", flexDirection: "column", gap: 8 }}>
-        <span style={label}>Running order · tap what&apos;s on now</span>
+        <span style={label}>Run of show · tap what&apos;s on now</span>
+        <span style={{ fontSize: 12.5, lineHeight: 1.5, color: MUTED }}>
+          Guests see this on the live page. Give each part of the night a name and a start time, then tap the circle when it&apos;s on.
+          {live.run_is_default && items.length > 0 && !dirty && " This is the series' usual run of show; edit it for tonight if anything's different."}
+        </span>
+        {items.length === 0 && !dirty && (
+          <span style={{ fontSize: 13, color: CREAM, padding: "6px 0" }}>Nothing yet. Add the parts of tonight below.</span>
+        )}
         {items.map((it, i) => {
           const on = !dirty && live.run_now === i;
           return (
@@ -400,6 +416,7 @@ function LiveTab({
                 aria-label="Item"
                 value={it.label}
                 maxLength={80}
+                placeholder="e.g. Bingo, round 1"
                 onChange={(e) => setOrder(items.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))}
                 style={{ ...fieldInput, height: 40, fontSize: 14 }}
               />
@@ -414,10 +431,31 @@ function LiveTab({
             </div>
           );
         })}
+        {items.length < 20 && (
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 4 }} aria-label="Quick add">
+            {QUICK_ADD.filter((q) => !items.some((x) => x.label === q)).map((q) => (
+              <button
+                key={q}
+                onClick={() => setOrder([...items, { label: q, time: null }])}
+                style={{ background: "transparent", border: "1px solid rgba(251,243,236,0.25)", borderRadius: 999, color: CREAM, fontSize: 12.5, padding: "6px 12px", minHeight: 34, cursor: "pointer" }}
+              >
+                + {q}
+              </button>
+            ))}
+          </div>
+        )}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
           {items.length < 20 && (
             <button onClick={() => setOrder([...items, { label: "", time: null }])} style={{ ...bigButton(true, "ghost"), width: "auto", padding: "0 14px", minHeight: 40 }}>
-              + Add
+              + Add your own
+            </button>
+          )}
+          {live.series_running_order.length > 0 && (live.run_is_default ? dirty : true) && (
+            <button
+              onClick={() => (items.length === 0 || confirm("Replace tonight's run of show with the series' usual one?")) && setOrder(live.series_running_order)}
+              style={{ background: "none", border: 0, color: MUTED, fontSize: 12, textDecoration: "underline", cursor: "pointer", minHeight: 40 }}
+            >
+              Use series default
             </button>
           )}
           {dirty && (
