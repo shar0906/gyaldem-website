@@ -8,7 +8,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { GatePreview } from "../../components/ln/PhonePreview";
+import ShowPanel, { PanelClient, PanelSeries, PanelVenue } from "./ShowPanel";
 import { easternInputToIso, isoToEasternInput, todayEastern } from "../../lib/ln/dates";
 import { RUN_PLACEHOLDER, runToText, textToRun } from "../../lib/ln/run-text";
 import { defaultSendAt, defaultTemplate } from "../../lib/ln/reminder-template";
@@ -36,6 +36,8 @@ import {
 
 type Artist = { id: string; display_name: string; approved_at: string | null; active: boolean };
 type ArtistFull = Artist & {
+  logo_url: string | null;
+  website_url: string | null;
   bio: string | null;
   instagram_handle: string | null;
   primary_color: string | null;
@@ -83,21 +85,11 @@ type ShowRow = {
   artist?: Artist | null;
   ballot?: { draft: number; published: number };
 };
-type SeriesOpt = {
-  id: string;
-  slug: string;
-  name: string;
-  primary_color: string | null;
-  default_running_order: RunItem[];
+type SeriesOpt = PanelSeries & {
   default_start_time: string | null;
   default_end_time: string | null;
   default_bingo_deck_id: string | null;
   default_venue_id: string | null;
-  feat_voting: boolean;
-  feat_vip: boolean;
-  feat_opentable: boolean;
-  feat_reminder: boolean;
-  feat_live: boolean;
   active: boolean;
 };
 type DeckOpt = { id: string; name: string; kind: string; lines: number; active: boolean };
@@ -271,7 +263,7 @@ export default function ShowsSection() {
   const [paymentsMode, setPaymentsMode] = useState<"test" | "live" | null | undefined>(undefined);
   const [suggestions, setSuggestions] = useState<Record<string, { event_date: string; voting_opens_at: string | null; voting_closes_at: string | null }>>({});
   const [artists, setArtists] = useState<ArtistFull[]>([]);
-  const [venues, setVenues] = useState<{ id: string; name: string; active: boolean; opentable_widget: string | null }[]>([]);
+  const [venues, setVenues] = useState<(PanelVenue & { active: boolean })[]>([]);
   const [selected, setSelected] = useState<string | "new" | null>(null);
   const [show, setShow] = useState<ShowRow | null>(null);
   const [songs, setSongs] = useState<BallotSong[]>([]);
@@ -284,6 +276,7 @@ export default function ShowsSection() {
   const [decks, setDecks] = useState<DeckOpt[]>([]);
   const [filter, setFilter] = useState<string>("all");
   const [recap, setRecap] = useState<Recap | null>(null);
+  const [clients, setClients] = useState<PanelClient[]>([]);
   // openShow reads the latest series list without re-creating itself.
   const seriesRef = useRef<SeriesOpt[]>([]);
   const seriesOf = (id: string | null | undefined) => seriesList.find((x) => x.id === id) ?? null;
@@ -292,10 +285,11 @@ export default function ShowsSection() {
     const [list, people, places, deckRes] = await Promise.all([
       api<{ shows: ShowRow[]; series: SeriesOpt[]; suggestions?: typeof suggestions; payments_mode?: "test" | "live" | null; error?: string }>("/api/admin/ladies-night/shows"),
       api<{ artists: ArtistFull[] }>("/api/admin/ladies-night/artists"),
-      api<{ venues: { id: string; name: string; active: boolean; opentable_widget: string | null }[] }>("/api/admin/ladies-night/venues"),
+      api<{ venues: (PanelVenue & { active: boolean })[] }>("/api/admin/ladies-night/venues"),
       api<{ decks: DeckOpt[] }>("/api/admin/ladies-night/bingo/decks"),
     ]);
     if (deckRes.ok) setDecks(deckRes.data.decks);
+    api<{ clients: PanelClient[] }>("/api/admin/ladies-night/clients").then((c) => c.ok && setClients(c.data.clients));
     if (!list.ok) {
       setLoadError(errorText(list.data));
       return null;
@@ -488,7 +482,7 @@ export default function ShowsSection() {
         .ln-shows{ display:grid; grid-template-columns:240px minmax(0,1fr) 300px; gap:24px; align-items:start; }
         .ln-grid-3{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
         .ln-vip-grid{ display:grid; grid-template-columns:140px 140px minmax(0,1fr); gap:12px; }
-        @media (max-width: 1180px){ .ln-shows{ grid-template-columns:220px minmax(0,1fr); } .ln-shows-preview{ grid-column:1 / -1; } }
+        @media (max-width: 1180px){ .ln-shows{ grid-template-columns:220px minmax(0,1fr); } .ln-shows-preview{ grid-column:1 / -1; position: static !important; max-height: none !important; } }
         @media (max-width: 760px){ .ln-shows{ grid-template-columns:1fr; } .ln-grid-3{ grid-template-columns:1fr; } .ln-vip-grid{ grid-template-columns:1fr 1fr; } .ln-vip-grid > :last-child{ grid-column:1 / -1; } }
       `}</style>
       <H1 action={<button onClick={startNew} style={button("primary")}>+ New show</button>}>Shows</H1>
@@ -633,7 +627,7 @@ export default function ShowsSection() {
               {fieldErr("event_date")}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
                 <Field id="s-dj" label="DJ / music by (optional)" hint="Shows as “Music by …” on the page.">
-                  <input id="s-dj" value={form.dj_name} maxLength={80} onChange={(e) => set("dj_name", e.target.value)} placeholder="YouKnowMeAsDubzz" style={inputStyle} />
+                  <input id="s-dj" value={form.dj_name} maxLength={80} onChange={(e) => set("dj_name", e.target.value)} placeholder="DJ name" style={inputStyle} />
                 </Field>
                 <Field id="s-theme" label="Theme (optional)" hint="Like “Spooky Szn”. Shows on the page and the hub.">
                   <input id="s-theme" value={form.theme_name} maxLength={60} onChange={(e) => set("theme_name", e.target.value)} style={inputStyle} />
@@ -935,32 +929,18 @@ export default function ShowsSection() {
           </div>
         )}
 
-        {form && !voting && formSeries && (
-          <aside className="ln-shows-preview" style={{ ...PANEL, padding: 18, display: "flex", flexDirection: "column", gap: 10 }}>
-            <span style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: MUTED }}>{formSeries.name}</span>
-            <span style={{ fontSize: 13, color: MUTED, lineHeight: 1.5 }}>The page uses the series&apos; logos, cover photo, and colors (set under Series), with this show&apos;s date, theme, and DJ.</span>
-            <a href={`/ladies-night/${formSeries.slug}`} target="_blank" rel="noopener" style={button("secondary")}>Open the page ↗</a>
-            <a href={`/ladies-night/${formSeries.slug}/live`} target="_blank" rel="noopener" style={button("quiet")}>Open the live page ↗</a>
-          </aside>
-        )}
-        {form && voting && formSeries && (
-          <aside className="ln-shows-preview" style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "center" }}>
-            <span style={{ alignSelf: "flex-start", fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: MUTED }}>Live preview · sign-in page</span>
-            <GatePreview
-              headline={form.gate_headline}
-              description={form.gate_description}
-              profile={{
-                display_name: selectedArtist?.display_name ?? "Artist",
-                bio: selectedArtist?.bio ?? null,
-                instagram_handle: selectedArtist?.instagram_handle ?? null,
-                primary_color: selectedArtist?.primary_color ?? null,
-                accent_color: selectedArtist?.accent_color ?? null,
-                photo_url: selectedArtist?.photo_url ?? null,
-                cover_url: selectedArtist?.cover_url ?? null,
-              }}
-            />
-            {!selectedArtist && <span style={{ fontSize: 12, color: MUTED, textAlign: "center" }}>Assign an artist to see their cover photo and colors.</span>}
-          </aside>
+        {form && formSeries && (
+          <ShowPanel
+            draft={form}
+            series={formSeries}
+            client={clients.find((c) => c.id === formSeries.client_id) ?? null}
+            venue={venues.find((v) => v.id === form.venue_id) ?? null}
+            artist={formSeries.feat_voting ? selectedArtist ?? null : null}
+            saved={show ? { id: show.id, stage: show.stage, reminder_broadcast_id: show.reminder_broadcast_id, reminder_error: show.reminder_error } : null}
+            ballotPublished={published}
+            paymentsMode={paymentsMode}
+            dirty={selected === "new" || (!!show && JSON.stringify(toForm(show, formSeries.feat_voting)) !== JSON.stringify(form))}
+          />
         )}
       </div>
     </div>

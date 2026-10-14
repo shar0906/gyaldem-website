@@ -35,11 +35,14 @@ export default function Gate({
   prefill,
   doorCode,
   onEntered,
+  preview = false,
 }: {
   current: OpenCurrent;
   prefill: Prefill;
   doorCode: string | null;
   onEntered: (guest: Guest) => void;
+  // Admin's phone preview: looks the same, sends nothing.
+  preview?: boolean;
 }) {
   const [mode, setMode] = useState<"new" | "returning">("new");
   const [first, setFirst] = useState(prefill?.first_name ?? "");
@@ -56,7 +59,7 @@ export default function Gate({
   const ready = mode === "returning" ? email.trim().length > 3 : first.trim() && last.trim() && email.trim().length > 3;
 
   async function submit() {
-    if (!ready || busy) return;
+    if (!ready || busy || preview) return;
     setBusy(true);
     setError(null);
     const res =

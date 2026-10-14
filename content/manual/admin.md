@@ -57,6 +57,15 @@ The list on the left shows every show by date, series, and artist or theme, with
 
 Each series page (like `/ladies-night/an-ode-to-her` or `/ladies-night/please`) always shows that series' **next upcoming show** that isn't archived. A later show takes over the page the day after the current one. A series can have only one show per date.
 
+### The side panel
+
+The same for every series, and it stays in view while you scroll the editor:
+
+- **Sign-in page:** the real page guests get, in a phone frame, drawn from what's in the editor right now. "Unsaved" shows next to it until you save.
+- **Ready for the night:** a checklist (date and times, RSVP opens, venue address and logo, artist and ballot on People's Choice series, bingo deck, run of show, OpenTable, Posh, Stripe for VIP, the Kit reminder). ✕ needs fixing; ! is worth a look.
+- **Links:** open the page and the live page, copy the share link, print the table placard.
+- **Door QR:** on series with door check-in, the show's door QR to print ahead. It only works on the night.
+
 ### The show
 
 - **Series:** which series the show belongs to. It can move to another series until someone RSVPs.
