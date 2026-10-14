@@ -98,7 +98,7 @@ type SeriesOpt = PanelSeries & {
 };
 type DeckOpt = { id: string; name: string; kind: string; lines: number; active: boolean };
 type RunItem = { label: string; time: string | null };
-type Recap = { rsvps: number; posh_opened: number; posh_confirmed: number; tables: number; checked_in: number; vip_passes: number; vip_revenue_cents: number; live_views: number; winners: string[] };
+type Recap = { rsvps: number; tables: number; checked_in: number; vip_passes: number; vip_revenue_cents: number; live_views: number; winners: string[] };
 type BallotSong = {
   song_id: string;
   status: "draft" | "published";
@@ -897,8 +897,6 @@ export default function ShowsSection() {
                     ["RSVPs", recap.rsvps],
                     ...(formSeries?.feat_vip ?? true ? [["VIP passes", `${recap.vip_passes}${recap.vip_passes ? ` (${money(recap.vip_revenue_cents)})` : ""}`]] : []),
                     ["Tables booked", recap.tables],
-                    ["Posh opened", recap.posh_opened],
-                    ["Posh confirmed", recap.posh_confirmed],
                     ["Checked in", recap.checked_in],
                     ["Live page visits", recap.live_views],
                   ].map(([k, v]) => (

@@ -2,7 +2,7 @@
 //
 // A series' guest page, e.g. /ladies-night/an-ode-to-her or
 // /ladies-night/please: RSVP, the parts the series has switched on
-// (voting, VIP, Posh, OpenTable, door check-in), and the live view on
+// (voting, VIP, OpenTable, door check-in), and the live view on
 // show night.
 //
 // Share previews: title and description come from the series' current

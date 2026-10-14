@@ -8,7 +8,7 @@ Ladies Night runs as **series**: An Ode To Her (Gyal Dem's own, with a guest art
 
 Work through this in order. Most steps take a minute once the venue and artist are set up.
 
-1. **Series ready.** In **Series**, the series has its logos, cover photo, usual venue, and the right switches on (and its Posh link, if it uses Posh).
+1. **Series ready.** In **Series**, the series has its logos, cover photo, usual venue, and the right switches on.
 2. **Venue ready.** In **Venues**, the restaurant has its **full address**, logo, website or Instagram, and OpenTable widget code.
 3. **Artist ready** (People's Choice series only). In **Artists**, the artist is invited and their profile is **Approved**. Profile changes wait in **Approvals**.
 4. **Create the show.** In **Shows**, click **+ New show** and pick the series (from a series tab it's picked for you). The show starts from the series' defaults; set the date, theme, sign-in page copy, and timing (see below).
@@ -62,7 +62,7 @@ Each series page (like `/ladies-night/an-ode-to-her` or `/ladies-night/please`) 
 The same for every series, and it stays in view while you scroll the editor:
 
 - **Sign-in page:** the real page guests get, in a phone frame, drawn from what's in the editor right now. "Unsaved" shows next to it until you save.
-- **Ready for the night:** a checklist (date and times, RSVP opens, venue address and logo, artist and ballot on People's Choice series, bingo deck, run of show, OpenTable, Posh, Stripe for VIP, the Kit reminder). ✕ needs fixing; ! is worth a look.
+- **Ready for the night:** a checklist (date and times, RSVP opens, venue address and logo, artist and ballot on People's Choice series, bingo deck, run of show, OpenTable, Stripe for VIP, the Kit reminder). ✕ needs fixing; ! is worth a look.
 - **Links:** open the page and the live page, copy the share link, print the table placard.
 - **Door QR:** on series with door check-in, the show's door QR to print ahead. It only works on the night.
 
@@ -127,7 +127,7 @@ One reminder per show, sent through Kit to everyone RSVP'd to that show.
 
 ### Recap
 
-Early the day after each show, the series' client gets a recap email (to the client's **Recap email**, copied to hello@gyaldemsocialclub.com): RSVPs, VIP passes, tables, Posh opened and confirmed, check-ins, live page visits, and the bingo winners. The same numbers are at the bottom of the show in Shows. For Gyal Dem's own series it goes to hello@gyaldemsocialclub.com only.
+Early the day after each show, the series' client gets a recap email (to the client's **Recap email**, copied to hello@gyaldemsocialclub.com): RSVPs, VIP passes, tables, check-ins, live page visits, and the bingo winners. The same numbers are at the bottom of the show in Shows. For Gyal Dem's own series it goes to hello@gyaldemsocialclub.com only.
 
 ### Archive
 
@@ -201,8 +201,7 @@ People's Choice results per show, with guests who voted, turnout, and average pi
 Each series has its own page at `/ladies-night/<link>` and its own live page at `/ladies-night/<link>/live`.
 
 - **Name, Link, Presented by** (a client, or Gyal Dem), **Usual venue**, tagline, and **Schedule note** (shown on the hub when there's no date yet).
-- **What this series uses:** People's Choice + artist, VIP, OpenTable, Posh step, Door check-in, Live page, Reminder email.
-- **Posh link:** when the Posh step is on, guests are sent here after RSVPing. Use the client's Posh tracking link named "Gyal Dem". Clicks and "I'm on Posh" taps are counted for the recap.
+- **What this series uses:** People's Choice + artist, VIP, OpenTable, Door check-in, Live page, Reminder email.
 - **Bingo call delay:** seconds between the host tapping Called and guests seeing the line (5 by default).
 - **Show defaults:** start and end times, bingo deck, and the **master run of show**. Every new show in the series starts with them; change them per show in Shows. A show with no run of show of its own uses the master on the live page.
 - **Order on the hub** and **Live on the site** (unchecked hides the series from the hub and its page).

@@ -4,7 +4,7 @@
 // Public. Everything a series page needs to draw the current show: the
 // series (event logos, colors, which parts are on), the show's stage and
 // details, the approved artist (voting series), published songs (once
-// voting opens), VIP, OpenTable, Posh, and the live state. Never
+// voting opens), VIP, OpenTable, and the live state. Never
 // includes vote counts, guest data, or the door code itself.
 // series defaults to an-ode-to-her.
 //
@@ -62,7 +62,7 @@ async function lastShowSummary(db: SupabaseClient, seriesId: string) {
   };
 }
 
-function showDetails(show: ShowRow, opentable: string | null, posh: string | null) {
+function showDetails(show: ShowRow, opentable: string | null) {
   return {
     id: show.id,
     title: show.title,
@@ -78,7 +78,6 @@ function showDetails(show: ShowRow, opentable: string | null, posh: string | nul
     has_bingo: !!show.bingo_deck_id,
     cover_url: show.cover_url,
     opentable_url: opentable,
-    posh_url: posh,
   };
 }
 
@@ -137,14 +136,13 @@ export async function GET(req: NextRequest) {
 
     // The show's own OpenTable code wins; otherwise the venue's.
     const opentable = series.feat_opentable ? show.opentable_widget ?? venue?.opentable_widget ?? null : null;
-    const posh = series.feat_posh ? series.posh_url : null;
 
     return NextResponse.json(
       {
         stage: publicStage,
         door,
         series: seriesView,
-        show: showDetails(show, opentable, posh),
+        show: showDetails(show, opentable),
         venue: publicVenue(venue),
         artist,
         songs,

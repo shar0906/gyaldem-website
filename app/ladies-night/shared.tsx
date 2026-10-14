@@ -44,7 +44,7 @@ export type Series = {
   accent_color: string | null;
   tagline: string | null;
   schedule_note: string | null;
-  features: { voting: boolean; vip: boolean; opentable: boolean; door: boolean; posh: boolean; live: boolean };
+  features: { voting: boolean; vip: boolean; opentable: boolean; door: boolean; live: boolean };
   client: Client | null;
 };
 export type LastShow = { event_date: string; theme_name: string | null; gallery_url: string | null; winners: string[] } | null;
@@ -75,7 +75,6 @@ export type Current =
         has_bingo: boolean;
         cover_url?: string | null;
         opentable_url: string | null;
-        posh_url: string | null;
       };
       venue: Venue | null;
       artist: Artist | null;
@@ -92,7 +91,6 @@ export type Guest = {
     table: { party_size: number | null; reserved_for: string | null; confirmation: string } | null;
     checked_in: boolean;
     vip_passes: number;
-    posh?: { clicked: boolean; confirmed: boolean };
   } | null;
   voted: boolean;
   picks: string[];

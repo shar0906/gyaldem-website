@@ -2,8 +2,7 @@
 //
 // Series: the recurring nights, each with its own page at
 // /ladies-night/<link>. Set the client and venue, the event logos and
-// cover photo, colors, the parts of the guest flow that are on, the Posh
-// link, and the bingo call delay. Print the table placard (a QR code to
+// cover photo, colors, the parts of the guest flow that are on, and the bingo call delay. Print the table placard (a QR code to
 // the series' live page) from here.
 
 "use client";
@@ -30,10 +29,8 @@ type Series = {
   feat_vip: boolean;
   feat_opentable: boolean;
   feat_door: boolean;
-  feat_posh: boolean;
   feat_live: boolean;
   feat_reminder: boolean;
-  posh_url: string | null;
   call_delay_seconds: number;
   sort_order: number;
   active: boolean;
@@ -49,7 +46,6 @@ const FEATURES: { key: keyof Series; label: string; help: string }[] = [
   { key: "feat_voting", label: "People's Choice + artist", help: "An artist each show, and guests vote the set list." },
   { key: "feat_vip", label: "VIP", help: "Paid VIP passes (set per show), through Gyal Dem's Stripe." },
   { key: "feat_opentable", label: "OpenTable", help: "Guests book a table without leaving the page." },
-  { key: "feat_posh", label: "Posh step", help: "After RSVP, guests confirm on the Posh link below." },
   { key: "feat_door", label: "Door check-in", help: "The door QR and check-in screen on show night." },
   { key: "feat_live", label: "Live page", help: "Announcements, bingo calls, winners, and the running order." },
   { key: "feat_reminder", label: "Reminder email", help: "The day-before email through Kit." },
@@ -70,10 +66,8 @@ const blank: Form = {
   feat_vip: false,
   feat_opentable: true,
   feat_door: false,
-  feat_posh: false,
   feat_live: true,
   feat_reminder: true,
-  posh_url: "",
   call_delay_seconds: 5,
   sort_order: 10,
   active: true,
@@ -89,7 +83,6 @@ function toForm(s: Series): Form {
     ...rest,
     tagline: s.tagline ?? "",
     schedule_note: s.schedule_note ?? "",
-    posh_url: s.posh_url ?? "",
     default_start_time: s.default_start_time?.slice(0, 5) ?? "",
     default_end_time: s.default_end_time?.slice(0, 5) ?? "",
   };
@@ -231,7 +224,6 @@ function SeriesForm({
       ...form,
       tagline: form.tagline || null,
       schedule_note: form.schedule_note || null,
-      posh_url: form.posh_url || null,
       client_id: form.client_id || null,
       default_venue_id: form.default_venue_id || null,
       default_running_order: textToRun(runText),
@@ -248,7 +240,6 @@ function SeriesForm({
   }
 
   const err = (f: string) => (error?.field === f ? <Notice tone="error">{error.text}</Notice> : null);
-  const poshMissing = form.feat_posh && !form.posh_url;
 
   return (
     <div style={{ ...PANEL, padding: 24, margin: "18px 0", display: "flex", flexDirection: "column", gap: 18, maxWidth: 880 }}>
@@ -316,13 +307,6 @@ function SeriesForm({
         </div>
       </section>
 
-      {form.feat_posh && (
-        <Field id="sr-posh" label="Posh link" hint="Use the client's Posh tracking link named “Gyal Dem”, so Posh credits RSVPs that come from our page.">
-          <input id="sr-posh" value={form.posh_url ?? ""} maxLength={500} onChange={(e) => set("posh_url", e.target.value.trim())} placeholder="https://posh.vip/e/..." style={inputStyle} />
-        </Field>
-      )}
-      {poshMissing && <Notice tone="error">Add the Posh link, or the Posh step stays hidden.</Notice>}
-      {err("posh_url")}
 
       <section style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 16, borderTop: LINE }}>
         <p style={sectionLabel}>Show defaults</p>

@@ -7,7 +7,7 @@
 //   door QR             -> checked in
 //   voting open, no vote-> ballot (voting series)
 //   then                -> VIP offer (fresh visits, when available)
-//   always ends at      -> summary (Posh, table, calendar, picks, VIP,
+//   always ends at      -> summary (table, calendar, picks, VIP,
 //                          countdown to the night)
 //   show night          -> the live view, on its own, once the host taps
 //                          We're live (and the recap after the wrap)

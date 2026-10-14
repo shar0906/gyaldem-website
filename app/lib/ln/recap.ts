@@ -1,7 +1,6 @@
 // lib/ln/recap.ts
 //
-// The recap for one show: how many RSVP'd, Posh click-throughs and
-// confirmations, tables booked, check-ins, VIP passes and revenue, live
+// The recap for one show: how many RSVP'd, tables booked, check-ins, VIP passes and revenue, live
 // page visits, and the winners. Shown in admin, and emailed after the
 // show to the series' client (cc the Gyal Dem record inbox), or just to
 // the record inbox for Gyal Dem's own series.
@@ -16,8 +15,6 @@ import { SHOW_COLUMNS, ShowRow } from "./shows";
 
 export type Recap = {
   rsvps: number;
-  posh_opened: number;
-  posh_confirmed: number;
   tables: number;
   checked_in: number;
   vip_passes: number;
@@ -28,7 +25,7 @@ export type Recap = {
 
 export async function showRecap(db: SupabaseClient, show: Pick<ShowRow, "id" | "live_views">): Promise<Recap> {
   const [rsvpRes, vipRes, winnersRes] = await Promise.all([
-    db.from("ln_rsvps").select("posh_clicked_at, posh_confirmed_at, table_reserved_at, checked_in_at").eq("event_id", show.id),
+    db.from("ln_rsvps").select("table_reserved_at, checked_in_at").eq("event_id", show.id),
     db.from("ln_vip_orders").select("quantity, amount_cents").eq("event_id", show.id).eq("status", "paid"),
     db
       .from("ln_live_posts")
@@ -42,8 +39,6 @@ export async function showRecap(db: SupabaseClient, show: Pick<ShowRow, "id" | "
   const rsvps = rsvpRes.data ?? [];
   return {
     rsvps: rsvps.length,
-    posh_opened: rsvps.filter((r) => r.posh_clicked_at).length,
-    posh_confirmed: rsvps.filter((r) => r.posh_confirmed_at).length,
     tables: rsvps.filter((r) => r.table_reserved_at).length,
     checked_in: rsvps.filter((r) => r.checked_in_at).length,
     vip_passes: (vipRes.data ?? []).reduce((n, o) => n + (o.quantity as number), 0),
@@ -67,17 +62,13 @@ export function buildRecapEmail(opts: {
   venueName: string | null;
   themeName: string | null;
   recap: Recap;
-  features: { posh: boolean; vip: boolean; door: boolean; opentable: boolean; live: boolean };
+  features: { vip: boolean; door: boolean; opentable: boolean; live: boolean };
   pageLink: string;
 }) {
   const { seriesName, eventDate, venueName, themeName, recap, features, pageLink } = opts;
   const date = new Date(`${eventDate}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
   const subject = `Recap: ${seriesName}, ${date}`;
   const rows: [string, string][] = [["RSVPs", String(recap.rsvps)]];
-  if (features.posh) {
-    rows.push(["Opened the Posh link", String(recap.posh_opened)]);
-    rows.push(["Confirmed on Posh", String(recap.posh_confirmed)]);
-  }
   if (features.opentable) rows.push(["Tables booked", String(recap.tables)]);
   if (features.door) rows.push(["Checked in at the door", String(recap.checked_in)]);
   if (features.vip) rows.push(["VIP passes sold", `${recap.vip_passes}${recap.vip_passes ? ` (${money(recap.vip_revenue_cents)})` : ""}`]);
@@ -124,7 +115,6 @@ export async function sendShowRecap(db: SupabaseClient, showId: string): Promise
     themeName: show.theme_name,
     recap,
     features: {
-      posh: series.feat_posh,
       vip: series.feat_vip,
       door: series.feat_door,
       opentable: series.feat_opentable,

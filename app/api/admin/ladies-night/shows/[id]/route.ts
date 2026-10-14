@@ -4,7 +4,7 @@
 //
 // GET   -> { show, artist, songs, recap }
 //   songs: the ballot in order, each with its current vote count.
-//   recap: RSVPs, Posh, tables, check-ins, VIP, live visits, winners.
+//   recap: RSVPs, tables, check-ins, VIP, live visits, winners.
 //
 // PATCH -> edit any show settings; changes go live right away.
 //   Body: any subset of the fields accepted on create, plus archived.

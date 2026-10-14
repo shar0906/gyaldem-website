@@ -15,7 +15,7 @@ export const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 export const SERIES_COLUMNS =
   "id, slug, name, client_id, default_venue_id, title_logo_url, presents_logo_url, cover_url, primary_color, accent_color, " +
-  "tagline, schedule_note, feat_voting, feat_vip, feat_opentable, feat_door, feat_posh, feat_live, feat_reminder, posh_url, " +
+  "tagline, schedule_note, feat_voting, feat_vip, feat_opentable, feat_door, feat_live, feat_reminder, " +
   "call_delay_seconds, sort_order, active, created_at, " +
   "default_running_order, default_start_time, default_end_time, default_bingo_deck_id";
 
@@ -36,10 +36,8 @@ export type SeriesRow = {
   feat_vip: boolean;
   feat_opentable: boolean;
   feat_door: boolean;
-  feat_posh: boolean;
   feat_live: boolean;
   feat_reminder: boolean;
-  posh_url: string | null;
   call_delay_seconds: number;
   sort_order: number;
   active: boolean;
@@ -81,10 +79,8 @@ export type PublicSeries = {
     vip: boolean;
     opentable: boolean;
     door: boolean;
-    posh: boolean;
     live: boolean;
   };
-  has_posh: boolean;
   client: PublicClient | null;
 };
 
@@ -148,10 +144,8 @@ export function publicSeries(s: SeriesRow, client: ClientRow | null): PublicSeri
       vip: s.feat_vip,
       opentable: s.feat_opentable,
       door: s.feat_door,
-      posh: s.feat_posh && !!s.posh_url,
       live: s.feat_live,
     },
-    has_posh: s.feat_posh && !!s.posh_url,
     client: publicClient(client),
   };
 }
@@ -174,7 +168,7 @@ function text(v: unknown, max: number): string | null | undefined {
   return t.length <= max ? t : undefined;
 }
 
-export const SERIES_FEATURES = ["feat_voting", "feat_vip", "feat_opentable", "feat_door", "feat_posh", "feat_live", "feat_reminder"] as const;
+export const SERIES_FEATURES = ["feat_voting", "feat_vip", "feat_opentable", "feat_door", "feat_live", "feat_reminder"] as const;
 export const SERIES_LOGO_FIELDS = ["title_logo_url", "presents_logo_url", "cover_url"] as const;
 
 export type SeriesPatch = Partial<Omit<SeriesRow, "id" | "created_at">>;
@@ -239,13 +233,6 @@ export function parseSeriesPatch(
       else if (typeof v === "string" && /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(v)) out[key] = v.slice(0, 5);
       else return { ok: false, field: key, message: "Pick a time." };
     }
-  }
-  if ("posh_url" in body) {
-    const v = text(body.posh_url, 500);
-    if (v === undefined || (v && !/^https:\/\/(www\.)?posh\.vip\/\S+$/.test(v))) {
-      return { ok: false, field: "posh_url", message: "Paste the Posh link, starting with https://posh.vip/" };
-    }
-    out.posh_url = v;
   }
   if ("call_delay_seconds" in body) {
     const v = body.call_delay_seconds;

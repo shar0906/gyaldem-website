@@ -2,7 +2,7 @@
 
 Each series has its own link to share: **gyaldemsocialclub.com/ladies-night/an-ode-to-her** and **gyaldemsocialclub.com/ladies-night/please**. **/ladies-night** is the hub that lists every series with its next date. Pages are built for phones and show the series' next upcoming show in its logos and colors. Knowing this flow helps when a guest asks for help.
 
-Which steps a guest sees depends on what the series uses (set in Series). Voting only appears on People's Choice series; the Posh step only on series that use Posh.
+Which steps a guest sees depends on what the series uses (set in Series). Voting only appears on People's Choice series. RSVPs go straight to the Gyal Dem list in Kit, tagged by series and show, for every series.
 
 ## Before RSVP opens
 
@@ -25,10 +25,6 @@ Once voting is open and the ballot is published:
 - The artist's photo, name, Instagram, and bio at the top.
 - One list of songs. Guests tap hearts to pick **up to 5**, then **Submit**.
 - They can **Change my picks** until voting closes. After that, their picks are locked and shown on their summary.
-
-## Posh
-
-On series that use Posh, the summary leads with **Confirm your spot on Posh**: it opens the client's Posh page in a new tab, where they RSVP there too (Posh requires its own login). When they come back, **I'm on Posh** clears the step.
 
 ## VIP
 

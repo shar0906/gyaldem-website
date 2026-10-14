@@ -31,10 +31,8 @@ export type PanelSeries = {
   feat_vip: boolean;
   feat_opentable: boolean;
   feat_door: boolean;
-  feat_posh: boolean;
   feat_live: boolean;
   feat_reminder: boolean;
-  posh_url: string | null;
   default_running_order: { label: string; time: string | null }[];
 };
 export type PanelClient = { id: string; name: string; instagram_handle: string | null; website_url: string | null; logo_url: string | null; active: boolean };
@@ -125,7 +123,6 @@ function checks(o: {
     const ot = !!draft.opentable_widget.trim() || !!venue?.opentable_widget;
     out.push({ ok: ot, warn: true, text: "OpenTable widget", note: ot ? undefined : "Add it on the venue, or the table step shows “opens soon”." });
   }
-  if (series.feat_posh) out.push({ ok: !!series.posh_url, text: "Posh link set", note: series.posh_url ? undefined : "Add it in Series, or the Posh step stays hidden." });
   if (series.feat_vip && draft.vip_enabled) {
     out.push({ ok: o.paymentsMode === "live", text: "VIP: Stripe is live", note: o.paymentsMode === "test" ? "Test mode: payments aren't real." : o.paymentsMode === null ? "Stripe isn't set up." : undefined });
   }
@@ -169,7 +166,6 @@ export function previewCurrent(o: {
         vip: series.feat_vip,
         opentable: series.feat_opentable,
         door: series.feat_door,
-        posh: series.feat_posh && !!series.posh_url,
         live: series.feat_live,
       },
       client: client && client.active ? { name: client.name, instagram_handle: client.instagram_handle, website_url: client.website_url, logo_url: client.logo_url } : null,
@@ -189,7 +185,6 @@ export function previewCurrent(o: {
       has_bingo: draft.has_bingo,
       cover_url: o.coverUrl ?? null,
       opentable_url: null,
-      posh_url: null,
     },
     venue: venue
       ? { name: venue.name, logo_url: venue.logo_url, website_url: venue.website_url, instagram_handle: venue.instagram_handle, address: venue.address }

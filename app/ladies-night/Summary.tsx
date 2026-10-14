@@ -1,6 +1,6 @@
 // ladies-night/Summary.tsx
 //
-// Where every path lands: the Posh step (series that use Posh), the
+// Where every path lands: the
 // reserve-your-table step, "You're all set," and the remembered-device
 // welcome back, depending on what the guest has already done. Chips show
 // only what's true for them. Add to Calendar and the countdown to the
@@ -63,9 +63,6 @@ export default function Summary({
 }) {
   const { show, artist, songs, vip, stage, series } = current;
   const client = series.client;
-  const posh = guest.rsvp?.posh ?? { clicked: false, confirmed: false };
-  const [poshOpened, setPoshOpened] = useState(posh.clicked);
-  const [poshBusy, setPoshBusy] = useState(false);
   const startMs = easternMs(show.event_date, show.event_start_time.slice(0, 5));
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -106,20 +103,6 @@ export default function Summary({
     onGuest(res.data.guest);
     setShowReserve(false);
     setWidgetOpen(false);
-  }
-
-  async function openPosh() {
-    setPoshOpened(true);
-    // Record the click without holding up the new tab.
-    post<{ guest: Guest }>("/api/ladies-night/posh", { action: "click" }).then((res) => res.ok && onGuest(res.data.guest));
-  }
-
-  async function confirmPosh() {
-    setPoshBusy(true);
-    const res = await post<{ guest: Guest }>("/api/ladies-night/posh", { action: "done" });
-    setPoshBusy(false);
-    if (res.ok) onGuest(res.data.guest);
-    else setError(errorFor(res.data));
   }
 
   async function markReserved() {
@@ -164,35 +147,6 @@ export default function Summary({
           <p role="status" style={{ margin: 0, fontSize: 14, color: notice.ok ? GOLD : "#FFC9CF" }}>{notice.text}</p>
         )}
       </div>
-
-      {series.features.posh && show.posh_url && (
-        <section style={{ ...card, display: "flex", flexDirection: "column", gap: 12 }} aria-label="Confirm on Posh">
-          <Glow />
-          <span style={{ fontSize: 10.5, letterSpacing: "0.16em", textTransform: "uppercase", color: GOLD }}>
-            {posh.confirmed ? "On the list" : "One more step"}
-          </span>
-          {posh.confirmed ? (
-            <h2 style={{ margin: 0, fontFamily: SERIF, fontStyle: "italic", fontWeight: 700, fontSize: 22, lineHeight: 1.2, display: "flex", alignItems: "center", gap: 8 }}>
-              <CheckIcon color={GOLD} size={20} /> You&apos;re on {client ? `${client.name}'s` : "the"} Posh list.
-            </h2>
-          ) : (
-            <>
-              <h2 style={{ margin: 0, fontFamily: SERIF, fontStyle: "italic", fontWeight: 700, fontSize: 24, lineHeight: 1.15 }}>Confirm your spot on Posh.</h2>
-              <p style={{ ...sub, fontSize: 13.5 }}>
-                {client ? `${client.name}'s` : "The"} guest list lives on Posh. RSVP there too so you&apos;re on the list at the door. It opens in a new tab; come back here after.
-              </p>
-              <a href={show.posh_url} target="_blank" rel="noopener noreferrer" onClick={openPosh} style={cta()}>
-                Confirm on Posh ↗
-              </a>
-              {poshOpened && (
-                <button onClick={confirmPosh} disabled={poshBusy} style={outlineButton}>
-                  <CheckIcon /> {poshBusy ? "Saving…" : "I'm on Posh"}
-                </button>
-              )}
-            </>
-          )}
-        </section>
-      )}
 
       {showReserve && series.features.opentable && (
         <section style={{ ...card, display: "flex", flexDirection: "column", gap: 12 }} aria-label="Reserve your table">

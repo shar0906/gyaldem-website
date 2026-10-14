@@ -101,10 +101,11 @@ Reminder emails are created in Kit as scheduled broadcasts; you'll see them unde
 7. `2026-10-06_ln_phase5_opentable_details.sql`
 8. `2026-10-05_ln_cron_schedule_v2.sql` (needs pg_cron and pg_net turned on under Database → Extensions)
 9. `2026-10-08_ln_phase6_super_admin.sql` (with your login email filled in)
-10. `2026-10-14_ln_phase7_series.sql` (series, clients, bingo decks, live page, Posh)
+10. `2026-10-14_ln_phase7_series.sql` (series, clients, bingo decks, live page)
 11. `2026-10-14_ln_phase7b_series_defaults.sql` (series show defaults, Bingo tonight)
 12. `2026-10-14_ln_phase7c_drop_default_dj.sql`
 13. `2026-10-14_ln_phase7d_show_cover_door.sql` (show cover photo, door check-in on for Please!)
+14. `2026-10-14_ln_phase7e_drop_posh.sql` (removes Posh; run after the site update that stops using it)
 
 **Photo storage:** artist photos and logos in the `artist-photos` bucket; venue, series, and client logos and series cover photos in `ln-brand`. Both are public to read; uploads only go through the site.
 
@@ -145,7 +146,6 @@ The `www` DNS record must be **Proxied** (orange cloud) for the rule to run.
 |---|---|---|
 | A series page shows "coming soon" | No RSVP opens time, or it's in the future | Set it in Shows |
 | Series page is a 404 | Wrong link, or **Live on the site** unchecked | Check it in Series |
-| Posh step missing | Posh step off, or no Posh link | Set both in Series |
 | No Bingo tab for the host | The show has no bingo deck | Pick one in Shows |
 | No ballot while voting is open | Ballot not published | Publish it in Shows |
 | VIP missing | Past the sales close time (48 hours before by default), sold out, Offer VIP off, or VIP off for the series | Expected; or check the show's VIP settings |

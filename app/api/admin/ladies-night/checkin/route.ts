@@ -29,8 +29,6 @@ type Row = {
   table_party_size: number | null;
   checked_in_at: string | null;
   checked_in_by: string | null;
-  posh_clicked_at: string | null;
-  posh_confirmed_at: string | null;
   ln_voters: { first_name: string | null; last_name: string | null; name: string; email: string } | null;
 };
 
@@ -52,7 +50,7 @@ export async function GET(req: NextRequest) {
     const [rsvpRes, vipRes, artist, venue] = await Promise.all([
       db
         .from("ln_rsvps")
-        .select("id, source, table_party_size, checked_in_at, checked_in_by, posh_clicked_at, posh_confirmed_at, ln_voters(first_name, last_name, name, email)")
+        .select("id, source, table_party_size, checked_in_at, checked_in_by, ln_voters(first_name, last_name, name, email)")
         .eq("event_id", show.id)
         .returns<Row[]>(),
       db.from("ln_vip_orders").select("rsvp_id, quantity").eq("event_id", show.id).eq("status", "paid"),
@@ -76,7 +74,6 @@ export async function GET(req: NextRequest) {
           vip_passes: vip.get(r.id) ?? 0,
           walk_in: r.source !== "gate",
           party_size: r.table_party_size,
-          posh: r.posh_confirmed_at ? "done" : r.posh_clicked_at ? "opened" : null,
           checked_in_at: r.checked_in_at,
         };
       })
@@ -93,8 +90,8 @@ export async function GET(req: NextRequest) {
       return csvResponse(
         `${series.slug}-${show.event_date}-guests.csv`,
         toCsv(
-          ["First name", "Last name", "Email", "Party size", "VIP passes", "Posh", "Checked in"],
-          guests.map((g) => [g.first_name, g.last_name, g.email, g.party_size, g.vip_passes, g.posh ?? "", g.checked_in_at ? "yes" : ""])
+          ["First name", "Last name", "Email", "Party size", "VIP passes", "Checked in"],
+          guests.map((g) => [g.first_name, g.last_name, g.email, g.party_size, g.vip_passes, g.checked_in_at ? "yes" : ""])
         )
       );
     }

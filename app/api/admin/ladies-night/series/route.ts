@@ -5,7 +5,7 @@
 // GET  -> { series, clients }   series in display order, each with its
 //         upcoming show count; clients for the picker
 // POST -> create { name, slug, client_id?, default_venue_id?, colors,
-//         tagline?, schedule_note?, feat_*?, posh_url?, call_delay_seconds? }
+//         tagline?, schedule_note?, feat_*?, call_delay_seconds? }
 //         (upload logos and the cover after creating)
 
 import { NextRequest, NextResponse } from "next/server";

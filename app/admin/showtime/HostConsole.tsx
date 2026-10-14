@@ -83,7 +83,7 @@ type HostData = {
   } | null;
   exhausted?: boolean;
 };
-type GuestRow = { rsvp_id: string; first_name: string; last_name: string; email: string; party_size?: number | null; vip_passes: number; posh?: string | null; checked_in_at: string | null };
+type GuestRow = { rsvp_id: string; first_name: string; last_name: string; email: string; party_size?: number | null; vip_passes: number; checked_in_at: string | null };
 
 const DEVICE_KEY = "ln_host_device";
 const CONFETTI_COLORS = [GOLD, "#C81E3A", CREAM, "#E85D6F", RED];
@@ -736,7 +736,6 @@ function GuestsTab({ showId }: { showId: string | null }) {
             <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
               {g.party_size ? <Chip>Table · {g.party_size}</Chip> : null}
               {g.vip_passes > 0 && <Chip>VIP × {g.vip_passes}</Chip>}
-              {g.posh === "done" && <Chip>Posh ✓</Chip>}
             </div>
           </div>
         ))}

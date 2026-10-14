@@ -4,7 +4,7 @@
 // Called hourly by the scheduler. Requires Authorization: Bearer <CRON_SECRET>.
 //   - People's Choice results to the artist, for every show whose voting
 //     has closed and hasn't been emailed yet
-//   - The recap (RSVPs, Posh, tables, VIP, live visits, winners) to the
+//   - The recap (RSVPs, tables, VIP, live visits, winners) to the
 //     series' client, the day after each show
 //
 // Only looks back two weeks, so turning this on never mass-emails old
