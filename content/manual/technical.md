@@ -107,7 +107,8 @@ Reminder emails are created in Kit as scheduled broadcasts; you'll see them unde
 13. `2026-10-14_ln_phase7d_show_cover_door.sql` (show cover photo, door check-in on for Please!)
 14. `2026-10-14_ln_phase7e_drop_posh.sql` (removes Posh; run after the site update that stops using it)
 15. `2026-10-14_ln_phase7f_show_colors.sql` (a show's own colors)
-16. `2026-10-14_ln_phase7g_cover_position.sql` (cover focal points)
+16. `2026-10-14_ln_phase7h_flyer_position.sql` (an Events flyer's focal point)
+17. `2026-10-14_ln_phase7i_drop_cover_position.sql` (removes the cover focal points; run after the site update that stops using them)
 
 **Photo storage:** artist photos and logos in the `artist-photos` bucket; venue, series, and client logos and series cover photos in `ln-brand`. Both are public to read; uploads only go through the site.
 

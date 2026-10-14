@@ -78,9 +78,9 @@ The same for every series, and it stays in view while you scroll the editor:
 
 The **Headline** and **Description** guests see on the sign-in page.
 
-- **Cover photo (this show):** a photo just for this show, behind the RSVP form. **Focal point** (like gallery covers) sets which part stays in view when it's cropped, with previews for the sign-in page, hub card, and link preview. Series covers have it too. Empty uses the artist's cover (People's Choice) or the series' cover. Create the show first, then upload.
+- **Cover photo (this show):** a photo just for this show, behind the RSVP form. Empty uses the artist's cover (People's Choice) or the series' cover. Create the show first, then upload.
 - **Colors:** uncheck **Use the series' colors** to give one show its own main and accent colors (orange and black for Spooky Szn, say). The sign-in page, live page, hub card, and link preview all use them.
-- **Flyer:** the same flyer as the show's Events page entry. Replacing it in either place replaces it in both. Saved with the show.
+- **Flyer:** the same flyer as the show's Events page entry. Replacing it in either place replaces it in both. Saved with the show. Its focal point is set from the Events tab.
 
  The preview on the right uses the series' logos, cover photo, and colors (or the artist's, on People's Choice series) with this show's details.
 
@@ -139,6 +139,8 @@ Early the day after each show, the series' client gets a recap email (to the cli
 Each Ladies Night show also appears on the site's **Events** page. Its title, description, date, and venue come from the show, so **make those edits in Ladies Night → Shows**. Edits made directly in the Events tab are replaced the next time the show is saved.
 
 **Title, description, and flyer** are shared both ways: edit them in Shows or in the Events tab and the other updates. The date, venue, and RSVP link always come from the show.
+
+**Flyer focal point:** in the Events tab, open the event and tap **Focal point** under the flyer. Click the part that should stay in view when the Events page crops it (wide card, phone card, past events thumbnail), then **Save focal point** and save the event. A new flyer starts centered. The Ladies Night sign-in cover is full-bleed and has no focal point.
 
 The Events entry stays a **draft** until it's listed: People's Choice shows when you publish the ballot, other series on their own once RSVP opens (checked hourly, and whenever you save the show). To list it earlier, set its status to **Upcoming** in the Events tab; that status isn't overwritten.
 

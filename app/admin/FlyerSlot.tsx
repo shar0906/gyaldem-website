@@ -4,25 +4,40 @@
 // editor. A Ladies Night show's flyer is its Events page entry's flyer, so
 // replacing it in either place changes both. The file goes to the
 // event-flyers bucket; the caller saves the URL with the rest of its form.
+// With onPosition, there's a Focal point button for where the flyer stays
+// anchored when the Events page crops it.
 
 "use client";
 
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
 import { button } from "./ladies-night/kit";
+import FocalPointPicker, { Frame } from "./FocalPointPicker";
+
+// The crops the Events page shows a flyer in.
+export const EVENTS_PAGE_FRAMES: Frame[] = [
+  { w: 280, h: 70, label: "Events card, wide" },
+  { w: 140, h: 120, label: "Events card, phone" },
+  { w: 64, h: 64, label: "Past events" },
+];
 
 export default function FlyerSlot({
   url,
   onChange,
   label = "Flyer",
   hint,
+  position,
+  onPosition,
 }: {
   url: string | null;
   onChange: (url: string | null) => void;
   label?: string;
   hint?: string;
+  position?: string | null;
+  onPosition?: (position: string | null) => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const [picking, setPicking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const id = `flyer-${label.replace(/\W+/g, "-").toLowerCase()}`;
 
@@ -38,6 +53,8 @@ export default function FlyerSlot({
     setBusy(false);
     if (upErr || !data) return setError("Upload didn't go through. Try again.");
     onChange(supabase.storage.from("event-flyers").getPublicUrl(data.path).data.publicUrl);
+    // A new flyer starts from the default crop.
+    onPosition?.(null);
   }
 
   // Laid out exactly like the image slots in Ladies Night (label on top,
@@ -48,7 +65,7 @@ export default function FlyerSlot({
         {label}
       </label>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 14, flexWrap: "wrap" }}>
-        <div style={{ width: 96, height: 120, background: url ? `center / cover no-repeat url("${url}"), #2A1416` : "#EFE8DC", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "rgba(10,10,10,0.4)", flex: "none" }}>
+        <div style={{ width: 96, height: 120, background: url ? `${position || "center"} / cover no-repeat url("${url}"), #2A1416` : "#EFE8DC", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "rgba(10,10,10,0.4)", flex: "none" }}>
           {!url && "None yet"}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0, flex: "1 1 180px" }}>
@@ -69,8 +86,21 @@ export default function FlyerSlot({
             </label>
             {url && (
               <>
+                {onPosition && (
+                  <button type="button" onClick={() => setPicking(true)} disabled={busy} style={button("quiet", !busy)}>
+                    Focal point
+                  </button>
+                )}
                 <a href={url} target="_blank" rel="noopener" style={button("quiet")}>View ↗</a>
-                <button type="button" onClick={() => onChange(null)} disabled={busy} style={button("quiet", !busy)}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange(null);
+                    onPosition?.(null);
+                  }}
+                  disabled={busy}
+                  style={button("quiet", !busy)}
+                >
                   Remove
                 </button>
               </>
@@ -80,6 +110,18 @@ export default function FlyerSlot({
           {error && <span role="alert" style={{ fontSize: 13, color: "#8B1A1A" }}>{error}</span>}
         </div>
       </div>
+      {picking && url && onPosition && (
+        <FocalPointPicker
+          url={url}
+          position={position ?? null}
+          frames={EVENTS_PAGE_FRAMES}
+          onCancel={() => setPicking(false)}
+          onSave={(p) => {
+            onPosition(p);
+            setPicking(false);
+          }}
+        />
+      )}
     </div>
   );
 }

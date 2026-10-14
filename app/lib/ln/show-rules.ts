@@ -35,7 +35,6 @@ export type ShowPatch = Partial<{
   has_bingo: boolean;
   primary_color: string | null;
   accent_color: string | null;
-  cover_position: string | null;
   running_order: RunItem[];
   gallery_url: string | null;
   vip_closes_at: string | null;
@@ -252,12 +251,6 @@ export function parseShowPatch(body: Record<string, unknown>): Result {
     const v = parseRunningOrder(body.running_order);
     if (typeof v === "string") return { ok: false, field: "running_order", error: v };
     out.running_order = v;
-  }
-  if ("cover_position" in body) {
-    const v = body.cover_position;
-    if (v === null || v === "") out.cover_position = null;
-    else if (typeof v === "string" && /^(100|[0-9]{1,2})% (100|[0-9]{1,2})%$/.test(v)) out.cover_position = v;
-    else return { ok: false, field: "cover_position", error: "Pick the focal point again." };
   }
   // A show's own colors; empty means the series' (or the artist's).
   for (const key of ["primary_color", "accent_color"] as const) {

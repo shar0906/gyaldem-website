@@ -100,8 +100,6 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const v = body.cover_url;
     if (v === null || v === "") patch.cover_url = null;
     else if (typeof v === "string" && v.length <= 1000 && v.startsWith(brandFolderPublicUrl("shows", id))) patch.cover_url = v;
-    // A new photo starts from the default crop.
-    if (patch.cover_url !== undefined && !("cover_position" in body)) patch.cover_position = null;
     else return NextResponse.json({ error: "invalid", field: "cover_url", message: "Upload the cover photo from the show." }, { status: 400 });
   }
   // The flyer lives on the show's Events page entry, shared both ways.
@@ -207,8 +205,16 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const mirrored = ["title", "gate_description", "event_date", "event_start_time", "event_end_time", "venue_id", "series_id", "rsvp_opens_at"];
   if (mirrored.some((k) => k in patch)) await syncPublicEvent(db, show);
   if (flyer !== undefined && show.public_event_id) {
-    const { error: flyerError } = await db.from("events").update({ flyer_url: flyer, updated_at: new Date().toISOString() }).eq("id", show.public_event_id);
-    if (flyerError) console.error("flyer save failed:", flyerError);
+    // Only a different flyer is written, and it starts from the default
+    // crop (the focal point is set on the Events page entry).
+    const { data: cur } = await db.from("events").select("flyer_url").eq("id", show.public_event_id).maybeSingle<{ flyer_url: string | null }>();
+    if ((cur?.flyer_url ?? null) !== flyer) {
+      const { error: flyerError } = await db
+        .from("events")
+        .update({ flyer_url: flyer, flyer_position: null, updated_at: new Date().toISOString() })
+        .eq("id", show.public_event_id);
+      if (flyerError) console.error("flyer save failed:", flyerError);
+    }
   }
 
   const voting = (await getSeriesById(db, show.series_id))?.feat_voting ?? true;

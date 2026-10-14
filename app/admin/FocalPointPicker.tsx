@@ -1,30 +1,33 @@
-// admin/ladies-night/FocalPointPicker.tsx
+// admin/FocalPointPicker.tsx
 //
-// Pick where a cover photo stays anchored when it's cropped, like the
-// gallery covers: click the photo to place the point, and see it in the
-// shapes it's shown in (the phone sign-in page, the hub card, and the
-// link preview) before saving.
+// Pick where a photo stays anchored when it's cropped, like the gallery
+// covers: click the photo to place the point, and see it in the shapes
+// it's shown in before saving. The caller passes those shapes as frames.
 
 "use client";
 
 import { useState } from "react";
-import { button } from "./kit";
+import { button } from "./ladies-night/kit";
 
-const DEFAULT = "50% 30%";
+export type Frame = { w: number; h: number; label: string };
+
+const DEFAULT = "50% 50%";
 
 function parse(pos: string | null | undefined): { x: number; y: number } {
   const m = (pos ?? "").match(/^(\d{1,3})% (\d{1,3})%$/);
-  return m ? { x: Number(m[1]), y: Number(m[2]) } : { x: 50, y: 30 };
+  return m ? { x: Number(m[1]), y: Number(m[2]) } : { x: 50, y: 50 };
 }
 
 export default function FocalPointPicker({
   url,
   position,
+  frames,
   onSave,
   onCancel,
 }: {
   url: string;
   position: string | null;
+  frames: Frame[];
   onSave: (position: string) => void;
   onCancel: () => void;
 }) {
@@ -58,7 +61,7 @@ export default function FocalPointPicker({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Set the cover's focal point"
+      aria-label="Set the focal point"
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.9)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "sans-serif" }}
       onKeyDown={(e) => e.key === "Escape" && onCancel()}
     >
@@ -84,9 +87,9 @@ export default function FocalPointPicker({
             <span style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.7)", color: "rgba(255,255,255,0.75)", fontSize: 10, letterSpacing: "0.1em", padding: "4px 8px" }}>{pos}</span>
           </div>
           <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "flex-end" }}>
-            {frame(120, 260, "Sign-in page")}
-            {frame(200, 100, "Hub card")}
-            {frame(150, 200, "Link preview")}
+            {frames.map((f) => (
+              <div key={f.label}>{frame(f.w, f.h, f.label)}</div>
+            ))}
           </div>
         </div>
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" }}>

@@ -61,7 +61,7 @@ export default function EventsClient({
                 <div key={event.id} style={{ borderRight: i % 2 === 0 ? "0.5px solid rgba(10,10,10,0.15)" : "none", borderBottom: "0.5px solid rgba(10,10,10,0.15)", padding: "32px" }}>
                   <div style={{ backgroundColor: "#d4c9b8", height: "260px", marginBottom: "20px", overflow: "hidden", position: "relative" }}>
                     {event.flyer_url ? (
-                      <img src={event.flyer_url} alt={event.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img src={event.flyer_url} alt={event.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: event.flyer_position || "center" }} />
                     ) : (
                       <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
                         <p style={{ color: "rgba(10,10,10,0.3)", fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "sans-serif" }}>Flyer coming soon</p>
@@ -113,7 +113,7 @@ export default function EventsClient({
                     <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
                       <div style={{ width: "80px", height: "80px", backgroundColor: "#d4c9b8", flexShrink: 0, overflow: "hidden" }}>
                         {event.flyer_url && (
-                          <img src={event.flyer_url} alt={event.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          <img src={event.flyer_url} alt={event.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: event.flyer_position || "center" }} />
                         )}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -161,7 +161,7 @@ export default function EventsClient({
             <div style={{ flexShrink: 0 }}>
               {activeInstallation.flyer_url && (
                 <div style={{ height: "260px", overflow: "hidden" }}>
-                  <img src={activeInstallation.flyer_url} alt={activeInstallation.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img src={activeInstallation.flyer_url} alt={activeInstallation.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: activeInstallation.flyer_position || "center" }} />
                 </div>
               )}
               <div style={{ padding: "20px 32px 0" }}>

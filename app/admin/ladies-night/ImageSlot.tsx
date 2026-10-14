@@ -9,7 +9,6 @@
 import { useMemo, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import { FAINT, MUTED, Notice, api, button, errorText } from "./kit";
-import FocalPointPicker from "./FocalPointPicker";
 
 export default function ImageSlot({
   label,
@@ -19,8 +18,6 @@ export default function ImageSlot({
   photo = false,
   hint,
   onSaved,
-  position,
-  onPosition,
 }: {
   label: string;
   url: string | null;
@@ -29,11 +26,7 @@ export default function ImageSlot({
   photo?: boolean; // JPG allowed, up to 10 MB; otherwise PNG/WebP up to 2 MB
   hint?: string;
   onSaved: (url: string | null) => Promise<boolean>;
-  // Cover photos: the focal point, set like gallery covers.
-  position?: string | null;
-  onPosition?: (position: string | null) => Promise<boolean>;
 }) {
-  const [picking, setPicking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const storage = useMemo(
@@ -76,7 +69,7 @@ export default function ImageSlot({
         style={{
           width: photo ? 96 : 150,
           height: photo ? 120 : 64,
-          background: url ? `${photo && position ? position : "center"} / ${photo ? "cover" : "contain"} no-repeat url("${url}"), #2A1416` : "#EFE8DC",
+          background: url ? `center / ${photo ? "cover" : "contain"} no-repeat url("${url}"), #2A1416` : "#EFE8DC",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -102,11 +95,6 @@ export default function ImageSlot({
               style={{ position: "absolute", width: 1, height: 1, opacity: 0, overflow: "hidden" }}
             />
           </label>
-          {url && onPosition && (
-            <button onClick={() => setPicking(true)} disabled={busy} style={button("quiet", !busy)}>
-              Focal point
-            </button>
-          )}
           {url && (
             <button onClick={() => onSaved(null)} disabled={busy} style={button("quiet", !busy)}>
               Remove
@@ -117,18 +105,6 @@ export default function ImageSlot({
         {error && <Notice tone="error">{error}</Notice>}
       </div>
     </div>
-    {picking && url && onPosition && (
-      <FocalPointPicker
-        url={url}
-        position={position ?? null}
-        onCancel={() => setPicking(false)}
-        onSave={async (p) => {
-          const ok = await onPosition(p);
-          if (ok) setPicking(false);
-          else setError("Couldn't save the focal point. Try again.");
-        }}
-      />
-    )}
     </div>
   );
 }

@@ -17,7 +17,6 @@ export type ShareCardData = {
   venueName: string | null;
   dateText: string | null;
   coverUrl: string | null;
-  coverPosition?: string | null;
   primary: string | null;
   accent: string | null;
   cta: string;
@@ -50,7 +49,7 @@ export async function renderShareCard(d: ShareCardData): Promise<ImageResponse> 
         <div style={{ width: 470, height: "100%", display: "flex", position: "relative", background: theme.primary }}>
           {photo && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={photo} alt="" width={470} height={630} style={{ width: 470, height: 630, objectFit: "cover", objectPosition: d.coverPosition ?? "center 20%" }} />
+            <img src={photo} alt="" width={470} height={630} style={{ width: 470, height: 630, objectFit: "cover", objectPosition: "center 20%" }} />
           )}
           <div style={{ position: "absolute", inset: 0, display: "flex", background: `linear-gradient(90deg, rgba(0,0,0,0) 60%, ${theme.deep} 100%)` }} />
         </div>

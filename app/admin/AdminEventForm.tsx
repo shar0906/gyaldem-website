@@ -24,6 +24,7 @@ export default function AdminEventForm({
   const [eventType, setEventType] = useState(event?.event_type || "ladies-night");
   const [status, setStatus] = useState(event?.status || "draft");
   const [flyerUrl, setFlyerUrl] = useState(event?.flyer_url || "");
+  const [flyerPosition, setFlyerPosition] = useState<string | null>(event?.flyer_position ?? null);
   const [saving, setSaving] = useState(false);
   // A Ladies Night show's entry: title, description, and flyer are shared
   // with the show both ways; date, location, and RSVP link come from it.
@@ -55,6 +56,7 @@ export default function AdminEventForm({
       event_type: eventType,
       status,
       flyer_url: flyerUrl || null,
+      flyer_position: flyerUrl ? flyerPosition : null,
       updated_at: new Date().toISOString(),
     };
     if (event) {
@@ -155,7 +157,12 @@ export default function AdminEventForm({
             label="Flyer"
             url={flyerUrl || null}
             onChange={(u) => setFlyerUrl(u ?? "")}
-            hint={linked ? "Shared with the Ladies Night show: replacing it here replaces it there." : undefined}
+            position={flyerPosition}
+            onPosition={setFlyerPosition}
+            hint={
+              (linked ? "Shared with the Ladies Night show: replacing it here replaces it there. " : "") +
+              "Focal point sets which part stays in view when the Events page crops it. Saved with the event."
+            }
           />
 
           <div style={{ display: "flex", gap: "12px", paddingTop: "8px" }}>

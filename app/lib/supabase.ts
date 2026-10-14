@@ -14,6 +14,8 @@ export type Event = {
     location: string | null;
     rsvp_link: string | null;
     flyer_url: string | null;
+    // Where the flyer stays anchored when cropped, "50% 30%"; null is centered.
+    flyer_position?: string | null;
     event_type: "ladies-night" | "cultural-experience" | "community" | "installation" | "other";
     status: "draft" | "upcoming" | "past";
     created_at: string;

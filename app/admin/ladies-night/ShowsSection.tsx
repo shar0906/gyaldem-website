@@ -79,7 +79,6 @@ type ShowRow = {
   bingo_deck_id: string | null;
   has_bingo: boolean;
   cover_url: string | null;
-  cover_position: string | null;
   primary_color: string | null;
   accent_color: string | null;
   flyer_url?: string | null;
@@ -699,18 +698,11 @@ export default function ShowsSection() {
                     url={show.cover_url}
                     uploadUrl={`/api/admin/ladies-night/shows/${show.id}/upload`}
                     photo
-                    position={show.cover_position}
-                    onPosition={async (p) => {
-                      const res = await api<{ show?: ShowRow }>(`/api/admin/ladies-night/shows/${show.id}`, { method: "PATCH", body: { cover_position: p } });
-                      if (!res.ok || !res.data.show) return false;
-                      setShow((cur) => (cur ? { ...cur, cover_position: res.data.show!.cover_position } : cur));
-                      return true;
-                    }}
                     hint={`Full-bleed behind the RSVP form for this show only. Leave it empty to use the ${voting ? "artist's or series'" : "series'"} cover.`}
                     onSaved={async (u) => {
                       const res = await api<{ show?: ShowRow }>(`/api/admin/ladies-night/shows/${show.id}`, { method: "PATCH", body: { cover_url: u } });
                       if (!res.ok || !res.data.show) return false;
-                      setShow((cur) => (cur ? { ...cur, cover_url: res.data.show!.cover_url, cover_position: res.data.show!.cover_position } : cur));
+                      setShow((cur) => (cur ? { ...cur, cover_url: res.data.show!.cover_url } : cur));
                       return true;
                     }}
                   />
@@ -720,7 +712,7 @@ export default function ShowsSection() {
                 <FlyerSlot
                   url={form.flyer_url || null}
                   onChange={(u) => set("flyer_url", u ?? "")}
-                  hint="The same flyer as the show's Events page entry: replacing it here replaces it there. Saved with the show."
+                  hint="The same flyer as the show's Events page entry: replacing it here replaces it there. Set its focal point from Events. Saved with the show."
                 />
               </div>
               {fieldErr("cover_url")}
@@ -1042,7 +1034,6 @@ export default function ShowsSection() {
             ballotPublished={published}
             paymentsMode={paymentsMode}
             coverUrl={show?.cover_url ?? null}
-            coverPosition={show?.cover_position ?? null}
             dirty={selected === "new" || (!!show && JSON.stringify(toForm(show, formSeries.feat_voting)) !== JSON.stringify(form))}
           />
         )}
