@@ -17,7 +17,7 @@ export const SERIES_COLUMNS =
   "id, slug, name, client_id, default_venue_id, title_logo_url, presents_logo_url, cover_url, primary_color, accent_color, " +
   "tagline, schedule_note, feat_voting, feat_vip, feat_opentable, feat_door, feat_posh, feat_live, feat_reminder, posh_url, " +
   "call_delay_seconds, sort_order, active, created_at, " +
-  "default_running_order, default_start_time, default_end_time, default_dj_name, default_bingo_deck_id";
+  "default_running_order, default_start_time, default_end_time, default_bingo_deck_id";
 
 export type SeriesRow = {
   id: string;
@@ -48,7 +48,6 @@ export type SeriesRow = {
   default_running_order: RunItem[];
   default_start_time: string | null;
   default_end_time: string | null;
-  default_dj_name: string | null;
   default_bingo_deck_id: string | null;
 };
 
@@ -240,11 +239,6 @@ export function parseSeriesPatch(
       else if (typeof v === "string" && /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(v)) out[key] = v.slice(0, 5);
       else return { ok: false, field: key, message: "Pick a time." };
     }
-  }
-  if ("default_dj_name" in body) {
-    const v = text(body.default_dj_name, 80);
-    if (v === undefined) return { ok: false, field: "default_dj_name", message: "Keep the DJ name under 80 characters." };
-    out.default_dj_name = v;
   }
   if ("posh_url" in body) {
     const v = text(body.posh_url, 500);

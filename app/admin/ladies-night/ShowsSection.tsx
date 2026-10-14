@@ -91,7 +91,6 @@ type SeriesOpt = {
   default_running_order: RunItem[];
   default_start_time: string | null;
   default_end_time: string | null;
-  default_dj_name: string | null;
   default_bingo_deck_id: string | null;
   default_venue_id: string | null;
   feat_voting: boolean;
@@ -214,7 +213,7 @@ function blankForm(
     reminder_subject: t.subject,
     reminder_body: t.body,
     series_id: series?.id ?? "",
-    dj_name: series?.default_dj_name ?? "",
+    dj_name: "",
     theme_name: "",
     bingo_deck_id: series?.default_bingo_deck_id ?? "",
     has_bingo: !!series?.default_bingo_deck_id,
@@ -563,7 +562,7 @@ export default function ShowsSection() {
         {form && selected === "new" && !form.series_id ? (
           <div style={{ ...PANEL, padding: 24, display: "flex", flexDirection: "column", gap: 14 }}>
             <p style={sectionLabel}>New show</p>
-            <Field id="s-series-pick" label="Which series is it for?" hint="The show starts from that series' venue, times, DJ, bingo deck, and run of show.">
+            <Field id="s-series-pick" label="Which series is it for?" hint="The show starts from that series' venue, times, bingo deck, and run of show.">
               <select id="s-series-pick" value="" onChange={(e) => changeSeries(e.target.value)} style={selectStyle}>
                 <option value="">Pick a series…</option>
                 {seriesList

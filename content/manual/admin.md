@@ -188,7 +188,7 @@ Each series has its own page at `/ladies-night/<link>` and its own live page at 
 - **What this series uses:** People's Choice + artist, VIP, OpenTable, Posh step, Door check-in, Live page, Reminder email.
 - **Posh link:** when the Posh step is on, guests are sent here after RSVPing. Use the client's Posh tracking link named "Gyal Dem". Clicks and "I'm on Posh" taps are counted for the recap.
 - **Bingo call delay:** seconds between the host tapping Called and guests seeing the line (5 by default).
-- **Show defaults:** start and end times, DJ, bingo deck, and the **master run of show**. Every new show in the series starts with them; change them per show in Shows. A show with no run of show of its own uses the master on the live page.
+- **Show defaults:** start and end times, bingo deck, and the **master run of show**. Every new show in the series starts with them; change them per show in Shows. A show with no run of show of its own uses the master on the live page.
 - **Order on the hub** and **Live on the site** (unchecked hides the series from the hub and its page).
 - **Title logo, "Presents" line, Cover photo:** save the series first, then upload. Logos white on transparent PNG.
 - **Print table placard ↗:** four QR placards per page, pointing at the series' live page.

@@ -164,7 +164,13 @@ function CalledSoFar({ calls, kind }: { calls: Call[]; kind: "match" | "callout_
   );
 }
 
+const UPDATES_SHOWN = 3;
+
+// The latest three updates, with the rest behind "View all".
 function Updates({ posts }: { posts: Post[] }) {
+  const [all, setAll] = useState(false);
+  const shown = all ? posts : posts.slice(0, UPDATES_SHOWN);
+  const hidden = posts.length - UPDATES_SHOWN;
   return (
     <section style={{ ...card }} aria-label="Updates">
       <h2 style={{ margin: "0 0 12px", fontFamily: SERIF, fontStyle: "italic", fontSize: 19, fontWeight: 700 }}>Updates</h2>
@@ -172,7 +178,7 @@ function Updates({ posts }: { posts: Post[] }) {
         <p style={{ margin: 0, fontSize: 14, color: "rgba(251,243,236,0.7)" }}>Updates from the host show up here.</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {posts.map((p) => (
+          {shown.map((p) => (
             <div key={p.id} style={{ display: "flex", flexDirection: "column", gap: 3, paddingLeft: 12, borderLeft: `2px solid ${p.kind === "winner" ? CREAM : GOLD}` }}>
               <small style={{ fontSize: 10.5, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(251,243,236,0.6)" }}>
                 {timeOf(p.created_at)} · {p.kind === "winner" ? "Winner" : "Host"}
@@ -183,6 +189,15 @@ function Updates({ posts }: { posts: Post[] }) {
               </div>
             </div>
           ))}
+          {hidden > 0 && (
+            <button
+              onClick={() => setAll((v) => !v)}
+              aria-expanded={all}
+              style={{ alignSelf: "flex-start", background: "none", border: 0, padding: "6px 0", minHeight: 36, color: GOLD, fontFamily: SANS, fontSize: 13, letterSpacing: "0.06em", cursor: "pointer" }}
+            >
+              {all ? "Show less" : `View all ${posts.length} updates`}
+            </button>
+          )}
         </div>
       )}
     </section>

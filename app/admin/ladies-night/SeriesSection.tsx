@@ -41,7 +41,6 @@ type Series = {
   default_running_order: { label: string; time: string | null }[];
   default_start_time: string | null;
   default_end_time: string | null;
-  default_dj_name: string | null;
   default_bingo_deck_id: string | null;
 };
 type Option = { id: string; name: string; active?: boolean };
@@ -81,7 +80,6 @@ const blank: Form = {
   default_running_order: [],
   default_start_time: "20:00",
   default_end_time: "00:00",
-  default_dj_name: "",
   default_bingo_deck_id: null,
 };
 
@@ -92,7 +90,6 @@ function toForm(s: Series): Form {
     tagline: s.tagline ?? "",
     schedule_note: s.schedule_note ?? "",
     posh_url: s.posh_url ?? "",
-    default_dj_name: s.default_dj_name ?? "",
     default_start_time: s.default_start_time?.slice(0, 5) ?? "",
     default_end_time: s.default_end_time?.slice(0, 5) ?? "",
   };
@@ -240,7 +237,6 @@ function SeriesForm({
       default_running_order: textToRun(runText),
       default_start_time: form.default_start_time || null,
       default_end_time: form.default_end_time || null,
-      default_dj_name: form.default_dj_name || null,
       default_bingo_deck_id: form.default_bingo_deck_id || null,
     };
     const res = series
@@ -338,9 +334,6 @@ function SeriesForm({
           <Field id="sr-end" label="Ends (Eastern)">
             <input id="sr-end" type="time" value={form.default_end_time ?? ""} onChange={(e) => set("default_end_time", e.target.value)} style={inputStyle} />
           </Field>
-          <Field id="sr-dj" label="DJ / Music by">
-            <input id="sr-dj" value={form.default_dj_name ?? ""} maxLength={80} onChange={(e) => set("default_dj_name", e.target.value)} style={inputStyle} />
-          </Field>
           <Field id="sr-deck" label="Bingo deck" hint="Pick one to make every new show a bingo night.">
             <select id="sr-deck" value={form.default_bingo_deck_id ?? ""} onChange={(e) => set("default_bingo_deck_id", e.target.value || null)} style={selectStyle}>
               <option value="">No bingo by default</option>
@@ -348,7 +341,7 @@ function SeriesForm({
             </select>
           </Field>
         </div>
-        {err("default_start_time")}{err("default_end_time")}{err("default_dj_name")}{err("default_bingo_deck_id")}
+        {err("default_start_time")}{err("default_end_time")}{err("default_bingo_deck_id")}
         {form.feat_live && (
           <Field id="sr-run" label="Master run of show" hint="One per line, with a 24-hour time in front: “21:30 Bingo, round 1”. New shows copy it; a show with no run of show of its own uses this on the live page.">
             <textarea id="sr-run" rows={5} value={runText} onChange={(e) => setRunText(e.target.value)} placeholder={RUN_PLACEHOLDER} style={{ ...inputStyle, lineHeight: 1.45, resize: "vertical" }} />
