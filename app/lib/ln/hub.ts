@@ -32,6 +32,7 @@ type NextRow = {
   cover_position: string | null;
   primary_color: string | null;
   accent_color: string | null;
+  public_event_id: string | null;
   ln_venues: { name: string } | null;
 };
 
@@ -53,7 +54,7 @@ export async function hubSeries(db: SupabaseClient): Promise<HubSeries[]> {
       : Promise.resolve({ data: [] as ClientRow[], error: null }),
     db
       .from("ln_events")
-      .select("series_id, event_date, event_start_time, theme_name, artist_id, cover_url, cover_position, primary_color, accent_color, ln_venues(name)")
+      .select("series_id, event_date, event_start_time, theme_name, artist_id, cover_url, cover_position, primary_color, accent_color, public_event_id, ln_venues(name)")
       .in("series_id", series.map((s) => s.id))
       .eq("archived", false)
       .gte("event_date", todayEastern())
@@ -62,8 +63,25 @@ export async function hubSeries(db: SupabaseClient): Promise<HubSeries[]> {
   ]);
   if (clientsRes.error || showsRes.error) throw clientsRes.error ?? showsRes.error;
   const clientById = new Map((clientsRes.data ?? []).map((c) => [c.id, c]));
+  // A show whose events listing is still a draft isn't on the hub yet.
+  const eventIds = (showsRes.data ?? []).flatMap((r) => (r.public_event_id ? [r.public_event_id] : []));
+  const drafts = new Set<string>();
+  if (eventIds.length) {
+    const { data: draftRows, error: draftErr } = await db
+      .from("events")
+      .select("id")
+      .in("id", eventIds)
+      .eq("status", "draft")
+      .returns<{ id: string }[]>();
+    if (draftErr) throw draftErr;
+    for (const d of draftRows ?? []) drafts.add(d.id);
+  }
+
   const nextBySeries = new Map<string, NextRow>();
-  for (const row of showsRes.data ?? []) if (!nextBySeries.has(row.series_id)) nextBySeries.set(row.series_id, row);
+  for (const row of showsRes.data ?? []) {
+    if (row.public_event_id && drafts.has(row.public_event_id)) continue;
+    if (!nextBySeries.has(row.series_id)) nextBySeries.set(row.series_id, row);
+  }
 
   return Promise.all(
     series.map(async (s) => {
