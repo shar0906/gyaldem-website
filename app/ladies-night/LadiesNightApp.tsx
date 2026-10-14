@@ -241,6 +241,8 @@ export default function LadiesNightApp({ series }: { series: string }) {
             opensAt={"rsvp_opens_at" in current ? current.rsvp_opens_at : null}
             showDate={"show_date" in current ? current.show_date : null}
             last={"last" in current ? current.last : null}
+            venue={"venue" in current ? current.venue ?? null : null}
+            artist={"artist" in current && current.series.features.voting ? current.artist ?? null : null}
             onOpen={load}
           />
         )}

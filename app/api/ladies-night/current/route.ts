@@ -92,19 +92,30 @@ export async function GET(req: NextRequest) {
 
     const show = await getCurrentShow(db, series.id);
     if (!show) {
-      return NextResponse.json({ stage: "none", series: seriesView, last: await lastShowSummary(db, series.id) }, { headers: NO_STORE });
+      // No date yet: the footer still shows the series' usual venue.
+      const usual = await getVenue(db, series.default_venue_id);
+      return NextResponse.json(
+        { stage: "none", series: seriesView, venue: publicVenue(usual), artist: null, last: await lastShowSummary(db, series.id) },
+        { headers: NO_STORE }
+      );
     }
 
     const stage = guestStage(show, series.feat_voting);
     const door = doorCodeValid(series, show, req.nextUrl.searchParams.get("door"));
 
     if (stage === "coming_soon" && !door) {
+      const [soonVenue, soonArtist] = await Promise.all([
+        getVenue(db, show.venue_id),
+        series.feat_voting ? publicArtist(db, show.artist_id) : Promise.resolve(null),
+      ]);
       return NextResponse.json(
         {
           stage,
           series: seriesView,
           rsvp_opens_at: show.rsvp_opens_at,
           show_date: show.event_date,
+          venue: publicVenue(soonVenue),
+          artist: soonArtist,
           last: await lastShowSummary(db, series.id),
         },
         { headers: NO_STORE }

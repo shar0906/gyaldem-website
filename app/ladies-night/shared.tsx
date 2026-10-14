@@ -54,8 +54,8 @@ export type Vip =
 export type Song = { song_id: string; title: string; artist: string; artwork_url: string | null };
 export type LiveState = "before" | "live" | "after";
 export type Current =
-  | { stage: "none"; series: Series; last: LastShow }
-  | { stage: "coming_soon"; series: Series; rsvp_opens_at: string | null; show_date: string; last: LastShow }
+  | { stage: "none"; series: Series; venue: Venue | null; artist: Artist | null; last: LastShow }
+  | { stage: "coming_soon"; series: Series; rsvp_opens_at: string | null; show_date: string; venue: Venue | null; artist: Artist | null; last: LastShow }
   | {
       stage: "rsvp_open" | "voting_open" | "voting_closed" | "coming_soon";
       door: boolean;

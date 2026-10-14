@@ -7,7 +7,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CREAM, Footer, GOLD, INK, LastShow, SANS, SERIF, Series, card, cta, eyebrow, prettyDate, prettyDateTime } from "./shared";
+import { Artist, CREAM, Footer, GOLD, INK, LastShow, SANS, SERIF, Series, Venue, card, cta, eyebrow, prettyDate, prettyDateTime } from "./shared";
 import { SeriesMark } from "./LiveView";
 
 function parts(ms: number) {
@@ -25,12 +25,16 @@ export default function ComingSoon({
   opensAt,
   showDate,
   last,
+  venue,
+  artist,
   onOpen,
 }: {
   series: Series;
   opensAt: string | null;
   showDate: string | null;
   last: LastShow;
+  venue: Venue | null;
+  artist: Artist | null;
   onOpen: () => void;
 }) {
   const target = opensAt ? new Date(opensAt).getTime() : null;
@@ -97,7 +101,7 @@ export default function ComingSoon({
           )}
         </section>
       )}
-      <Footer client={series.client} />
+      <Footer venue={venue} artist={artist} client={series.client} />
     </main>
   );
 }
