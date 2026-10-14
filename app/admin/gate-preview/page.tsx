@@ -10,7 +10,7 @@
 import { CSSProperties, useEffect, useState } from "react";
 import Gate from "../../ladies-night/Gate";
 import { CREAM, OpenCurrent, SANS } from "../../ladies-night/shared";
-import { ballotTheme } from "../../lib/ln/theme";
+import { ballotTheme, showColors } from "../../lib/ln/theme";
 
 type Message = { type: "ln-gate-preview"; current: OpenCurrent };
 
@@ -31,10 +31,8 @@ export default function GatePreviewPage() {
 
   if (!current) return <div style={{ minHeight: "100dvh", background: "#2B2224" }} />;
 
-  const theme =
-    current.series.features.voting && current.artist
-      ? ballotTheme(current.artist.primary_color, current.artist.accent_color)
-      : ballotTheme(current.series.primary_color, current.series.accent_color);
+  const colors = showColors(current.show, current.artist, current.series, current.series.features.voting);
+  const theme = ballotTheme(colors.primary, colors.accent);
   const vars = {
     "--ln-primary": theme.primary,
     "--ln-deep": theme.deep,

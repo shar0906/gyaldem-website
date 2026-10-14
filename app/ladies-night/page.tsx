@@ -37,7 +37,7 @@ function when(n: NonNullable<HubSeries["next"]>): string {
 }
 
 function SeriesCard({ s }: { s: HubSeries }) {
-  const theme = ballotTheme(s.primary_color, s.accent_color);
+  const theme = ballotTheme(s.next?.primary_color ?? s.primary_color, s.next?.accent_color ?? s.accent_color);
   const cover = s.next?.cover_url ?? s.cover_url;
   const presenter = s.client ? `${s.client.name} presents` : "Gyal Dem presents";
   return (

@@ -9,6 +9,7 @@ export const contentType = "image/png";
 
 export default async function Image() {
   return renderShareCard({
+    ownerName: "Gyal Dem Social Club",
     title: "Ladies Night",
     artistName: null,
     djName: null,

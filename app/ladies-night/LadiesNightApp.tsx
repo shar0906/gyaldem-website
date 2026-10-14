@@ -24,7 +24,7 @@ import Summary from "./Summary";
 import VipStep from "./VipStep";
 import LiveView from "./LiveView";
 import { CREAM, Current, Guest, OpenCurrent, Prefill, SANS, cta, post, seriesQuery, setActiveSeries, textLink } from "./shared";
-import { ballotTheme } from "../lib/ln/theme";
+import { ballotTheme, showColors } from "../lib/ln/theme";
 
 type Step = "loading" | "error" | "none" | "coming_soon" | "gate" | "checked_in" | "ballot" | "vip" | "summary" | "live";
 
@@ -203,9 +203,9 @@ export default function LadiesNightApp({ series }: { series: string }) {
 
   // Voting series wear the artist's colors; others the series' own.
   const seriesInfo = current?.series ?? null;
-  const theme = open?.series.features.voting && open.artist
-    ? ballotTheme(open.artist.primary_color, open.artist.accent_color)
-    : ballotTheme(seriesInfo?.primary_color, seriesInfo?.accent_color);
+  // The show's own colors, else the artist's (People's Choice), else the series'.
+  const colors = showColors(open?.show, open?.artist, seriesInfo, !!open?.series.features.voting);
+  const theme = ballotTheme(colors.primary, colors.accent);
   const vars = {
     "--ln-primary": theme.primary,
     "--ln-deep": theme.deep,

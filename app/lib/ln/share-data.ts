@@ -5,11 +5,13 @@
 // reached), so a shared link always has a preview.
 
 import { serviceClient } from "../admin/staff-auth";
+import { showColors } from "./theme";
 import { getCurrentShow, publicArtist } from "./public-show";
 import { getVenue } from "./venues";
-import { DEFAULT_SERIES_SLUG, getSeriesBySlug } from "./series";
+import { DEFAULT_SERIES_SLUG, getClient, getSeriesBySlug } from "./series";
 import type { ShareCardData } from "./share-card";
 
+const GYAL_DEM = "Gyal Dem Social Club";
 const FALLBACK_TITLE: Record<string, string> = { [DEFAULT_SERIES_SLUG]: "Ladies Night: An Ode To Her" };
 
 export async function currentShareData(slug: string = DEFAULT_SERIES_SLUG): Promise<ShareCardData> {
@@ -23,13 +25,16 @@ export async function currentShareData(slug: string = DEFAULT_SERIES_SLUG): Prom
     primary: null,
     accent: null,
     cta: "RSVP",
+    ownerName: GYAL_DEM,
   };
   try {
     const db = serviceClient();
     const series = await getSeriesBySlug(db, slug);
     if (!series) return fallback;
+    const client = await getClient(db, series.client_id).catch(() => null);
     const base = {
       ...fallback,
+      ownerName: client?.active ? client.name : GYAL_DEM,
       title: series.name,
       coverUrl: series.cover_url,
       primary: series.primary_color,
@@ -55,9 +60,11 @@ export async function currentShareData(slug: string = DEFAULT_SERIES_SLUG): Prom
       djName: show.dj_name,
       venueName: venue?.name ?? null,
       dateText,
-      coverUrl: artist?.cover_url ?? series.cover_url,
-      primary: artist?.primary_color ?? series.primary_color,
-      accent: artist?.accent_color ?? series.accent_color,
+      coverUrl: show.cover_url ?? artist?.cover_url ?? series.cover_url,
+      ...(() => {
+        const c = showColors(show, artist, series, series.feat_voting);
+        return { primary: c.primary, accent: c.accent };
+      })(),
     };
   } catch {
     return fallback;

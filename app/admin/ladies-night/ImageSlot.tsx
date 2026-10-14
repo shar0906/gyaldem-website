@@ -59,8 +59,12 @@ export default function ImageSlot({
     if (!ok) setError("Uploaded, but it didn't save. Try again.");
   }
 
+  // Same layout as the flyer slot: label on top, then the image with its
+  // buttons beside it.
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <span style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(10,10,10,0.6)" }}>{label}</span>
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 14, flexWrap: "wrap" }}>
       <div
         style={{
           width: photo ? 96 : 150,
@@ -76,8 +80,7 @@ export default function ImageSlot({
       >
         {!url && "None yet"}
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-        <span style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(10,10,10,0.6)" }}>{label}</span>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0, flex: "1 1 180px" }}>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           <label style={{ ...button("secondary", !busy), cursor: busy ? "default" : "pointer", position: "relative" }}>
             {busy ? "Uploading…" : url ? "Replace" : "Upload"}
@@ -101,6 +104,7 @@ export default function ImageSlot({
         {hint && <span style={{ fontSize: 12, color: MUTED }}>{hint}</span>}
         {error && <Notice tone="error">{error}</Notice>}
       </div>
+    </div>
     </div>
   );
 }

@@ -74,6 +74,8 @@ export type Current =
         theme_name: string | null;
         has_bingo: boolean;
         cover_url?: string | null;
+        primary_color?: string | null;
+        accent_color?: string | null;
         opentable_url: string | null;
       };
       venue: Venue | null;

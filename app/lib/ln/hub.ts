@@ -3,6 +3,7 @@
 // The /ladies-night page: every active series with its next show.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { showColors } from "./theme";
 import { todayEastern } from "./dates";
 import { CLIENT_COLUMNS, ClientRow, PublicSeries, SERIES_COLUMNS, SeriesRow, publicSeries } from "./series";
 import { publicArtist } from "./public-show";
@@ -15,6 +16,8 @@ export type HubSeries = PublicSeries & {
     venue_name: string | null;
     artist_name: string | null;
     cover_url: string | null;
+    primary_color: string | null;
+    accent_color: string | null;
   } | null;
 };
 
@@ -24,6 +27,9 @@ type NextRow = {
   event_start_time: string;
   theme_name: string | null;
   artist_id: string | null;
+  cover_url: string | null;
+  primary_color: string | null;
+  accent_color: string | null;
   ln_venues: { name: string } | null;
 };
 
@@ -45,7 +51,7 @@ export async function hubSeries(db: SupabaseClient): Promise<HubSeries[]> {
       : Promise.resolve({ data: [] as ClientRow[], error: null }),
     db
       .from("ln_events")
-      .select("series_id, event_date, event_start_time, theme_name, artist_id, ln_venues(name)")
+      .select("series_id, event_date, event_start_time, theme_name, artist_id, cover_url, primary_color, accent_color, ln_venues(name)")
       .in("series_id", series.map((s) => s.id))
       .eq("archived", false)
       .gte("event_date", todayEastern())
@@ -70,7 +76,11 @@ export async function hubSeries(db: SupabaseClient): Promise<HubSeries[]> {
               theme_name: n.theme_name,
               venue_name: n.ln_venues?.name ?? null,
               artist_name: artist?.display_name ?? null,
-              cover_url: artist?.cover_url ?? null,
+              cover_url: n.cover_url ?? artist?.cover_url ?? null,
+              ...(() => {
+                const c = showColors(n, artist, s, s.feat_voting);
+                return { primary_color: c.primary, accent_color: c.accent };
+              })(),
             }
           : null,
       };

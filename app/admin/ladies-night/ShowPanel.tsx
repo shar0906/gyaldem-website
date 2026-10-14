@@ -76,6 +76,8 @@ export type PanelDraft = {
   opentable_widget: string;
   vip_enabled: boolean;
   reminder_enabled: boolean;
+  primary_color?: string;
+  accent_color?: string;
 };
 
 export type PanelSaved = {
@@ -184,6 +186,8 @@ export function previewCurrent(o: {
       theme_name: draft.theme_name || null,
       has_bingo: draft.has_bingo,
       cover_url: o.coverUrl ?? null,
+      primary_color: /^#[0-9A-Fa-f]{6}$/.test(draft.primary_color ?? "") ? draft.primary_color : null,
+      accent_color: /^#[0-9A-Fa-f]{6}$/.test(draft.accent_color ?? "") ? draft.accent_color : null,
       opentable_url: null,
     },
     venue: venue

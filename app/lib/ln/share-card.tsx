@@ -20,6 +20,8 @@ export type ShareCardData = {
   primary: string | null;
   accent: string | null;
   cta: string;
+  // Who presents the series: the client (e.g. Where's Jeanie), or Gyal Dem.
+  ownerName: string;
 };
 
 // Remote photos are fetched here so a slow or missing one never breaks the
@@ -52,7 +54,7 @@ export async function renderShareCard(d: ShareCardData): Promise<ImageResponse> 
           <div style={{ position: "absolute", inset: 0, display: "flex", background: `linear-gradient(90deg, rgba(0,0,0,0) 60%, ${theme.deep} 100%)` }} />
         </div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "56px 64px", gap: 18 }}>
-          <div style={{ display: "flex", fontSize: 22, letterSpacing: 5, textTransform: "uppercase", color: "#D8B667" }}>Gyal Dem Social Club</div>
+          <div style={{ display: "flex", fontSize: 22, letterSpacing: 5, textTransform: "uppercase", color: "#D8B667" }}>{d.ownerName}</div>
           <div style={{ display: "flex", fontSize: 64, fontWeight: 700, lineHeight: 1.05 }}>{d.title}</div>
           {d.artistName && (
             <div style={{ display: "flex", fontSize: 40, color: theme.accentSoft, fontWeight: 700 }}>with {d.artistName}</div>

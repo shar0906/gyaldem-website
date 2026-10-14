@@ -47,3 +47,18 @@ export function ballotTheme(primary?: string | null, accent?: string | null): Ba
     border: `${mix(a, "#FFFFFF", 0.35)}55`,
   };
 }
+
+// Which colors a show wears: its own override, else the artist's on
+// People's Choice series, else the series'.
+export function showColors(
+  show: { primary_color?: string | null; accent_color?: string | null } | null | undefined,
+  artist: { primary_color?: string | null; accent_color?: string | null } | null | undefined,
+  series: { primary_color?: string | null; accent_color?: string | null } | null | undefined,
+  voting: boolean
+): { primary: string | null; accent: string | null } {
+  const base = voting && artist?.primary_color ? artist : series;
+  return {
+    primary: show?.primary_color ?? base?.primary_color ?? null,
+    accent: show?.accent_color ?? (voting && artist?.accent_color ? artist.accent_color : series?.accent_color) ?? null,
+  };
+}

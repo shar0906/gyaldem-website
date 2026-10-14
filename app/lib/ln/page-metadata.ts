@@ -20,10 +20,11 @@ export async function seriesMetadata(slug: string): Promise<Metadata> {
       : `RSVP for ${d.title}${where}.`;
   const url = `${siteUrl()}${seriesPath(slug)}`;
   return {
-    title: `${title} | Gyal Dem Social Club`,
+    // The series' owner (the client, or Gyal Dem) names the page.
+    title: `${title} | ${d.ownerName}`,
     description,
     alternates: { canonical: url },
-    openGraph: { title, description, url, siteName: "Gyal Dem Social Club", type: "website" },
+    openGraph: { title, description, url, siteName: d.ownerName, type: "website" },
     twitter: { card: "summary_large_image", title, description },
   };
 }

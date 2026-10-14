@@ -9,8 +9,10 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import LivePage from "./LivePage";
 import { ladiesNightViewport } from "../../../lib/ln/page-metadata";
-import { getSeriesBySlug, SLUG } from "../../../lib/ln/series";
+import { getClient, getSeriesBySlug, SLUG } from "../../../lib/ln/series";
 import { serviceClient } from "../../../lib/admin/staff-auth";
+import { getCurrentShow, publicArtist } from "../../../lib/ln/public-show";
+import { showColors } from "../../../lib/ln/theme";
 
 export const dynamic = "force-dynamic";
 export const viewport = ladiesNightViewport;
@@ -19,9 +21,12 @@ type Props = { params: Promise<{ series: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { series } = await params;
-  const row = SLUG.test(series) ? await getSeriesBySlug(serviceClient(), series).catch(() => null) : null;
+  const db = serviceClient();
+  const row = SLUG.test(series) ? await getSeriesBySlug(db, series).catch(() => null) : null;
   const name = row?.name ?? "Ladies Night";
-  return { title: `${name}: Live | Gyal Dem Social Club`, description: `Live updates, bingo calls, and winners from ${name}.` };
+  const client = row ? await getClient(db, row.client_id).catch(() => null) : null;
+  const owner = client?.active ? client.name : "Gyal Dem Social Club";
+  return { title: `${name}: Live | ${owner}`, description: `Live updates, bingo calls, and winners from ${name}.` };
 }
 
 export default async function SeriesLivePage({ params }: Props) {
@@ -29,5 +34,9 @@ export default async function SeriesLivePage({ params }: Props) {
   if (!SLUG.test(series)) notFound();
   const row = await getSeriesBySlug(serviceClient(), series).catch(() => null);
   if (!row) notFound();
-  return <LivePage slug={series} primary={row.primary_color} accent={row.accent_color} />;
+  const db = serviceClient();
+  const show = await getCurrentShow(db, row.id).catch(() => null);
+  const artist = show && row.feat_voting ? await publicArtist(db, show.artist_id).catch(() => null) : null;
+  const colors = showColors(show, artist, row, row.feat_voting);
+  return <LivePage slug={series} primary={colors.primary} accent={colors.accent} />;
 }

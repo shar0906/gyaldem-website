@@ -79,6 +79,8 @@ type ShowRow = {
   bingo_deck_id: string | null;
   has_bingo: boolean;
   cover_url: string | null;
+  primary_color: string | null;
+  accent_color: string | null;
   flyer_url?: string | null;
   running_order: RunItem[];
   gallery_url: string | null;
@@ -132,6 +134,8 @@ type Form = {
   bingo_deck_id: string;
   has_bingo: boolean;
   flyer_url: string;
+  primary_color: string; // "" = the series' (or artist's) colors
+  accent_color: string;
   running_order: string; // one per line: "21:30 Bingo, round 1"
   gallery_url: string;
   vip_closes_at: string;
@@ -176,6 +180,8 @@ function toForm(s: ShowRow, featVoting: boolean): Form {
     bingo_deck_id: s.bingo_deck_id ?? "",
     has_bingo: s.has_bingo,
     flyer_url: s.flyer_url ?? "",
+    primary_color: s.primary_color ?? "",
+    accent_color: s.accent_color ?? "",
     running_order: runToText(s.running_order),
     gallery_url: s.gallery_url ?? "",
     vip_closes_at: isoToEasternInput(s.vip_closes_at),
@@ -216,6 +222,8 @@ function blankForm(
     bingo_deck_id: series?.default_bingo_deck_id ?? "",
     has_bingo: !!series?.default_bingo_deck_id,
     flyer_url: "",
+    primary_color: "",
+    accent_color: "",
     // Blank uses the series' master run of show, which stays current.
     running_order: "",
     gallery_url: "",
@@ -252,6 +260,8 @@ function toBody(f: Form, featVoting: boolean) {
     running_order: textToRun(f.running_order),
     has_bingo: f.has_bingo,
     flyer_url: f.flyer_url || null,
+    primary_color: f.primary_color || null,
+    accent_color: f.accent_color || null,
     gallery_url: f.gallery_url || null,
     vip_closes_at: easternInputToIso(f.vip_closes_at),
   };
@@ -682,6 +692,49 @@ export default function ShowsSection() {
               </div>
               {fieldErr("cover_url")}
               {fieldErr("flyer_url")}
+              {(() => {
+                const inherited = {
+                  primary: (voting && selectedArtist?.primary_color) || formSeries?.primary_color || "#6E1420",
+                  accent: (voting && selectedArtist?.accent_color) || formSeries?.accent_color || "#C81E3A",
+                };
+                const custom = !!(form.primary_color || form.accent_color);
+                const from = voting && selectedArtist?.primary_color ? "the artist's" : "the series'";
+                return (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <span style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(10,10,10,0.6)" }}>Colors</span>
+                    <label style={{ display: "flex", gap: 10, alignItems: "center", cursor: "pointer", fontSize: 14 }}>
+                      <input
+                        type="checkbox"
+                        checked={!custom}
+                        onChange={(e) =>
+                          setForm((f) => (f ? { ...f, primary_color: e.target.checked ? "" : inherited.primary.toUpperCase(), accent_color: e.target.checked ? "" : inherited.accent.toUpperCase() } : f))
+                        }
+                        style={{ width: 18, height: 18, accentColor: RED }}
+                      />
+                      Use {from} colors
+                      <span aria-hidden="true" style={{ display: "inline-flex", gap: 4 }}>
+                        <span style={{ width: 16, height: 16, background: inherited.primary, border: "0.5px solid rgba(10,10,10,0.2)" }} />
+                        <span style={{ width: 16, height: 16, background: inherited.accent, border: "0.5px solid rgba(10,10,10,0.2)" }} />
+                      </span>
+                    </label>
+                    {custom && (
+                      <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+                        {(["primary_color", "accent_color"] as const).map((k) => (
+                          <Field key={k} id={`s-${k}`} label={k === "primary_color" ? "Main color (this show)" : "Accent color (this show)"} hint={k === "primary_color" ? "Backgrounds and cards." : "Buttons."}>
+                            <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                              <input type="color" aria-label={k === "primary_color" ? "Main color" : "Accent color"} value={form[k] || (k === "primary_color" ? inherited.primary : inherited.accent)} onChange={(e) => set(k, e.target.value.toUpperCase())} style={{ width: 44, height: 40, padding: 0, border: "0.5px solid rgba(10,10,10,0.3)", background: "none" }} />
+                              <input id={`s-${k}`} value={form[k]} maxLength={7} onChange={(e) => set(k, e.target.value)} style={{ ...inputStyle, width: 110 }} />
+                            </span>
+                          </Field>
+                        ))}
+                      </div>
+                    )}
+                    <span style={{ fontSize: 12, color: MUTED }}>For a themed night, like orange and black for Spooky Szn. The preview updates as you pick.</span>
+                    {fieldErr("primary_color")}
+                    {fieldErr("accent_color")}
+                  </div>
+                );
+              })()}
             </section>
 
             <section style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 20, borderTop: LINE }}>

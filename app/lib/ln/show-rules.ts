@@ -33,6 +33,8 @@ export type ShowPatch = Partial<{
   theme_name: string | null;
   bingo_deck_id: string | null;
   has_bingo: boolean;
+  primary_color: string | null;
+  accent_color: string | null;
   running_order: RunItem[];
   gallery_url: string | null;
   vip_closes_at: string | null;
@@ -249,6 +251,15 @@ export function parseShowPatch(body: Record<string, unknown>): Result {
     const v = parseRunningOrder(body.running_order);
     if (typeof v === "string") return { ok: false, field: "running_order", error: v };
     out.running_order = v;
+  }
+  // A show's own colors; empty means the series' (or the artist's).
+  for (const key of ["primary_color", "accent_color"] as const) {
+    if (key in body) {
+      const v = body[key];
+      if (v === null || v === "") out[key] = null;
+      else if (typeof v === "string" && /^#[0-9A-Fa-f]{6}$/.test(v)) out[key] = v.toUpperCase();
+      else return { ok: false, field: key, error: "Use a color like #6E1420." };
+    }
   }
   if ("has_bingo" in body) {
     if (typeof body.has_bingo !== "boolean") return { ok: false, field: "has_bingo", error: "Invalid bingo setting." };
