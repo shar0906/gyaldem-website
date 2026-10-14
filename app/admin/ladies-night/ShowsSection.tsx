@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GatePreview } from "../../components/ln/PhonePreview";
-import { easternInputToIso, isoToEasternInput } from "../../lib/ln/dates";
+import { easternInputToIso, isoToEasternInput, todayEastern } from "../../lib/ln/dates";
 import { defaultSendAt, defaultTemplate } from "../../lib/ln/reminder-template";
 import { formatDateTime } from "../artist/ui";
 import {
@@ -85,6 +85,7 @@ type SeriesOpt = {
   id: string;
   slug: string;
   name: string;
+  primary_color: string | null;
   default_venue_id: string | null;
   feat_voting: boolean;
   feat_vip: boolean;
@@ -340,6 +341,27 @@ export default function ShowsSection() {
     });
   }, [loadList, openShow]);
 
+  // Switching series: keep the open show if it belongs, otherwise open
+  // that series' next show, or nothing if it has none yet.
+  const pickFilter = (id: string) => {
+    setFilter(id);
+    if (id === "all" || selected === "new") return;
+    const current = (shows ?? []).find((x) => x.id === selected);
+    if (current && current.series_id === id) return;
+    const first = (shows ?? []).find((x) => x.series_id === id && !x.archived);
+    if (first) {
+      setForm(null);
+      openShow(first.id);
+    } else {
+      setSelected(null);
+      setShow(null);
+      setForm(null);
+      setSongs([]);
+      setRecap(null);
+      setNotice(null);
+    }
+  };
+
   const startNew = () => {
     const series = seriesList.find((x) => x.id === filter) ?? seriesList.find((x) => x.active) ?? null;
     const f = blankForm(series?.feat_voting ? suggestion : null, series);
@@ -454,6 +476,7 @@ export default function ShowsSection() {
   const voting = formSeries?.feat_voting ?? true;
   const tpl = defaultTemplate(voting);
   const visibleShows = filter === "all" ? shows : shows.filter((x) => x.series_id === filter);
+  const today = todayEastern();
   const money = (c: number) => `$${(c / 100).toFixed(2).replace(/\.00$/, "")}`;
 
   return (
@@ -473,7 +496,7 @@ export default function ShowsSection() {
               key={x.id}
               role="tab"
               aria-selected={filter === x.id}
-              onClick={() => setFilter(x.id)}
+              onClick={() => pickFilter(x.id)}
               style={{ ...button(filter === x.id ? "primary" : "secondary"), padding: "8px 12px" }}
             >
               {x.name}
@@ -484,22 +507,36 @@ export default function ShowsSection() {
 
       <div className="ln-shows">
         <nav aria-label="Shows" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {visibleShows.length === 0 && <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>No shows yet. Create the first one.</p>}
-          {visibleShows.map((s) => {
+          {visibleShows.length === 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-start" }}>
+              <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>
+                No {filter === "all" ? "" : `${seriesOf(filter)?.name ?? ""} `}shows yet.
+              </p>
+              <button onClick={startNew} style={button("secondary")}>+ New {filter === "all" ? "" : `${seriesOf(filter)?.name ?? ""} `}show</button>
+            </div>
+          )}
+          {visibleShows.map((s, i) => {
             const active = s.id === selected;
+            const isPast = s.archived || s.event_date < today;
+            const prevPast = i > 0 && (visibleShows[i - 1].archived || visibleShows[i - 1].event_date < today);
+            const heading = i === 0 ? (isPast ? "Past" : "Upcoming") : isPast && !prevPast ? "Past" : null;
+            const color = seriesOf(s.series_id)?.primary_color ?? RED;
             return (
+              <div key={s.id} style={{ display: "contents" }}>
+              {heading && <span style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: MUTED, marginTop: i === 0 ? 0 : 10 }}>{heading}</span>}
               <button
-                key={s.id}
                 onClick={() => {
                   if (s.id !== selected) setForm(null);
                   openShow(s.id);
                 }}
                 aria-current={active}
-                style={{ ...PANEL, border: active ? `1px solid ${RED}` : PANEL.border, padding: "12px 14px", textAlign: "left", display: "flex", flexDirection: "column", gap: 6, cursor: "pointer", opacity: s.archived ? 0.6 : 1, fontFamily: "sans-serif", color: INK }}
+                style={{ ...PANEL, border: active ? `1px solid ${RED}` : PANEL.border, borderLeft: `4px solid ${color}`, padding: "12px 14px", textAlign: "left", display: "flex", flexDirection: "column", gap: 6, cursor: "pointer", opacity: s.archived ? 0.6 : 1, fontFamily: "sans-serif", color: INK }}
               >
+                {s.series && seriesList.length > 1 && (
+                  <span style={{ fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color, fontWeight: 600 }}>{s.series.name}</span>
+                )}
                 <span style={{ fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: MUTED }}>
                   {showLabel({ event_date: s.event_date, artist: null }).split(" · ")[0]}
-                  {s.series && seriesList.length > 1 ? ` · ${s.series.name}` : ""}
                 </span>
                 {seriesOf(s.series_id)?.feat_voting ?? true ? (
                   <span style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: 18, color: s.artist ? INK : FAINT }}>{s.artist?.display_name ?? "No artist yet"}</span>
@@ -508,6 +545,7 @@ export default function ShowsSection() {
                 )}
                 <StageChip stage={s.stage} />
               </button>
+              </div>
             );
           })}
           {selected === "new" && (
