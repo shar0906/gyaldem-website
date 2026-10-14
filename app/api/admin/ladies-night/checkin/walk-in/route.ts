@@ -16,7 +16,7 @@ import { parseGuest, upsertGuestRsvp } from "../../../../../lib/ln/guests";
 import { staffTonight } from "../../../../../lib/ln/staff-show";
 
 export async function POST(req: NextRequest) {
-  const user = await requireStaffUser(["admin", "door"]);
+  const user = await requireStaffUser(["admin", "door", "host"]);
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 403 });
 
   const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;

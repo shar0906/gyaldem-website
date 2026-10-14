@@ -18,7 +18,7 @@ export type BrandUpload =
   | { ok: false; status: number; error: string; message?: string };
 
 export async function createBrandUpload(
-  folder: "series" | "clients",
+  folder: "series" | "clients" | "shows",
   id: string,
   kind: "title" | "presents" | "cover" | "logo",
   contentType: unknown,

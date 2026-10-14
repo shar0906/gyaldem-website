@@ -17,14 +17,14 @@ import { getSeriesById } from "../../../../../lib/ln/series";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const user = await requireStaffUser(["admin", "door"]);
+  const user = await requireStaffUser(["admin", "door", "host"]);
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 403 });
 
   try {
     const db = serviceClient();
     const asked = readShowId(req.nextUrl.searchParams.get("show"));
     let target: { show: ShowRow; series: { slug: string } } | null = null;
-    if (asked && user.role !== "door") {
+    if (asked && (user.role === "admin" || user.role === "super_admin")) {
       const { data: show, error } = await db.from("ln_events").select(SHOW_COLUMNS).eq("id", asked).maybeSingle<ShowRow>();
       if (error) throw error;
       const series = show ? await getSeriesById(db, show.series_id) : null;

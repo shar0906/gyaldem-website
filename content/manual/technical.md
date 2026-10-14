@@ -60,7 +60,7 @@ Two hourly jobs run in Supabase (Integrations → Cron):
 | Job | When | Does |
 |---|---|---|
 | `ln-kit-worker` | Top of each hour | Tags new guests in Kit, then schedules or updates show reminders |
-| `ln-results-mail` | 5 past each hour | Emails results for shows whose voting just closed, and the recap for shows that ended yesterday (looks back 2 weeks) |
+| `ln-results-mail` | 5 past each hour | Lists no-ballot shows on the Events page once RSVP opens; emails results for shows whose voting just closed, and the recap for shows that ended yesterday (looks back 2 weeks) |
 
 **Run one now:** Supabase → Integrations → Cron → the job → **Run now**. Useful right before a Kit broadcast so the latest RSVPs are tagged.
 
@@ -103,6 +103,8 @@ Reminder emails are created in Kit as scheduled broadcasts; you'll see them unde
 9. `2026-10-08_ln_phase6_super_admin.sql` (with your login email filled in)
 10. `2026-10-14_ln_phase7_series.sql` (series, clients, bingo decks, live page, Posh)
 11. `2026-10-14_ln_phase7b_series_defaults.sql` (series show defaults, Bingo tonight)
+12. `2026-10-14_ln_phase7c_drop_default_dj.sql`
+13. `2026-10-14_ln_phase7d_show_cover_door.sql` (show cover photo, door check-in on for Please!)
 
 **Photo storage:** artist photos and logos in the `artist-photos` bucket; venue, series, and client logos and series cover photos in `ln-brand`. Both are public to read; uploads only go through the site.
 

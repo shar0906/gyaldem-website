@@ -1,7 +1,8 @@
 "use client";
 
 import StaffHeader from "./StaffHeader";
-import { useState } from "react";
+import FlyerSlot from "./FlyerSlot";
+import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import type { Event } from "../lib/supabase";
 
@@ -23,24 +24,18 @@ export default function AdminEventForm({
   const [eventType, setEventType] = useState(event?.event_type || "ladies-night");
   const [status, setStatus] = useState(event?.status || "draft");
   const [flyerUrl, setFlyerUrl] = useState(event?.flyer_url || "");
-  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  // A Ladies Night show's entry: title, description, and flyer are shared
+  // with the show both ways; date, location, and RSVP link come from it.
+  const [linked, setLinked] = useState<{ id: string; series_name: string | null } | null>(null);
 
-  const handleFlyerUpload = async (file: File) => {
-    setUploading(true);
-    const ext = file.name.split(".").pop();
-    const fileName = `${Date.now()}.${ext}`;
-    const { data, error } = await supabase.storage
-      .from("event-flyers")
-      .upload(fileName, file, { upsert: true });
-    if (!error && data) {
-      const { data: urlData } = supabase.storage
-        .from("event-flyers")
-        .getPublicUrl(data.path);
-      setFlyerUrl(urlData.publicUrl);
-    }
-    setUploading(false);
-  };
+  useEffect(() => {
+    if (!event) return;
+    fetch(`/api/admin/ladies-night/event-link?event_id=${event.id}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setLinked(d?.show ?? null))
+      .catch(() => setLinked(null));
+  }, [event]);
 
   const handleSave = async () => {
     if (!name || !date) return;
@@ -64,6 +59,13 @@ export default function AdminEventForm({
     };
     if (event) {
       await supabase.from("events").update(payload).eq("id", event.id);
+      if (linked) {
+        await fetch("/api/admin/ladies-night/event-link", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ event_id: event.id }),
+        }).catch(() => null);
+      }
     } else {
       await supabase.from("events").insert(payload);
     }
@@ -91,6 +93,12 @@ export default function AdminEventForm({
         </h1>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          {linked && (
+            <p style={{ margin: 0, padding: "12px 14px", background: "white", border: "0.5px solid rgba(10,10,10,0.15)", fontSize: 13, lineHeight: 1.5, fontFamily: "sans-serif", color: "rgba(10,10,10,0.7)" }}>
+              This is a Ladies Night show{linked.series_name ? ` (${linked.series_name})` : ""}. The name, description, and flyer stay in sync with it both ways.
+              The date, location, and RSVP link come from Ladies Night → Shows, so change those there.
+            </p>
+          )}
 
           <div>
             <label style={labelStyle}>RSVP Link</label>
@@ -143,21 +151,12 @@ export default function AdminEventForm({
             </div>
           </div>
 
-          <div>
-            <label style={labelStyle}>Flyer / Cover Image</label>
-            {flyerUrl && (
-              <div style={{ marginBottom: "12px" }}>
-                <img src={flyerUrl} alt="Flyer preview" style={{ height: "120px", objectFit: "cover" }} />
-              </div>
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => { if (e.target.files?.[0]) handleFlyerUpload(e.target.files[0]); }}
-              style={{ fontSize: "13px", fontFamily: "sans-serif", color: "rgba(10,10,10,0.6)" }}
-            />
-            {uploading && <p style={{ fontSize: "12px", color: "#8B1A1A", fontFamily: "sans-serif", margin: "6px 0 0" }}>Uploading...</p>}
-          </div>
+          <FlyerSlot
+            label="Flyer"
+            url={flyerUrl || null}
+            onChange={(u) => setFlyerUrl(u ?? "")}
+            hint={linked ? "Shared with the Ladies Night show: replacing it here replaces it there." : undefined}
+          />
 
           <div style={{ display: "flex", gap: "12px", paddingTop: "8px" }}>
             <button onClick={handleSave} disabled={saving || !name || !date} style={{ backgroundColor: "#8B1A1A", color: "white", border: "none", padding: "14px 32px", fontSize: "12px", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "sans-serif", cursor: "pointer", opacity: saving || !name || !date ? 0.5 : 1 }}>

@@ -148,6 +148,7 @@ export function previewCurrent(o: {
   client: PanelClient | null;
   venue: PanelVenue | null;
   artist: PanelArtist | null;
+  coverUrl?: string | null;
 }): OpenCurrent {
   const { draft, series, client, venue, artist } = o;
   return {
@@ -186,6 +187,7 @@ export function previewCurrent(o: {
       dj_name: draft.dj_name || null,
       theme_name: draft.theme_name || null,
       has_bingo: draft.has_bingo,
+      cover_url: o.coverUrl ?? null,
       opentable_url: null,
       posh_url: null,
     },
@@ -262,6 +264,7 @@ export default function ShowPanel(props: {
   ballotPublished: boolean;
   paymentsMode: "test" | "live" | null | undefined;
   dirty: boolean;
+  coverUrl?: string | null;
 }) {
   const { series, saved } = props;
   const [copied, setCopied] = useState(false);

@@ -6,6 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getVenue } from "./venues";
 import { getSeriesById, seriesPath } from "./series";
 import { siteUrl } from "./site";
+import { todayEastern } from "./dates";
 
 export const SHOW_COLUMNS =
   "id, slug, title, event_date, event_start_time, event_end_time, artist_id, venue_id, gate_headline, gate_description, " +
@@ -13,7 +14,7 @@ export const SHOW_COLUMNS =
   "vip_cap, archived, public_event_id, door_code, results_emailed_at, results_email_error, reminder_enabled, reminder_send_at, " +
   "reminder_subject, reminder_body, reminder_broadcast_id, reminder_scheduled_at, reminder_error, created_at, " +
   "series_id, dj_name, theme_name, bingo_deck_id, live_started_at, live_ended_at, running_order, run_now, gallery_url, " +
-  "vip_closes_at, live_views, recap_emailed_at, recap_email_error, has_bingo";
+  "vip_closes_at, live_views, recap_emailed_at, recap_email_error, has_bingo, cover_url";
 
 export type RunItem = { label: string; time: string | null };
 
@@ -54,6 +55,7 @@ export type ShowRow = {
   theme_name: string | null;
   bingo_deck_id: string | null;
   has_bingo: boolean;
+  cover_url: string | null;
   live_started_at: string | null;
   live_ended_at: string | null;
   running_order: RunItem[];
@@ -112,4 +114,41 @@ export async function syncPublicEvent(db: SupabaseClient, show: ShowRow): Promis
     })
     .eq("id", show.public_event_id);
   if (error) console.error("public event sync failed:", error);
+  if (series && !series.feat_voting) await listIfRsvpOpen(db, show);
+}
+
+// Shows without a ballot go on the Events page by themselves once RSVP
+// opens (People's Choice shows go on when the ballot is published).
+// Only ever draft -> upcoming, so a manual "past" or "upcoming" stands.
+export async function listIfRsvpOpen(db: SupabaseClient, show: Pick<ShowRow, "public_event_id" | "rsvp_opens_at" | "archived" | "event_date">, now: Date = new Date()): Promise<boolean> {
+  if (!show.public_event_id || show.archived || !show.rsvp_opens_at) return false;
+  if (new Date(show.rsvp_opens_at).getTime() > now.getTime()) return false;
+  if (show.event_date < todayEastern(now)) return false;
+  const { data, error } = await db.from("events").update({ status: "upcoming" }).eq("id", show.public_event_id).eq("status", "draft").select("id");
+  if (error) {
+    console.error("events listing failed:", error);
+    return false;
+  }
+  return (data?.length ?? 0) > 0;
+}
+
+// The hourly job: list every no-ballot show whose RSVP has opened.
+export async function listOpenNoBallotShows(db: SupabaseClient, now: Date = new Date()): Promise<number> {
+  const { data: series, error: seriesError } = await db.from("ln_series").select("id").eq("feat_voting", false);
+  if (seriesError) throw seriesError;
+  const ids = (series ?? []).map((x: { id: string }) => x.id);
+  if (!ids.length) return 0;
+  const { data: shows, error } = await db
+    .from("ln_events")
+    .select("public_event_id, rsvp_opens_at, archived, event_date")
+    .in("series_id", ids)
+    .eq("archived", false)
+    .gte("event_date", todayEastern(now))
+    .lte("rsvp_opens_at", now.toISOString())
+    .not("public_event_id", "is", null)
+    .returns<Pick<ShowRow, "public_event_id" | "rsvp_opens_at" | "archived" | "event_date">[]>();
+  if (error) throw error;
+  let listed = 0;
+  for (const show of shows ?? []) if (await listIfRsvpOpen(db, show, now)) listed++;
+  return listed;
 }

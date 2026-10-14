@@ -266,6 +266,12 @@ export async function POST(req: NextRequest) {
   }
 
   await syncPublicEvent(db, show);
-  return NextResponse.json({ success: true, show: { ...show, stage: showStage(show, undefined, series?.feat_voting ?? true) } });
+  // The flyer, if one was uploaded before saving, goes on the Events entry.
+  const flyer = typeof body.flyer_url === "string" && /^https:\/\/\S+$/.test(body.flyer_url) && body.flyer_url.length <= 1000 ? body.flyer_url : null;
+  if (flyer && show.public_event_id) {
+    const { error: flyerError } = await db.from("events").update({ flyer_url: flyer }).eq("id", show.public_event_id);
+    if (flyerError) console.error("flyer save failed:", flyerError);
+  }
+  return NextResponse.json({ success: true, show: { ...show, stage: showStage(show, undefined, series?.feat_voting ?? true), flyer_url: flyer } });
 }
 

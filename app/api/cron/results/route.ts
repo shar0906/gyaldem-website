@@ -17,6 +17,7 @@ import { serviceClient } from "../../../lib/admin/staff-auth";
 import { cronAuthorized } from "../../../lib/ln/cron-auth";
 import { sendShowResults } from "../../../lib/ln/results-email";
 import { sendShowRecap } from "../../../lib/ln/recap";
+import { listOpenNoBallotShows } from "../../../lib/ln/shows";
 import { todayEastern } from "../../../lib/ln/dates";
 import { mailerConfigured } from "../../../lib/ln/mailer";
 
@@ -26,10 +27,20 @@ const LOOKBACK_DAYS = 14;
 
 async function run(req: NextRequest) {
   if (!cronAuthorized(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (!mailerConfigured()) return NextResponse.json({ error: "not_configured" }, { status: 503 });
 
   const db = serviceClient();
   const now = new Date();
+
+  // Shows without a ballot go on the Events page once RSVP opens. Runs
+  // even when email isn't set up.
+  let listed = 0;
+  try {
+    listed = await listOpenNoBallotShows(db, now);
+  } catch (err) {
+    console.error("events listing failed:", err);
+  }
+  if (!mailerConfigured()) return NextResponse.json({ error: "not_configured", listed }, { status: 503 });
+
   const since = new Date(now.getTime() - LOOKBACK_DAYS * 86400 * 1000);
 
   try {
@@ -76,7 +87,7 @@ async function run(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ sent, skipped, failed, recaps });
+    return NextResponse.json({ sent, skipped, failed, recaps, listed });
   } catch (error) {
     console.error("results cron failed:", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });

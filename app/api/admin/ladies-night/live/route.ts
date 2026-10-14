@@ -20,7 +20,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireStaffUser, serviceClient } from "../../../../lib/admin/staff-auth";
-import { readShowId, staffTonight } from "../../../../lib/ln/staff-show";
+import { hostShow, readShowId } from "../../../../lib/ln/staff-show";
 import { parseRunningOrder } from "../../../../lib/ln/show-rules";
 import { runningOrder } from "../../../../lib/ln/live";
 
@@ -37,8 +37,12 @@ export async function POST(req: NextRequest) {
 
   const db = serviceClient();
   try {
-    const { current } = await staffTonight(db, user, body.show_id);
+    const { current, today } = await hostShow(db, user, body.show_id);
     if (!current) return NextResponse.json({ error: "no_show_tonight" }, { status: 409 });
+    // Admins can prep an upcoming show; going live waits for show day.
+    if (!today && (action === "go_live" || action === "wrap" || action === "reopen")) {
+      return NextResponse.json({ error: "not_show_day", message: "You can go live on show day." }, { status: 409 });
+    }
     const { show } = current;
     const update = (fields: Record<string, unknown>) => db.from("ln_events").update(fields).eq("id", show.id);
     const now = new Date().toISOString();

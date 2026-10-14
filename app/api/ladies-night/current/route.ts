@@ -76,6 +76,7 @@ function showDetails(show: ShowRow, opentable: string | null, posh: string | nul
     dj_name: show.dj_name,
     theme_name: show.theme_name,
     has_bingo: !!show.bingo_deck_id,
+    cover_url: show.cover_url,
     opentable_url: opentable,
     posh_url: posh,
   };

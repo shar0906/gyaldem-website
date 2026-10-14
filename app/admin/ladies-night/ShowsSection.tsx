@@ -9,6 +9,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import ShowPanel, { PanelClient, PanelSeries, PanelVenue } from "./ShowPanel";
+import ImageSlot from "./ImageSlot";
+import FlyerSlot from "../FlyerSlot";
 import { easternInputToIso, isoToEasternInput, todayEastern } from "../../lib/ln/dates";
 import { RUN_PLACEHOLDER, runToText, textToRun } from "../../lib/ln/run-text";
 import { defaultSendAt, defaultTemplate } from "../../lib/ln/reminder-template";
@@ -76,6 +78,8 @@ type ShowRow = {
   theme_name: string | null;
   bingo_deck_id: string | null;
   has_bingo: boolean;
+  cover_url: string | null;
+  flyer_url?: string | null;
   running_order: RunItem[];
   gallery_url: string | null;
   vip_closes_at: string | null;
@@ -127,6 +131,7 @@ type Form = {
   theme_name: string;
   bingo_deck_id: string;
   has_bingo: boolean;
+  flyer_url: string;
   running_order: string; // one per line: "21:30 Bingo, round 1"
   gallery_url: string;
   vip_closes_at: string;
@@ -170,6 +175,7 @@ function toForm(s: ShowRow, featVoting: boolean): Form {
     theme_name: s.theme_name ?? "",
     bingo_deck_id: s.bingo_deck_id ?? "",
     has_bingo: s.has_bingo,
+    flyer_url: s.flyer_url ?? "",
     running_order: runToText(s.running_order),
     gallery_url: s.gallery_url ?? "",
     vip_closes_at: isoToEasternInput(s.vip_closes_at),
@@ -209,7 +215,9 @@ function blankForm(
     theme_name: "",
     bingo_deck_id: series?.default_bingo_deck_id ?? "",
     has_bingo: !!series?.default_bingo_deck_id,
-    running_order: runToText(series?.default_running_order),
+    flyer_url: "",
+    // Blank uses the series' master run of show, which stays current.
+    running_order: "",
     gallery_url: "",
     vip_closes_at: "",
   };
@@ -243,6 +251,7 @@ function toBody(f: Form, featVoting: boolean) {
     bingo_deck_id: f.bingo_deck_id || null,
     running_order: textToRun(f.running_order),
     has_bingo: f.has_bingo,
+    flyer_url: f.flyer_url || null,
     gallery_url: f.gallery_url || null,
     vip_closes_at: easternInputToIso(f.vip_closes_at),
   };
@@ -638,7 +647,7 @@ export default function ShowsSection() {
             </section>
 
             <section style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 20, borderTop: LINE }}>
-              <p style={sectionLabel}>Sign-in page copy, shown in the preview as you type</p>
+              <p style={sectionLabel}>Sign-in page, shown in the preview as you type</p>
               <Field id="s-head" label="Headline">
                 <input id="s-head" value={form.gate_headline} maxLength={120} onChange={(e) => set("gate_headline", e.target.value)} style={inputStyle} />
               </Field>
@@ -647,6 +656,32 @@ export default function ShowsSection() {
               </Field>
               {fieldErr("gate_headline")}
               {fieldErr("gate_description")}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 18, alignItems: "start" }}>
+                {show ? (
+                  <ImageSlot
+                    label="Cover photo (this show)"
+                    url={show.cover_url}
+                    uploadUrl={`/api/admin/ladies-night/shows/${show.id}/upload`}
+                    photo
+                    hint={`Full-bleed behind the RSVP form for this show only. Leave it empty to use the ${voting ? "artist's or series'" : "series'"} cover.`}
+                    onSaved={async (u) => {
+                      const res = await api<{ show?: ShowRow }>(`/api/admin/ladies-night/shows/${show.id}`, { method: "PATCH", body: { cover_url: u } });
+                      if (!res.ok || !res.data.show) return false;
+                      setShow((cur) => (cur ? { ...cur, cover_url: res.data.show!.cover_url } : cur));
+                      return true;
+                    }}
+                  />
+                ) : (
+                  <span style={{ fontSize: 12, color: MUTED }}>Create the show, then add a cover photo just for it.</span>
+                )}
+                <FlyerSlot
+                  url={form.flyer_url || null}
+                  onChange={(u) => set("flyer_url", u ?? "")}
+                  hint="The same flyer as the show's Events page entry: replacing it here replaces it there. Saved with the show."
+                />
+              </div>
+              {fieldErr("cover_url")}
+              {fieldErr("flyer_url")}
             </section>
 
             <section style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 20, borderTop: LINE }}>
@@ -711,17 +746,20 @@ export default function ShowsSection() {
                   label="Run of show"
                   hint={
                     <>
-                      One per line, with a 24-hour time in front if you like: “21:30 Bingo, round 1”. Shown on the live page; the host can edit it and mark what&apos;s on now. Leave it blank to use the series&apos; master run of show.{" "}
+                      One per line, with a 24-hour time in front if you like: “21:30 Bingo, round 1”. Shown on the live page; the host can edit it and mark what&apos;s on now. Leave it blank to use the series&apos; master run of show; type here only if tonight is different.{" "}
                       {!!formSeries?.default_running_order?.length && (
                         <button type="button" onClick={() => set("running_order", runToText(formSeries.default_running_order))} style={{ ...button("quiet"), padding: 0, textDecoration: "underline" }}>
-                          Use the series default
+                          Copy the master to edit it
                         </button>
                       )}
                     </>
                   }
                 >
-                  <textarea id="s-run" rows={5} value={form.running_order} onChange={(e) => set("running_order", e.target.value)} placeholder={RUN_PLACEHOLDER} style={{ ...inputStyle, lineHeight: 1.45, resize: "vertical" }} />
+                  <textarea id="s-run" rows={5} value={form.running_order} onChange={(e) => set("running_order", e.target.value)} placeholder={formSeries?.default_running_order?.length ? runToText(formSeries.default_running_order) : RUN_PLACEHOLDER} style={{ ...inputStyle, lineHeight: 1.45, resize: "vertical" }} />
                 </Field>
+              )}
+              {(formSeries?.feat_live ?? true) && !form.running_order.trim() && !!formSeries?.default_running_order?.length && (
+                <span style={{ fontSize: 12, color: GREEN, marginTop: -6 }}>Using the series&apos; master run of show (shown faded above). Changes to the master in Series show up here and on the live page.</span>
               )}
               {fieldErr("running_order")}
               <Field id="s-gallery" label="Photo gallery link (optional)" hint="Shows on the recap after the night.">
@@ -939,6 +977,7 @@ export default function ShowsSection() {
             saved={show ? { id: show.id, stage: show.stage, reminder_broadcast_id: show.reminder_broadcast_id, reminder_error: show.reminder_error } : null}
             ballotPublished={published}
             paymentsMode={paymentsMode}
+            coverUrl={show?.cover_url ?? null}
             dirty={selected === "new" || (!!show && JSON.stringify(toForm(show, formSeries.feat_voting)) !== JSON.stringify(form))}
           />
         )}

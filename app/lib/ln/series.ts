@@ -179,7 +179,7 @@ export const SERIES_LOGO_FIELDS = ["title_logo_url", "presents_logo_url", "cover
 
 export type SeriesPatch = Partial<Omit<SeriesRow, "id" | "created_at">>;
 
-export function brandFolderPublicUrl(kind: "series" | "clients" | "venues", id: string): string {
+export function brandFolderPublicUrl(kind: "series" | "clients" | "venues" | "shows", id: string): string {
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/$/, "");
   return `${base}/storage/v1/object/public/ln-brand/${kind}/${id}/`;
 }

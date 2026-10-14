@@ -28,6 +28,7 @@ export async function hostState(db: SupabaseClient, t: TonightShow, deviceId: st
       series_slug: series.slug,
       live_path: livePath(series.slug),
       live_enabled: series.feat_live,
+      door_enabled: series.feat_door,
       has_bingo: show.has_bingo,
       bingo_ready: !show.has_bingo || !!show.bingo_deck_id,
     },

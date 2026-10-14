@@ -1,7 +1,7 @@
 // ladies-night/Gate.tsx
 //
-// The way in, shared by every series: a full-bleed photo (the artist's
-// cover on voting series, otherwise the series' own), the event logos at
+// The way in, shared by every series: a full-bleed photo (the show's own
+// cover, else the artist's on voting series, else the series'), the event logos at
 // the top, the night in a line or two of clean text, and the RSVP form,
 // with the brand logos underneath. Built to fit one phone screen.
 // Pressing the button is the consent (the line sits right under it).
@@ -85,7 +85,8 @@ export default function Gate({
 
   const inputProps = { onKeyDown: (e: React.KeyboardEvent) => e.key === "Enter" && submit() };
 
-  const cover = (voting && artist?.cover_url) || series.cover_url;
+  // This show's own cover first, then the artist's (People's Choice), then the series'.
+  const cover = show.cover_url || (voting && artist?.cover_url) || series.cover_url;
   const coverStyle = cover ? { backgroundImage: `url("${cover}")` } : { backgroundImage: "linear-gradient(180deg, #4A3A3D, #2B2224)" };
 
   // Without a title logo, the show's headline is the title.

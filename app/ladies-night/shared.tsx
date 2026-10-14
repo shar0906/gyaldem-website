@@ -73,6 +73,7 @@ export type Current =
         dj_name: string | null;
         theme_name: string | null;
         has_bingo: boolean;
+        cover_url?: string | null;
         opentable_url: string | null;
         posh_url: string | null;
       };

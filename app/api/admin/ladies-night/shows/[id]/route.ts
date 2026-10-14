@@ -24,7 +24,7 @@ import { requireStaffUser, serviceClient, ARTIST_COLUMNS } from "../../../../../
 import { parseShowPatch } from "../../../../../lib/ln/show-rules";
 import { showStage } from "../../../../../lib/ln/show-status";
 import { SHOW_COLUMNS, ShowRow, checkBookableArtist, checkVenue, syncPublicEvent } from "../../../../../lib/ln/shows";
-import { getSeriesById } from "../../../../../lib/ln/series";
+import { brandFolderPublicUrl, getSeriesById } from "../../../../../lib/ln/series";
 import { showRecap } from "../../../../../lib/ln/recap";
 
 export const dynamic = "force-dynamic";
@@ -72,7 +72,10 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const songs = (songsRes.data ?? []).map((s) => ({ ...s, votes: votes.get(s.song_id) ?? 0 }));
 
   const voting = (await getSeriesById(db, show.series_id))?.feat_voting ?? true;
-  return NextResponse.json({ show: { ...show, stage: showStage(show, undefined, voting) }, artist: artistRes.data, songs, recap });
+  const { data: pub } = show.public_event_id
+    ? await db.from("events").select("flyer_url").eq("id", show.public_event_id).maybeSingle<{ flyer_url: string | null }>()
+    : { data: null };
+  return NextResponse.json({ show: { ...show, stage: showStage(show, undefined, voting), flyer_url: pub?.flyer_url ?? null }, artist: artistRes.data, songs, recap });
 }
 
 export async function PATCH(req: NextRequest, { params }: Params) {
@@ -90,7 +93,23 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (!parsed.ok) {
     return NextResponse.json({ error: "invalid", field: parsed.field, message: parsed.error }, { status: 400 });
   }
-  const patch = parsed.value;
+  const patch: typeof parsed.value & { cover_url?: string | null } = parsed.value;
+
+  // The show's own cover photo: only files uploaded for this show.
+  if ("cover_url" in body) {
+    const v = body.cover_url;
+    if (v === null || v === "") patch.cover_url = null;
+    else if (typeof v === "string" && v.length <= 1000 && v.startsWith(brandFolderPublicUrl("shows", id))) patch.cover_url = v;
+    else return NextResponse.json({ error: "invalid", field: "cover_url", message: "Upload the cover photo from the show." }, { status: 400 });
+  }
+  // The flyer lives on the show's Events page entry, shared both ways.
+  let flyer: string | null | undefined;
+  if ("flyer_url" in body) {
+    const v = body.flyer_url;
+    if (v === null || v === "") flyer = null;
+    else if (typeof v === "string" && v.length <= 1000 && /^https:\/\/\S+$/.test(v)) flyer = v;
+    else return NextResponse.json({ error: "invalid", field: "flyer_url", message: "Upload the flyer again." }, { status: 400 });
+  }
 
   const db = serviceClient();
   const { data: current, error: currentError } = await db
@@ -167,12 +186,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     draftsCleared = (ballot ?? []).length;
   }
 
-  const { data: show, error: updateError } = await db
-    .from("ln_events")
-    .update(patch)
-    .eq("id", id)
-    .select(SHOW_COLUMNS)
-    .single<ShowRow>();
+  const { data: show, error: updateError } = Object.keys(patch).length
+    ? await db.from("ln_events").update(patch).eq("id", id).select(SHOW_COLUMNS).single<ShowRow>()
+    : { data: current, error: null };
   if (updateError || !show) {
     if (updateError?.code === "23514") {
       return NextResponse.json({ error: "invalid", field: "voting_closes_at", message: "Check the voting window." }, { status: 400 });
@@ -186,9 +202,20 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (clearError) console.error("clearing old artist drafts failed:", clearError);
   }
 
-  const mirrored = ["title", "gate_description", "event_date", "event_start_time", "event_end_time", "venue_id", "series_id"];
+  const mirrored = ["title", "gate_description", "event_date", "event_start_time", "event_end_time", "venue_id", "series_id", "rsvp_opens_at"];
   if (mirrored.some((k) => k in patch)) await syncPublicEvent(db, show);
+  if (flyer !== undefined && show.public_event_id) {
+    const { error: flyerError } = await db.from("events").update({ flyer_url: flyer, updated_at: new Date().toISOString() }).eq("id", show.public_event_id);
+    if (flyerError) console.error("flyer save failed:", flyerError);
+  }
 
   const voting = (await getSeriesById(db, show.series_id))?.feat_voting ?? true;
-  return NextResponse.json({ success: true, show: { ...show, stage: showStage(show, undefined, voting) }, drafts_cleared: draftsCleared });
+  const { data: pub } = show.public_event_id
+    ? await db.from("events").select("flyer_url").eq("id", show.public_event_id).maybeSingle<{ flyer_url: string | null }>()
+    : { data: null };
+  return NextResponse.json({
+    success: true,
+    show: { ...show, stage: showStage(show, undefined, voting), flyer_url: pub?.flyer_url ?? null },
+    drafts_cleared: draftsCleared,
+  });
 }

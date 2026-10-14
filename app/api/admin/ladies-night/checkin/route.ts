@@ -16,7 +16,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireStaffUser, serviceClient } from "../../../../lib/admin/staff-auth";
-import { staffTonight } from "../../../../lib/ln/staff-show";
+import { hostShow, staffTonight } from "../../../../lib/ln/staff-show";
 import { publicArtist } from "../../../../lib/ln/public-show";
 import { csvResponse, toCsv } from "../../../../lib/ln/csv";
 import { getVenue } from "../../../../lib/ln/venues";
@@ -40,7 +40,12 @@ export async function GET(req: NextRequest) {
 
   const db = serviceClient();
   try {
-    const { current, options } = await staffTonight(db, user, req.nextUrl.searchParams.get("show"));
+    // ?prep=1 (the host console's guest list): admins can read any upcoming
+    // show's list. The door screen always works on tonight's show.
+    const prep = req.nextUrl.searchParams.get("prep") === "1";
+    const { current, options } = prep
+      ? await hostShow(db, user, req.nextUrl.searchParams.get("show"))
+      : await staffTonight(db, user, req.nextUrl.searchParams.get("show"));
     if (!current) return NextResponse.json({ show: null, shows: [] }, { headers: { "Cache-Control": "no-store" } });
     const { show, series } = current;
 
@@ -119,7 +124,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const user = await requireStaffUser(["admin", "door"]);
+  const user = await requireStaffUser(["admin", "door", "host"]);
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 403 });
 
   const body = (await req.json().catch(() => null)) as { show_id?: unknown; rsvp_id?: unknown; checked_in?: unknown } | null;

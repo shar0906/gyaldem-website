@@ -74,9 +74,14 @@ The same for every series, and it stays in view while you scroll the editor:
 - **Venue:** picks the restaurant. New shows start on the series' usual venue.
 - **Date, Starts, Ends:** all times are **Eastern**.
 
-### Sign-in page copy
+### Sign-in page
 
-The **Headline** and **Description** guests see on the sign-in page. The preview on the right uses the series' logos, cover photo, and colors (or the artist's, on People's Choice series) with this show's details.
+The **Headline** and **Description** guests see on the sign-in page.
+
+- **Cover photo (this show):** a photo just for this show, behind the RSVP form. Empty uses the artist's cover (People's Choice) or the series' cover. Create the show first, then upload.
+- **Flyer:** the same flyer as the show's Events page entry. Replacing it in either place replaces it in both. Saved with the show.
+
+ The preview on the right uses the series' logos, cover photo, and colors (or the artist's, on People's Choice series) with this show's details.
 
 ### Timing (Eastern)
 
@@ -132,7 +137,9 @@ Early the day after each show, the series' client gets a recap email (to the cli
 
 Each Ladies Night show also appears on the site's **Events** page. Its title, description, date, and venue come from the show, so **make those edits in Ladies Night → Shows**. Edits made directly in the Events tab are replaced the next time the show is saved.
 
-The Events entry stays a **draft** until you publish the ballot. To list it earlier, set its status to **Upcoming** in the Events tab; that status isn't overwritten.
+**Title, description, and flyer** are shared both ways: edit them in Shows or in the Events tab and the other updates. The date, venue, and RSVP link always come from the show.
+
+The Events entry stays a **draft** until it's listed: People's Choice shows when you publish the ballot, other series on their own once RSVP opens (checked hourly, and whenever you save the show). To list it earlier, set its status to **Upcoming** in the Events tab; that status isn't overwritten.
 
 ## Approvals
 

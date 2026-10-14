@@ -31,7 +31,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStaffUser, serviceClient } from "../../../../lib/admin/staff-auth";
 import { DEVICE_ID, ROUNDS_PER_NIGHT, bingoState } from "../../../../lib/ln/bingo";
-import { staffTonight } from "../../../../lib/ln/staff-show";
+import { hostShow } from "../../../../lib/ln/staff-show";
 import { hostState } from "../../../../lib/ln/host-state";
 
 export const dynamic = "force-dynamic";
@@ -47,10 +47,10 @@ export async function GET(req: NextRequest) {
   const device = req.nextUrl.searchParams.get("device");
   const db = serviceClient();
   try {
-    const { current, options } = await staffTonight(db, user, req.nextUrl.searchParams.get("show"));
+    const { current, options, today } = await hostShow(db, user, req.nextUrl.searchParams.get("show"));
     if (!current) return NextResponse.json({ show: null, shows: [] }, { headers: { "Cache-Control": "no-store" } });
     const state = await hostState(db, current, device && DEVICE_ID.test(device) ? device : null);
-    return NextResponse.json({ ...state, shows: options }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ ...state, show: state.show && { ...state.show, show_day: today }, shows: options }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("host state failed:", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
@@ -72,8 +72,9 @@ export async function POST(req: NextRequest) {
 
   const db = serviceClient();
   try {
-    const { current: tonight, options } = await staffTonight(db, user, body?.show_id);
+    const { current: tonight, options, today } = await hostShow(db, user, body?.show_id);
     if (!tonight) return NextResponse.json({ error: "no_show_tonight" }, { status: 409 });
+    if (!today) return NextResponse.json({ error: "not_show_day", message: "Bingo opens on show day." }, { status: 409 });
     const { show, series } = tonight;
     if (!show.bingo_deck_id) return NextResponse.json({ error: "no_deck" }, { status: 409 });
 
@@ -161,9 +162,9 @@ export async function POST(req: NextRequest) {
       if (error) throw error;
     }
 
-    const fresh = await staffTonight(db, user, show.id);
+    const fresh = await hostShow(db, user, show.id);
     const state = await hostState(db, fresh.current ?? tonight, device);
-    return NextResponse.json({ ...state, shows: options, exhausted });
+    return NextResponse.json({ ...state, show: state.show && { ...state.show, show_day: true }, shows: options, exhausted });
   } catch (error) {
     const message = (error as { message?: string })?.message ?? "";
     const conflict = CONFLICTS.find((c) => message.includes(c));

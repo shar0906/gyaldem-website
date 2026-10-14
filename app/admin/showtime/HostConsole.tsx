@@ -16,6 +16,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLiveData } from "./useLiveData";
+import DoorCheckIn from "./DoorCheckIn";
 import {
   CREAM,
   Centered,
@@ -65,6 +66,9 @@ type HostData = {
     live_enabled: boolean;
     has_bingo: boolean;
     bingo_ready: boolean;
+    door_enabled: boolean;
+    // false when an admin opens an upcoming show to prep it
+    show_day?: boolean;
   } | null;
   shows?: { id: string; label: string }[];
   live?: { state: "before" | "live" | "after"; started_at: string | null; ended_at: string | null; posts: Post[]; running_order: RunItem[]; run_now: number | null; run_is_default: boolean; series_running_order: RunItem[] };
@@ -251,10 +255,14 @@ export default function HostConsole({ onLogout }: { onLogout?: () => void }) {
     );
   }
 
+  const showDay = show.show_day !== false;
+  // On show day, series with door check-in get the door (check in, walk-ins,
+  // the door QR) in place of the plain guest list.
+  const doorTab = showDay && show.door_enabled;
   const tabs: { id: "live" | "bingo" | "guests"; label: string }[] = [
     { id: "live", label: "Live" },
     ...(data.bingo?.deck ? [{ id: "bingo" as const, label: "Bingo" }] : []),
-    { id: "guests", label: "Guests" },
+    { id: "guests", label: doorTab ? "Door" : "Guests" },
   ];
   const dateText = new Date(`${show.event_date}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
 
@@ -272,15 +280,29 @@ export default function HostConsole({ onLogout }: { onLogout?: () => void }) {
         <Tabs tabs={tabs} value={tab} onChange={setTab} />
         <LiveBadge state={data.live?.state ?? "before"} />
       </div>
+      {!showDay && (
+        <p role="status" style={{ margin: "10px 16px 0", padding: "10px 12px", borderRadius: 10, background: "rgba(216,182,103,0.12)", color: "#D8B667", fontSize: 13, lineHeight: 1.45 }}>
+          Prep mode for {dateText}. Edit the run of show, post updates, and look over the deck. Going live, bingo, and the door open on show day.
+        </p>
+      )}
       {message && <p role="status" style={{ margin: "10px 16px 0", fontSize: 13, color: message.ok ? GREEN : SOFT_RED }}>{message.text}</p>}
 
       {tab === "live" && data.live && (
         <LiveTab show={show} live={data.live} busy={busy} online={online} act={liveAct} />
       )}
-      {tab === "bingo" && data.bingo?.deck && (
+      {tab === "bingo" && data.bingo?.deck && showDay && (
         <BingoTab bingo={data.bingo} busy={busy} online={online} exhausted={exhausted} act={bingoAct} />
       )}
-      {tab === "guests" && <GuestsTab showId={currentShowId} />}
+      {tab === "bingo" && data.bingo?.deck && !showDay && (
+        <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ ...panel, padding: 16, display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={label}>Tonight&apos;s deck</span>
+            <span style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: 22, color: CREAM }}>{data.bingo.deck.name}</span>
+            <span style={{ fontSize: 13, color: MUTED }}>3 rounds, any line. Drawing and calling open on show day.</span>
+          </div>
+        </div>
+      )}
+      {tab === "guests" && (doorTab ? <DoorCheckIn embedded showId={currentShowId} /> : <GuestsTab showId={currentShowId} />)}
 
       {celebrate > 0 && <Confetti key={celebrate} />}
     </div>
@@ -341,7 +363,10 @@ function LiveTab({
               Tonight is set for bingo but there&apos;s no deck yet. Ask an admin to pick one in Shows, then refresh.
             </span>
           )}
-          <button onClick={() => act("go_live", {}, "You're live.")} disabled={!!busy || !online || !show.bingo_ready} style={bigButton(!busy && online && show.bingo_ready, "gold")}>
+          {show.show_day === false && (
+            <span style={{ fontSize: 13, lineHeight: 1.5, color: MUTED }}>You can go live on show day.</span>
+          )}
+          <button onClick={() => act("go_live", {}, "You're live.")} disabled={!!busy || !online || !show.bingo_ready || show.show_day === false} style={bigButton(!busy && online && show.bingo_ready && show.show_day !== false, "gold")}>
             {busy === "go_live" ? "Going live…" : "We're live"}
           </button>
         </div>
@@ -681,7 +706,7 @@ function BingoTab({
 
 function GuestsTab({ showId }: { showId: string | null }) {
   const { data, online } = useLiveData<{ counts?: { rsvps: number; checked_in: number }; guests?: GuestRow[] }>(
-    `/api/admin/ladies-night/checkin${showId ? `?show=${showId}` : ""}`,
+    `/api/admin/ladies-night/checkin?prep=1${showId ? `&show=${showId}` : ""}`,
     10_000
   );
   const [q, setQ] = useState("");

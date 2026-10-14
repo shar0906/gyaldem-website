@@ -34,9 +34,14 @@ function timeOf(iso: string) {
   return new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
 }
 
-export default function DoorCheckIn({ onLogout }: { onLogout?: () => void }) {
-  const [showId, setShowId] = useState<string | null>(null);
-  useEffect(() => setShowId(savedShow()), []);
+// embedded: the Door tab inside the host console, for series where the
+// host also runs the door. The console picks the show; no header here.
+export default function DoorCheckIn({ onLogout, embedded = false, showId: fixedShow = null }: { onLogout?: () => void; embedded?: boolean; showId?: string | null }) {
+  const [pickedShow, setShowId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!embedded) setShowId(savedShow());
+  }, [embedded]);
+  const showId = embedded ? fixedShow : pickedShow;
   const { data, online, authError, refresh } = useLiveData<CheckinData>(`/api/admin/ladies-night/checkin${showId ? `?show=${showId}` : ""}`);
   const currentShow = data?.show?.id ?? null;
   const pick = (id: string) => {
@@ -90,6 +95,13 @@ export default function DoorCheckIn({ onLogout }: { onLogout?: () => void }) {
     });
   }
 
+  if (embedded && (!data || !data.show)) {
+    return (
+      <Centered>
+        <span style={{ color: MUTED }}>{!data ? "Loading tonight's list…" : "Check-in opens on the night of the show."}</span>
+      </Centered>
+    );
+  }
   if (authError) {
     return (
       <div style={screen}>
@@ -125,6 +137,7 @@ export default function DoorCheckIn({ onLogout }: { onLogout?: () => void }) {
   if (view === "walkin") {
     return (
       <WalkIn
+        embedded={embedded}
         showId={currentShow}
         artist={data.show.artist_name}
         onBack={() => setView("list")}
@@ -143,10 +156,18 @@ export default function DoorCheckIn({ onLogout }: { onLogout?: () => void }) {
   const dateText = new Date(`${data.show.event_date}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 
   return (
-    <div style={{ ...screen, height: "100dvh" }}>
-      <TopBar label="Door check-in" onLogout={onLogout} />
+    <div style={embedded ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" } : { ...screen, height: "100dvh" }}>
+      {!embedded && <TopBar label="Door check-in" onLogout={onLogout} />}
       <Reconnecting online={online} />
-      <ShowPicker shows={data.shows ?? []} value={currentShow} onChange={pick} />
+      {!embedded && <ShowPicker shows={data.shows ?? []} value={currentShow} onChange={pick} />}
+      {embedded ? (
+        <div style={{ padding: "14px 20px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+          <span style={{ fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase", color: MUTED }}>Door check-in</span>
+          <a href={`/api/admin/ladies-night/checkin?format=csv${currentShow ? `&show=${currentShow}` : ""}`} style={{ fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", color: "#D8B667", textDecoration: "none" }}>
+            Download ↓
+          </a>
+        </div>
+      ) : (
       <div style={{ padding: "18px 20px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
         <span style={{ fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase", color: "#c86b6b" }}>Tonight</span>
         <h1 style={{ margin: 0, fontFamily: "Georgia, serif", fontStyle: "italic", fontWeight: 400, fontSize: 26, lineHeight: 1.15 }}>{data.show.title}</h1>
@@ -155,6 +176,7 @@ export default function DoorCheckIn({ onLogout }: { onLogout?: () => void }) {
           {dateText}{data.show.venue_name ? ` · ${data.show.venue_name}` : ""}
         </span>
       </div>
+      )}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, padding: "0 20px 14px" }}>
         <Count name="Checked in" value={checkedIn} of={counts.rsvps} />
         <Count name="VIP passes in" value={vipIn} of={counts.vip_passes} />
@@ -258,7 +280,7 @@ function bigButton(enabled: boolean) {
   } as const;
 }
 
-function WalkIn({ showId, artist, onBack, onDone }: { showId: string | null; artist: string | null; onBack: () => void; onDone: (name: string) => void }) {
+function WalkIn({ showId, artist, onBack, onDone, embedded = false }: { showId: string | null; artist: string | null; onBack: () => void; onDone: (name: string) => void; embedded?: boolean }) {
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");
   const [email, setEmail] = useState("");
@@ -291,7 +313,7 @@ function WalkIn({ showId, artist, onBack, onDone }: { showId: string | null; art
   }
 
   return (
-    <div style={screen}>
+    <div style={embedded ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflowY: "auto" } : screen}>
       <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: LINE }}>
         <button onClick={onBack} style={{ minHeight: 44, display: "flex", alignItems: "center", gap: 4, background: "none", border: 0, color: CREAM, fontSize: 15, cursor: "pointer", padding: 0 }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={CREAM} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>

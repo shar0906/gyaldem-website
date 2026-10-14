@@ -2,7 +2,9 @@
 
 On show night, log in at **gyaldemsocialclub.com/admin** with your host login. You go straight to the host console for tonight's show. A host login that belongs to one series (like Please! A Ladies Night) only ever sees that series' shows. If two shows are on the same night, pick yours from the list at the top.
 
-The console has three tabs: **Live**, **Bingo**, and **Guests**.
+The console has three tabs: **Live**, **Bingo**, and **Door** (on series with door check-in) or **Guests**.
+
+Admins can also open any upcoming show from the list at the top to prep it: edit the run of show, post updates, and look over the deck. Going live, bingo, and the door open on show day.
 
 ## Live
 
@@ -52,9 +54,13 @@ Check their card against **Called so far**. If it's good, tap **Someone has BING
 
 Only one phone calls at a time. The first phone to draw becomes the caller; any other phone follows along and shows who's calling. To switch, tap **Take over** on the phone that should call next.
 
+## Door
+
+On series with door check-in (Please! and An Ode To Her), the host runs the door from here, no separate door login needed: search, tap **Check in**, and **Add walk-in** for day-of guests. A walk-in can scan the QR on your phone to RSVP and check in on their own phone, or you can type them in. **Download** saves the list.
+
 ## Guests
 
-Everyone RSVP'd to tonight's show, with search. **Download** saves the list as a spreadsheet.
+On series without door check-in: everyone RSVP'd to the show, with search. **Download** saves the list as a spreadsheet.
 
 ## If something looks off
 
