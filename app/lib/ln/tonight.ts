@@ -6,6 +6,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { todayEastern } from "./dates";
 import { SHOW_COLUMNS, ShowRow } from "./shows";
+import { ODE_PATH } from "./paths";
 
 export async function getTonightShow(db: SupabaseClient): Promise<ShowRow | null> {
   const { data, error } = await db
@@ -24,5 +25,5 @@ export function siteUrl(): string {
 }
 
 export function doorUrl(show: ShowRow): string {
-  return `${siteUrl()}/ladies-night?door=${encodeURIComponent(show.door_code)}`;
+  return `${siteUrl()}${ODE_PATH}?door=${encodeURIComponent(show.door_code)}`;
 }

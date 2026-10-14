@@ -19,6 +19,7 @@ import { getVenue } from "./venues";
 import { publicArtist } from "./public-show";
 import { siteUrl } from "./tonight";
 import { DEFAULT_BODY, DEFAULT_SUBJECT, defaultSendAt } from "./reminder-template";
+import { ODE_PATH } from "./paths";
 
 export { DEFAULT_BODY, DEFAULT_SUBJECT, defaultSendAt };
 
@@ -169,7 +170,7 @@ export async function processReminders(db: SupabaseClient, now = new Date()) {
         date: new Date(`${show.event_date}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" }),
         time: new Date(easternToUtcIso(show.event_date, show.event_start_time)).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" }),
         venue: venue ? (venue.address ? `${venue.name}, ${venue.address}` : venue.name) : "the venue",
-        link: `${siteUrl()}/ladies-night`,
+        link: `${siteUrl()}${ODE_PATH}`,
       };
       const subject = fillText(show.reminder_subject || DEFAULT_SUBJECT, fill);
       const html = bodyToHtml(show.reminder_body || DEFAULT_BODY, fill);

@@ -10,6 +10,7 @@ import { serviceClient } from "../../../lib/admin/staff-auth";
 import { getCurrentShow, publicArtist } from "../../../lib/ln/public-show";
 import { easternToUtcIso } from "../../../lib/ln/dates";
 import { getVenue } from "../../../lib/ln/venues";
+import { ODE_PATH } from "../../../lib/ln/paths";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,7 @@ export async function GET() {
     const site = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://gyaldemsocialclub.com").replace(/\/$/, "");
     const title = artist ? `${show.title} with ${artist.display_name}` : show.title;
     const location = venue?.name ?? "";
-    const description = [show.gate_description, `${site}/ladies-night`].filter(Boolean).join("\n\n");
+    const description = [show.gate_description, `${site}${ODE_PATH}`].filter(Boolean).join("\n\n");
 
     const ics = [
       "BEGIN:VCALENDAR",
@@ -49,7 +50,7 @@ export async function GET() {
       `SUMMARY:${icsText(title)}`,
       `LOCATION:${icsText(location)}`,
       `DESCRIPTION:${icsText(description)}`,
-      `URL:${site}/ladies-night`,
+      `URL:${site}${ODE_PATH}`,
       "END:VEVENT",
       "END:VCALENDAR",
       "",

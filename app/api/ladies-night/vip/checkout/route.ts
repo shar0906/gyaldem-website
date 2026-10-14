@@ -20,6 +20,7 @@ import { getCurrentShow, publicArtist } from "../../../../lib/ln/public-show";
 import { limited, tooMany } from "../../../../lib/ln/public-guard";
 import { stripe } from "../../../../lib/ln/stripe";
 import { returnOrigin } from "../../../../lib/ln/return-origin";
+import { ODE_PATH } from "../../../../lib/ln/paths";
 
 const RESERVE_ERRORS = ["vip_disabled", "vip_closed", "sold_out", "rsvp_limit", "invalid_quantity", "rsvp_not_found"];
 // Stripe's minimum checkout lifetime is 30 minutes; a little extra
@@ -98,8 +99,8 @@ export async function POST(req: NextRequest) {
           ],
           metadata: { order_id: orderId as string, event_id: show.id, rsvp_id: rsvp.id },
           payment_intent_data: { metadata: { order_id: orderId as string, event_id: show.id } },
-          success_url: `${site}/ladies-night?vip=success&session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${site}/ladies-night?vip=cancelled`,
+          success_url: `${site}${ODE_PATH}?vip=success&session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${site}${ODE_PATH}?vip=cancelled`,
         },
         { idempotencyKey: `vip-order-${orderId}` }
       );

@@ -2,7 +2,7 @@
 //
 // GET -> the door QR code for tonight's show, as an SVG image. Admin or
 // door logins only, so the code itself never appears on a public page.
-// Scanning it opens /ladies-night in door mode, which RSVPs and checks
+// Scanning it opens /ladies-night/ode-to-her in door mode, which RSVPs and checks
 // the guest in. It only works on the night of the show.
 
 import QRCode from "qrcode";
