@@ -2,7 +2,7 @@
 //
 // Share previews for the An Ode To Her guest page: title and description
 // come from the current show and artist. Used by /ladies-night and
-// /ladies-night/ode-to-her, which show the same page.
+// /ladies-night/an-ode-to-her, which show the same page.
 
 import type { Metadata, Viewport } from "next";
 import { currentShareData } from "./share-data";

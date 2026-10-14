@@ -4,4 +4,4 @@
 // (emails, calendar, Stripe, the door QR) uses this, so it keeps working
 // when /ladies-night becomes the page listing every series.
 
-export const ODE_PATH = "/ladies-night/ode-to-her";
+export const ODE_PATH = "/ladies-night/an-ode-to-her";

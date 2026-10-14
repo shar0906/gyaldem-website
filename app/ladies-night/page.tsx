@@ -2,7 +2,7 @@
 //
 // The public Ladies Night page: RSVP, People's Choice voting, VIP, table
 // reservations, and the door QR on show night. The same page also lives
-// at /ladies-night/ode-to-her, the address we share; this one keeps old
+// at /ladies-night/an-ode-to-her, the address we share; this one keeps old
 // links working until it becomes the page listing every series.
 //
 // Share previews: title and description come from the current show and

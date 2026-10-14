@@ -1,4 +1,4 @@
-// The link-preview image for /ladies-night/ode-to-her. Rebuilt at most every 10
+// The link-preview image for /ladies-night/an-ode-to-her. Rebuilt at most every 10
 // minutes, so a new show or new cover photo shows up on its own.
 
 import { SHARE_SIZE, renderShareCard } from "../../lib/ln/share-card";

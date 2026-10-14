@@ -1,6 +1,6 @@
 # What guests see
 
-Guests go to **gyaldemsocialclub.com/ladies-night/ode-to-her**, the link to share everywhere. (`/ladies-night` shows the same page for now; it will later list every Ladies Night series.) It's built for phones and shows the next upcoming show in the artist's colors. Knowing this flow helps when a guest asks for help.
+Guests go to **gyaldemsocialclub.com/ladies-night/an-ode-to-her**, the link to share everywhere. (`/ladies-night` shows the same page for now; it will later list every Ladies Night series.) It's built for phones and shows the next upcoming show in the artist's colors. Knowing this flow helps when a guest asks for help.
 
 ## Before RSVP opens
 
@@ -42,7 +42,7 @@ Where every guest ends up:
 
 ## Show night at the door
 
-The door shows a QR code. A guest who scans it lands on `/ladies-night/ode-to-her` and is **checked in**: instantly if their phone already knows them, or after entering their details if not. They see "You're checked in. Enjoy the night."
+The door shows a QR code. A guest who scans it lands on `/ladies-night/an-ode-to-her` and is **checked in**: instantly if their phone already knows them, or after entering their details if not. They see "You're checked in. Enjoy the night."
 
 ## Emails guests get
 

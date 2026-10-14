@@ -1,4 +1,4 @@
-// app/ladies-night/ode-to-her/page.tsx
+// app/ladies-night/an-ode-to-her/page.tsx
 //
 // An Ode To Her's guest page, at the address we share: RSVP, voting, VIP,
 // table reservations, and the door QR. Same page as /ladies-night today.
@@ -10,6 +10,6 @@ export const revalidate = 600;
 export const generateMetadata = odeMetadata;
 export const viewport = odeViewport;
 
-export default function OdeToHerPage() {
+export default function AnOdeToHerPage() {
   return <LadiesNightApp />;
 }

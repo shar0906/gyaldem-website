@@ -51,7 +51,7 @@ The list on the left shows every show by date and artist, with its stage:
 | **Voting closed** | Voting is over; the show is still ahead or tonight |
 | **Past** / **Archived** | Done, or hidden |
 
-The guest page (`/ladies-night/ode-to-her`, also `/ladies-night` for now) always shows the **next upcoming show** that isn't archived. On the Events page, set the show's RSVP link to `https://gyaldemsocialclub.com/ladies-night/ode-to-her`. If you create a later show, it takes over the page the day after the current one.
+The guest page (`/ladies-night/an-ode-to-her`, also `/ladies-night` for now) always shows the **next upcoming show** that isn't archived. On the Events page, set the show's RSVP link to `https://gyaldemsocialclub.com/ladies-night/an-ode-to-her`. If you create a later show, it takes over the page the day after the current one.
 
 ### The show
 
