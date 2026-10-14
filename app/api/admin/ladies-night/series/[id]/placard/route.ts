@@ -37,8 +37,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
     : `<div class="title-text">${esc(series.name)}</div>`;
   const presents = series.presents_logo_url ? `<img class="presents" src="${esc(series.presents_logo_url)}" alt="">` : "";
   const brands = [
-    client?.logo_url ? `<img src="${esc(client.logo_url)}" alt="${esc(client.name)}">` : "",
     venue?.logo_url ? `<img src="${esc(venue.logo_url)}" alt="${esc(venue.name)}">` : "",
+    client?.logo_url ? `<img src="${esc(client.logo_url)}" alt="${esc(client.name)}">` : "",
     `<img src="/gyaldem_red_wl_transparent.png" alt="Gyal Dem">`].join("");
 
   const card = `

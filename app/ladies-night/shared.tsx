@@ -202,8 +202,9 @@ function linkFor(website: string | null, instagram: string | null): string | nul
 // each linking to their own site. Without a logo they show their name.
 export function Footer({ venue, artist, client }: { venue?: Venue | null; artist?: Artist | null; client?: Client | null }) {
   const items: { key: string; name: string; logo: string | null; href: string | null; external: boolean }[] = [];
-  if (client) items.push({ key: "client", name: client.name, logo: client.logo_url, href: linkFor(client.website_url, client.instagram_handle), external: true });
+  // Order: venue, then the partner (client) or artist, then Gyal Dem.
   if (venue) items.push({ key: "venue", name: venue.name, logo: venue.logo_url, href: linkFor(venue.website_url, venue.instagram_handle), external: true });
+  if (client) items.push({ key: "client", name: client.name, logo: client.logo_url, href: linkFor(client.website_url, client.instagram_handle), external: true });
   if (artist) items.push({ key: "artist", name: artist.display_name, logo: artist.logo_url, href: linkFor(artist.website_url, artist.instagram_handle), external: true });
   items.push({ key: "gyaldem", name: "Gyal Dem Social Club", logo: "/gyaldem_red_wl_transparent.png", href: "https://gyaldemsocialclub.com", external: false });
 

@@ -13,7 +13,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { serviceClient } from "../../../lib/admin/staff-auth";
-import { getCurrentShow, getLastShow, guestStage } from "../../../lib/ln/public-show";
+import { getCurrentShow, getLastShow, guestStage, publicArtist } from "../../../lib/ln/public-show";
 import { getClient, publicSeries } from "../../../lib/ln/series";
 import { loadSeries } from "../../../lib/ln/public-guard";
 import { publicLive } from "../../../lib/ln/live";
@@ -57,7 +57,10 @@ export async function GET(req: NextRequest) {
       next = data ?? null;
     }
 
-    const venue = show ? await getVenue(db, show.venue_id) : null;
+    const [venue, artist] = await Promise.all([
+      show ? getVenue(db, show.venue_id) : Promise.resolve(null),
+      show && series.feat_voting ? publicArtist(db, show.artist_id) : Promise.resolve(null),
+    ]);
     const live = show ? await publicLive(db, show, series.call_delay_seconds) : null;
     // A next show that hasn't happened yet always reads "before".
     if (live && show && show === upcoming && !tonight) live.state = "before";
@@ -74,6 +77,7 @@ export async function GET(req: NextRequest) {
               theme_name: show.theme_name,
               dj_name: show.dj_name,
               venue: publicVenue(venue),
+              artist,
             }
           : null,
         live,

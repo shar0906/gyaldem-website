@@ -45,7 +45,7 @@ Where every guest ends up:
 - **Countdown** to the show, then **Starting soon** on the night.
 - **Make it VIP**, if passes are still available.
 - **Add to calendar.** The invite has the venue's full address and the live page link.
-- The **footer** shows the client (or artist), venue, and Gyal Dem logos, each linking to their site.
+- The **footer** shows the venue, the partner (or artist), and Gyal Dem logos, in that order, each linking to their site.
 
 ## The live page
 

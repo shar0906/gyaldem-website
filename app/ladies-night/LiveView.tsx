@@ -12,7 +12,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CREAM, Footer, GOLD, INK, SANS, SERIF, Series, V, Venue, card, cta, eyebrow, outlineButton, prettyDate, prettyTime } from "./shared";
+import { Artist, CREAM, Footer, GOLD, INK, SANS, SERIF, Series, V, Venue, card, cta, eyebrow, outlineButton, prettyDate, prettyTime } from "./shared";
 
 type Call = { order: number; callout: string; answer: string | null; card: string | null };
 type Post = { id: string; kind: "announcement" | "winner"; body: string; round_number: number | null; created_at: string };
@@ -26,6 +26,7 @@ export type LiveData = {
     theme_name: string | null;
     dj_name: string | null;
     venue: Venue | null;
+    artist: Artist | null;
   } | null;
   live: {
     state: "before" | "live" | "after";
@@ -186,11 +187,11 @@ function Updates({ posts }: { posts: Post[] }) {
   );
 }
 
-function RunningOrder({ items, now }: { items: { label: string; time: string | null }[]; now: number | null }) {
+function RunningOrder({ items, now, title }: { items: { label: string; time: string | null }[]; now: number | null; title: string }) {
   if (!items.length) return null;
   return (
-    <section style={{ ...card }} aria-label="Tonight">
-      <h2 style={{ margin: "0 0 6px", fontFamily: SERIF, fontStyle: "italic", fontSize: 19, fontWeight: 700 }}>Tonight</h2>
+    <section style={{ ...card }} aria-label={title}>
+      <h2 style={{ margin: "0 0 6px", fontFamily: SERIF, fontStyle: "italic", fontSize: 19, fontWeight: 700 }}>{title}</h2>
       {items.map((it, i) => {
         const on = i === now;
         return (
@@ -297,6 +298,8 @@ export default function LiveView({
   const startMs = show ? easternMs(show.event_date, show.event_start_time) : null;
   const nextMs = next ? easternMs(next.event_date, next.event_start_time) : null;
   const bingo = live?.bingo ?? null;
+  const todayEastern = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+  const isTonight = !!show && show.event_date === todayEastern;
   const showBingo = bingo && (state === "live" || (state === "after" && bingo.calls.length > 0));
 
   return (
@@ -311,7 +314,7 @@ export default function LiveView({
           </span>
         ) : (
           <span style={{ fontSize: 10.5, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(251,243,236,0.7)" }}>
-            {state === "after" ? "Recap" : "Tonight"}
+            {state === "after" ? "Recap" : isTonight ? "Tonight" : "Next up"}
           </span>
         )}
       </header>
@@ -355,7 +358,7 @@ export default function LiveView({
       )}
 
       {show && (state === "live" || (live?.posts.length ?? 0) > 0) && <Updates posts={live?.posts ?? []} />}
-      {show && state !== "after" && <RunningOrder items={live?.running_order ?? []} now={state === "live" ? live?.run_now ?? null : null} />}
+      {show && state !== "after" && <RunningOrder items={live?.running_order ?? []} now={state === "live" ? live?.run_now ?? null : null} title={isTonight || state === "live" ? "Tonight" : "The night"} />}
 
       {next && state === "after" && (
         <section style={{ ...card, display: "flex", flexDirection: "column", gap: 12, textAlign: "center" }}>
@@ -373,7 +376,7 @@ export default function LiveView({
         </section>
       )}
 
-      {!embedded && <Footer venue={show?.venue ?? null} client={series.client} />}
+      {!embedded && <Footer venue={show?.venue ?? null} artist={show?.artist ?? null} client={series.client} />}
     </main>
   );
 }
