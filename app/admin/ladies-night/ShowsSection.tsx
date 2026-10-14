@@ -87,6 +87,7 @@ type ShowRow = {
   gallery_url: string | null;
   vip_closes_at: string | null;
   recap_emailed_at: string | null;
+  live_ended_at?: string | null;
   series?: { id: string; name: string; slug: string } | null;
   stage: string;
   artist?: Artist | null;
@@ -589,6 +590,30 @@ export default function ShowsSection() {
           </div>
         ) : form ? (
           <div style={{ ...PANEL, padding: 24, display: "flex", flexDirection: "column", gap: 22 }}>
+            {show && recap && (
+              <section style={{ display: "flex", flexDirection: "column", gap: 10, paddingBottom: 20, borderBottom: LINE }}>
+                {/* Live numbers until the night is over; then it's the recap. */}
+                <p style={sectionLabel}>
+                  {show.event_date < today || show.live_ended_at ? "Recap" : "Current stats"}{" "}
+                  {show.recap_emailed_at ? `(emailed ${formatDateTime(show.recap_emailed_at)})` : "(the recap is emailed to the client the day after)"}
+                </p>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8, fontSize: 13 }}>
+                  {[
+                    ["RSVPs", recap.rsvps],
+                    ...(formSeries?.feat_vip ?? true ? [["VIP passes", `${recap.vip_passes}${recap.vip_passes ? ` (${money(recap.vip_revenue_cents)})` : ""}`]] : []),
+                    ["Tables booked", recap.tables],
+                    ["Checked in", recap.checked_in],
+                    ["Live page visits", recap.live_views],
+                  ].map(([k, v]) => (
+                    <div key={k as string} style={{ border: LINE, padding: "8px 10px" }}>
+                      <div style={{ color: MUTED, fontSize: 11 }}>{k}</div>
+                      <div style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: 20 }}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+                {recap.winners.length > 0 && <span style={{ fontSize: 13 }}>Winners: {recap.winners.join(" · ")}</span>}
+              </section>
+            )}
             <section style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
                 <p style={sectionLabel}>The show</p>
@@ -950,26 +975,6 @@ export default function ShowsSection() {
             </div>
             {notice && !notice.field && <Notice tone={notice.tone}>{notice.text}</Notice>}
 
-            {show && recap && (
-              <section style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 20, borderTop: LINE }}>
-                <p style={sectionLabel}>Recap {show.recap_emailed_at ? `(emailed ${formatDateTime(show.recap_emailed_at)})` : "(emailed to the client the day after)"}</p>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8, fontSize: 13 }}>
-                  {[
-                    ["RSVPs", recap.rsvps],
-                    ...(formSeries?.feat_vip ?? true ? [["VIP passes", `${recap.vip_passes}${recap.vip_passes ? ` (${money(recap.vip_revenue_cents)})` : ""}`]] : []),
-                    ["Tables booked", recap.tables],
-                    ["Checked in", recap.checked_in],
-                    ["Live page visits", recap.live_views],
-                  ].map(([k, v]) => (
-                    <div key={k as string} style={{ border: LINE, padding: "8px 10px" }}>
-                      <div style={{ color: MUTED, fontSize: 11 }}>{k}</div>
-                      <div style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: 20 }}>{v}</div>
-                    </div>
-                  ))}
-                </div>
-                {recap.winners.length > 0 && <span style={{ fontSize: 13 }}>Winners: {recap.winners.join(" · ")}</span>}
-              </section>
-            )}
 
             {show && voting && (
               <section style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 20, borderTop: LINE }}>
