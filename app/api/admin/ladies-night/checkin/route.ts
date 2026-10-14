@@ -1,19 +1,24 @@
 // app/api/admin/ladies-night/checkin/route.ts
 //
-// Door check-in for tonight's show. Admin or door logins.
+// Door check-in for tonight's show. Admin or door logins; hosts can read
+// the list (the host console's Guests tab). Logins limited to a series
+// only see that series' show.
 //
-// GET  -> { show, counts, guests }   The door screen refreshes this every
-//   couple of seconds, so check-ins from other phones show up.
-//   show is null when there's no show tonight.
+// GET ?show=<id>[&format=csv] -> { show, shows, counts, guests }
+//   The door screen refreshes this every couple of seconds, so check-ins
+//   from other phones show up. show is null when there's no show tonight;
+//   shows lists tonight's shows this login can pick from. format=csv
+//   downloads the list.
 //
-// POST -> { rsvp_id, checked_in: true | false }
+// POST -> { show_id?, rsvp_id, checked_in: true | false }
 //   Check a guest in, or undo it. Only for tonight's guests.
 //   200 { success: true, checked_in_at }
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireStaffUser, serviceClient } from "../../../../lib/admin/staff-auth";
-import { getTonightShow } from "../../../../lib/ln/tonight";
+import { staffTonight } from "../../../../lib/ln/staff-show";
 import { publicArtist } from "../../../../lib/ln/public-show";
+import { csvResponse, toCsv } from "../../../../lib/ln/csv";
 import { getVenue } from "../../../../lib/ln/venues";
 
 export const dynamic = "force-dynamic";
@@ -24,26 +29,29 @@ type Row = {
   table_party_size: number | null;
   checked_in_at: string | null;
   checked_in_by: string | null;
+  posh_clicked_at: string | null;
+  posh_confirmed_at: string | null;
   ln_voters: { first_name: string | null; last_name: string | null; name: string; email: string } | null;
 };
 
-export async function GET() {
-  const user = await requireStaffUser(["admin", "door"]);
+export async function GET(req: NextRequest) {
+  const user = await requireStaffUser(["admin", "door", "host"]);
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 403 });
 
   const db = serviceClient();
   try {
-    const show = await getTonightShow(db);
-    if (!show) return NextResponse.json({ show: null }, { headers: { "Cache-Control": "no-store" } });
+    const { current, options } = await staffTonight(db, user, req.nextUrl.searchParams.get("show"));
+    if (!current) return NextResponse.json({ show: null, shows: [] }, { headers: { "Cache-Control": "no-store" } });
+    const { show, series } = current;
 
     const [rsvpRes, vipRes, artist, venue] = await Promise.all([
       db
         .from("ln_rsvps")
-        .select("id, source, table_party_size, checked_in_at, checked_in_by, ln_voters(first_name, last_name, name, email)")
+        .select("id, source, table_party_size, checked_in_at, checked_in_by, posh_clicked_at, posh_confirmed_at, ln_voters(first_name, last_name, name, email)")
         .eq("event_id", show.id)
         .returns<Row[]>(),
       db.from("ln_vip_orders").select("rsvp_id, quantity").eq("event_id", show.id).eq("status", "paid"),
-      publicArtist(db, show.artist_id),
+      series.feat_voting ? publicArtist(db, show.artist_id) : Promise.resolve(null),
       getVenue(db, show.venue_id),
     ]);
     if (rsvpRes.error || vipRes.error) throw rsvpRes.error ?? vipRes.error;
@@ -63,6 +71,7 @@ export async function GET() {
           vip_passes: vip.get(r.id) ?? 0,
           walk_in: r.source !== "gate",
           party_size: r.table_party_size,
+          posh: r.posh_confirmed_at ? "done" : r.posh_clicked_at ? "opened" : null,
           checked_in_at: r.checked_in_at,
         };
       })
@@ -75,6 +84,16 @@ export async function GET() {
       vip_passes_in: guests.reduce((n, g) => n + (g.checked_in_at ? g.vip_passes : 0), 0),
     };
 
+    if (req.nextUrl.searchParams.get("format") === "csv") {
+      return csvResponse(
+        `${series.slug}-${show.event_date}-guests.csv`,
+        toCsv(
+          ["First name", "Last name", "Email", "Party size", "VIP passes", "Posh", "Checked in"],
+          guests.map((g) => [g.first_name, g.last_name, g.email, g.party_size, g.vip_passes, g.posh ?? "", g.checked_in_at ? "yes" : ""])
+        )
+      );
+    }
+
     return NextResponse.json(
       {
         show: {
@@ -84,7 +103,10 @@ export async function GET() {
           event_start_time: show.event_start_time,
           artist_name: artist?.display_name ?? null,
           venue_name: venue?.name ?? null,
+          series_name: series.name,
+          door_enabled: series.feat_door,
         },
+        shows: options,
         counts,
         guests,
       },
@@ -100,7 +122,7 @@ export async function POST(req: NextRequest) {
   const user = await requireStaffUser(["admin", "door"]);
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 403 });
 
-  const body = (await req.json().catch(() => null)) as { rsvp_id?: unknown; checked_in?: unknown } | null;
+  const body = (await req.json().catch(() => null)) as { show_id?: unknown; rsvp_id?: unknown; checked_in?: unknown } | null;
   const rsvpId = typeof body?.rsvp_id === "string" ? body.rsvp_id : null;
   if (!rsvpId || typeof body?.checked_in !== "boolean") {
     return NextResponse.json({ error: "missing_fields" }, { status: 400 });
@@ -108,8 +130,9 @@ export async function POST(req: NextRequest) {
 
   const db = serviceClient();
   try {
-    const show = await getTonightShow(db);
-    if (!show) return NextResponse.json({ error: "no_show_tonight" }, { status: 409 });
+    const { current } = await staffTonight(db, user, body.show_id);
+    if (!current) return NextResponse.json({ error: "no_show_tonight" }, { status: 409 });
+    const { show } = current;
 
     const checkedInAt = body.checked_in ? new Date().toISOString() : null;
     const { data, error } = await db

@@ -1,7 +1,10 @@
 // app/api/admin/staff/invite/route.ts
 //
 // POST /api/admin/staff/invite
-// Body: { email: string, name?: string, role: "super_admin" | "admin" | "artist" | "door" | "host" }
+// Body: { email: string, name?: string, role: "super_admin" | "admin" | "artist" | "door" | "host",
+//         series_id?: string }
+// series_id limits a host or door login to one series (e.g. a client's
+// own login). Ignored for other roles.
 //
 // Who can invite whom:
 //   super admins: any role
@@ -53,7 +56,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = (await req.json().catch(() => null)) as
-    | { email?: unknown; name?: unknown; role?: unknown }
+    | { email?: unknown; name?: unknown; role?: unknown; series_id?: unknown }
     | null;
   const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
   const name = typeof body?.name === "string" && body.name.trim() ? body.name.trim().slice(0, 80) : null;
@@ -75,6 +78,14 @@ export async function POST(req: NextRequest) {
 
   const db = serviceClient();
 
+  let seriesId: string | null = null;
+  if ((role === "host" || role === "door") && typeof body?.series_id === "string" && body.series_id) {
+    const { data: series, error: seriesError } = await db.from("ln_series").select("id").eq("id", body.series_id).maybeSingle();
+    if (seriesError) return NextResponse.json({ error: "server_error" }, { status: 500 });
+    if (!series) return NextResponse.json({ error: "bad_series" }, { status: 400 });
+    seriesId = series.id;
+  }
+
   const { data: existing, error: existingError } = await db
     .from("ln_staff")
     .select("role, name")
@@ -93,7 +104,7 @@ export async function POST(req: NextRequest) {
 
   const { error: staffError } = await db
     .from("ln_staff")
-    .upsert({ email, name: name ?? existing?.name ?? null, role }, { onConflict: "email" });
+    .upsert({ email, name: name ?? existing?.name ?? null, role, series_id: seriesId }, { onConflict: "email" });
   if (staffError) {
     if (staffError.message?.includes("last_super_admin")) {
       return NextResponse.json({ error: "last_super_admin" }, { status: 409 });

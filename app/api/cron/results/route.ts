@@ -1,19 +1,23 @@
 // app/api/cron/results/route.ts
 //
 // POST /api/cron/results   (GET works too)
-// Emails People's Choice results for every show whose voting has closed
-// and hasn't been emailed yet. Called hourly by the scheduler. Requires
-// Authorization: Bearer <CRON_SECRET>.
+// Called hourly by the scheduler. Requires Authorization: Bearer <CRON_SECRET>.
+//   - People's Choice results to the artist, for every show whose voting
+//     has closed and hasn't been emailed yet
+//   - The recap (RSVPs, Posh, tables, VIP, live visits, winners) to the
+//     series' client, the day after each show
 //
 // Only looks back two weeks, so turning this on never mass-emails old
 // shows. A show whose email fails is retried on the next run.
 //
-//   200 { sent, skipped, failed }
+//   200 { sent, skipped, failed, recaps: { sent, failed } }
 
 import { NextRequest, NextResponse } from "next/server";
 import { serviceClient } from "../../../lib/admin/staff-auth";
 import { cronAuthorized } from "../../../lib/ln/cron-auth";
 import { sendShowResults } from "../../../lib/ln/results-email";
+import { sendShowRecap } from "../../../lib/ln/recap";
+import { todayEastern } from "../../../lib/ln/dates";
 import { mailerConfigured } from "../../../lib/ln/mailer";
 
 export const dynamic = "force-dynamic";
@@ -51,7 +55,28 @@ async function run(req: NextRequest) {
         failed++;
       }
     }
-    return NextResponse.json({ sent, skipped, failed });
+    // Recaps: shows from the last two weeks that are over (yesterday or
+    // earlier, Eastern).
+    const { data: over, error: overError } = await db
+      .from("ln_events")
+      .select("id")
+      .eq("archived", false)
+      .is("recap_emailed_at", null)
+      .lt("event_date", todayEastern(now))
+      .gte("event_date", since.toISOString().slice(0, 10));
+    if (overError) throw overError;
+    const recaps = { sent: 0, failed: 0 };
+    for (const show of over ?? []) {
+      try {
+        await sendShowRecap(db, show.id);
+        recaps.sent++;
+      } catch (err) {
+        console.error(`recap email for ${show.id} failed:`, err);
+        recaps.failed++;
+      }
+    }
+
+    return NextResponse.json({ sent, skipped, failed, recaps });
   } catch (error) {
     console.error("results cron failed:", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });

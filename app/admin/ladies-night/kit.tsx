@@ -154,9 +154,15 @@ export function showLabel(s: {
   event_date: string;
   artist?: { display_name: string } | null;
   venue?: { name: string } | null;
+  series?: { name: string } | null;
+  theme_name?: string | null;
 }): string {
   const date = new Date(`${s.event_date}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
-  const parts = [date, s.artist?.display_name ?? "No artist yet"];
+  const parts = [date];
+  if (s.series?.name) parts.push(s.series.name);
+  if (s.artist?.display_name) parts.push(s.artist.display_name);
+  else if (s.theme_name) parts.push(s.theme_name);
+  else if (!s.series) parts.push("No artist yet");
   if (s.venue?.name) parts.push(s.venue.name);
   return parts.join(" · ");
 }

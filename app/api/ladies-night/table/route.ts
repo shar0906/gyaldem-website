@@ -3,6 +3,7 @@
 // POST /api/ladies-night/table
 // Public, remembered guests only. Records that the guest has a table.
 //
+// Every body may include series (defaults to an-ode-to-her).
 //   {}                                   "I've reserved my table" (honor system)
 //   { source: "opentable", confirmation_number, party_size,
 //     reservation_datetime }             the booking OpenTable reported to the
@@ -20,8 +21,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { serviceClient } from "../../../lib/admin/staff-auth";
 import { readGuestId } from "../../../lib/ln/guest-session";
 import { guestState } from "../../../lib/ln/guests";
-import { getCurrentShow } from "../../../lib/ln/public-show";
-import { limited, tooMany } from "../../../lib/ln/public-guard";
+import { limited, loadSeriesShow, tooMany } from "../../../lib/ln/public-guard";
 
 export async function POST(req: NextRequest) {
   if (limited(req, "table", 10)) return tooMany();
@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
   if (!voterId) return NextResponse.json({ error: "not_signed_in" }, { status: 401 });
 
   const body = (await req.json().catch(() => ({}))) as {
+    series?: unknown;
     source?: unknown;
     confirmation_number?: unknown;
     party_size?: unknown;
@@ -53,8 +54,9 @@ export async function POST(req: NextRequest) {
 
   const db = serviceClient();
   try {
-    const show = await getCurrentShow(db);
-    if (!show) return NextResponse.json({ error: "rsvp_required" }, { status: 409 });
+    const loaded = await loadSeriesShow(db, body.series);
+    if (!loaded.ok) return NextResponse.json({ error: "rsvp_required" }, { status: 409 });
+    const { show } = loaded;
 
     const { data: rsvp, error: findError } = await db
       .from("ln_rsvps")

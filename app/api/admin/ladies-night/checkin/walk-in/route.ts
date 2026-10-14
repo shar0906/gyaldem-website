@@ -1,7 +1,7 @@
 // app/api/admin/ladies-night/checkin/walk-in/route.ts
 //
 // POST -> walk-in typed in by the door (for guests without a phone).
-// Body: { first_name, last_name, email, consent: true }
+// Body: { show_id?, first_name, last_name, email, consent: true }
 // consent is the door's "Guest agreed to RSVP and join the mailing list"
 // box. RSVPs them to tonight's show, queues them for Kit, and checks them
 // in, all at once. Admin or door logins.
@@ -13,7 +13,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStaffUser, serviceClient } from "../../../../../lib/admin/staff-auth";
 import { parseGuest, upsertGuestRsvp } from "../../../../../lib/ln/guests";
-import { getTonightShow } from "../../../../../lib/ln/tonight";
+import { staffTonight } from "../../../../../lib/ln/staff-show";
 
 export async function POST(req: NextRequest) {
   const user = await requireStaffUser(["admin", "door"]);
@@ -30,8 +30,9 @@ export async function POST(req: NextRequest) {
 
   const db = serviceClient();
   try {
-    const show = await getTonightShow(db);
-    if (!show) return NextResponse.json({ error: "no_show_tonight" }, { status: 409 });
+    const { current } = await staffTonight(db, user, body.show_id);
+    if (!current) return NextResponse.json({ error: "no_show_tonight" }, { status: 409 });
+    const { show } = current;
 
     const { rsvpId } = await upsertGuestRsvp(db, {
       showId: show.id,

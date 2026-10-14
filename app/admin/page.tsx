@@ -19,7 +19,7 @@ import { createBrowserClient } from "@supabase/ssr";
 import AdminDashboard from "./AdminDashboard";
 import ArtistDashboard from "./artist/ArtistDashboard";
 import DoorCheckIn from "./showtime/DoorCheckIn";
-import HostBingo from "./showtime/HostBingo";
+import HostConsole from "./showtime/HostConsole";
 
 type StaffRole = "super_admin" | "admin" | "artist" | "door" | "host";
 type StaffUser = { email: string; role: StaffRole };
@@ -111,7 +111,7 @@ export default function AdminPage() {
     // or /admin?screen=bingo (linked from the Ladies Night menu).
     const screen = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("screen") : null;
     if (screen === "checkin") return <DoorCheckIn onLogout={handleLogout} />;
-    if (screen === "bingo") return <HostBingo onLogout={handleLogout} />;
+    if (screen === "bingo") return <HostConsole onLogout={handleLogout} />;
     return <AdminDashboard onLogout={handleLogout} isSuper={staffUser.role === "super_admin"} />;
   }
 
@@ -120,7 +120,7 @@ export default function AdminPage() {
   }
 
   if (staffUser?.role === "door") return <DoorCheckIn onLogout={handleLogout} />;
-  if (staffUser?.role === "host") return <HostBingo onLogout={handleLogout} />;
+  if (staffUser?.role === "host") return <HostConsole onLogout={handleLogout} />;
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center" }}>

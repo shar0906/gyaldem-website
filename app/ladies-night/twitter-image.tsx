@@ -1,14 +1,22 @@
-// Same card for X / Twitter previews.
+// The link-preview image for the Ladies Night hub.
 
 import { SHARE_SIZE, renderShareCard } from "../lib/ln/share-card";
-import { currentShareData } from "../lib/ln/share-data";
 
 export const runtime = "nodejs";
-export const revalidate = 600;
 export const alt = "Ladies Night, hosted by Gyal Dem Social Club";
 export const size = SHARE_SIZE;
 export const contentType = "image/png";
 
 export default async function Image() {
-  return renderShareCard(await currentShareData());
+  return renderShareCard({
+    title: "Ladies Night",
+    artistName: null,
+    djName: null,
+    venueName: null,
+    dateText: "Nights for the girls, across the city",
+    coverUrl: null,
+    primary: null,
+    accent: null,
+    cta: "Pick your night",
+  });
 }

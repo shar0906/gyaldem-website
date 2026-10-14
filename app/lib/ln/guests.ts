@@ -134,7 +134,7 @@ export async function guestState(db: SupabaseClient, voterId: string, showId: st
     db.from("ln_voters").select("first_name, name").eq("id", voterId).maybeSingle(),
     db
       .from("ln_rsvps")
-      .select("id, share_with_artist, table_reserved_at, table_party_size, table_reserved_for, table_confirmation, checked_in_at")
+      .select("id, share_with_artist, table_reserved_at, table_party_size, table_reserved_for, table_confirmation, checked_in_at, posh_clicked_at, posh_confirmed_at")
       .eq("event_id", showId)
       .eq("voter_id", voterId)
       .maybeSingle(),
@@ -171,6 +171,7 @@ export async function guestState(db: SupabaseClient, voterId: string, showId: st
             : null,
           checked_in: !!rsvpRes.data.checked_in_at,
           vip_passes: vipPasses,
+          posh: { clicked: !!rsvpRes.data.posh_clicked_at, confirmed: !!rsvpRes.data.posh_confirmed_at },
         }
       : null,
     voted: picks.length > 0,

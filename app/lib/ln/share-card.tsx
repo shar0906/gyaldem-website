@@ -1,8 +1,9 @@
 // lib/ln/share-card.tsx
 //
-// The link-preview image for /ladies-night (what iMessage, Instagram DMs,
-// WhatsApp, and X show when the link is shared): the artist's cover photo
-// on the left, the show on the right, in the artist's colors.
+// The link-preview image for a series page (what iMessage, Instagram DMs,
+// WhatsApp, and X show when the link is shared): the cover photo on the
+// left (the artist's, or the series'), the show on the right, in its
+// colors.
 
 import { ImageResponse } from "next/og";
 import { ballotTheme } from "./theme";
@@ -12,11 +13,13 @@ export const SHARE_SIZE = { width: 1200, height: 630 };
 export type ShareCardData = {
   title: string;
   artistName: string | null;
+  djName: string | null;
   venueName: string | null;
   dateText: string | null;
   coverUrl: string | null;
   primary: string | null;
   accent: string | null;
+  cta: string;
 };
 
 // Remote photos are fetched here so a slow or missing one never breaks the
@@ -54,6 +57,9 @@ export async function renderShareCard(d: ShareCardData): Promise<ImageResponse> 
           {d.artistName && (
             <div style={{ display: "flex", fontSize: 40, color: theme.accentSoft, fontWeight: 700 }}>with {d.artistName}</div>
           )}
+          {!d.artistName && d.djName && (
+            <div style={{ display: "flex", fontSize: 34, color: theme.accentSoft, fontWeight: 700 }}>Music by {d.djName}</div>
+          )}
           {d.dateText && <div style={{ display: "flex", fontSize: 28, color: "rgba(251,243,236,0.85)" }}>{[d.dateText, d.venueName].filter(Boolean).join(" · ")}</div>}
           <div
             style={{
@@ -69,7 +75,7 @@ export async function renderShareCard(d: ShareCardData): Promise<ImageResponse> 
               color: "#D8B667",
             }}
           >
-            RSVP · Vote the set list
+            {d.cta}
           </div>
         </div>
       </div>

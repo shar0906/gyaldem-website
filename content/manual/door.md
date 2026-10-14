@@ -1,6 +1,6 @@
 # Door guide
 
-On show night, log in at **gyaldemsocialclub.com/admin** with your door login. You go straight to check-in. Before show night, the screen says there's no show tonight.
+On show night, log in at **gyaldemsocialclub.com/admin** with your door login. You go straight to check-in. Before show night, the screen says there's no show tonight. If two series have a show the same night, pick the right one from the list at the top.
 
 ## Checking guests in
 

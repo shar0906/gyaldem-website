@@ -1,7 +1,8 @@
 // lib/ln/reminder.ts
 //
 // The automatic reminder email for each show, sent through Kit to the
-// show's tag ("Ladies Night 2026-11-04"). On by default; 6 PM Eastern the
+// show's tag (see kit-tags.ts). Series with reminders switched off are
+// skipped. On by default; 6 PM Eastern the
 // evening before unless a time is set. Blank subject or message means the
 // default template, filled in from the show.
 //
@@ -17,11 +18,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { easternToUtcIso, todayEastern } from "./dates";
 import { getVenue } from "./venues";
 import { publicArtist } from "./public-show";
-import { siteUrl } from "./tonight";
-import { DEFAULT_BODY, DEFAULT_SUBJECT, defaultSendAt } from "./reminder-template";
-import { ODE_PATH } from "./paths";
+import { siteUrl } from "./site";
+import { DEFAULT_BODY, DEFAULT_SUBJECT, defaultSendAt, defaultTemplate } from "./reminder-template";
+import { showTagName } from "./kit-tags";
+import { SERIES_COLUMNS, SeriesRow, livePath, seriesPath } from "./series";
 
-export { DEFAULT_BODY, DEFAULT_SUBJECT, defaultSendAt };
+export { DEFAULT_BODY, DEFAULT_SUBJECT, defaultSendAt, showTagName };
 
 const KIT = "https://api.kit.com/v4";
 const HAND_OFF_DAYS = 7;
@@ -39,20 +41,27 @@ export type ReminderShow = {
   reminder_body: string | null;
   reminder_broadcast_id: number | null;
   reminder_synced_hash: string | null;
+  series_id: string;
+  dj_name: string | null;
 };
 
 export const REMINDER_COLUMNS =
-  "id, event_date, event_start_time, archived, artist_id, venue_id, reminder_enabled, reminder_send_at, reminder_subject, reminder_body, reminder_broadcast_id, reminder_synced_hash";
+  "id, event_date, event_start_time, archived, artist_id, venue_id, reminder_enabled, reminder_send_at, reminder_subject, reminder_body, reminder_broadcast_id, reminder_synced_hash, series_id, dj_name";
 
 export function sendAtFor(show: Pick<ReminderShow, "event_date" | "reminder_send_at">): string {
   return show.reminder_send_at ?? defaultSendAt(show.event_date);
 }
 
-export function showTagName(eventDate: string): string {
-  return `Ladies Night ${eventDate}`;
-}
-
-export type Fill = { artist: string; date: string; time: string; venue: string; link: string };
+export type Fill = {
+  series: string;
+  artist: string;
+  dj: string;
+  date: string;
+  time: string;
+  venue: string;
+  link: string;
+  live: string;
+};
 
 function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -60,6 +69,9 @@ function esc(s: string): string {
 
 export function fillText(template: string, f: Fill): string {
   return template
+    .replace(/\{series\}/g, f.series)
+    .replace(/\{dj\}/g, f.dj)
+    .replace(/\{live\}/g, f.live)
     .replace(/\{artist\}/g, f.artist)
     .replace(/\{date\}/g, f.date)
     .replace(/\{time\}/g, f.time)
@@ -74,7 +86,12 @@ export function bodyToHtml(text: string, f: Fill): string {
     .split(/\n\s*\n/)
     .map((para) => {
       const html = esc(para.trim()).replace(/\n/g, "<br>");
-      const linked = html.split(esc(f.link)).join(`<a href="${esc(f.link)}">${esc(f.link)}</a>`);
+      // Longer link first, so the live link isn't split by the page link.
+      const links = [f.live, f.link].filter(Boolean).sort((a, b) => b.length - a.length);
+      let linked = html;
+      const marks = links.map((_, i) => `\u0000${i}\u0000`);
+      links.forEach((l, i) => (linked = linked.split(esc(l)).join(marks[i])));
+      links.forEach((l, i) => (linked = linked.split(marks[i]).join(`<a href="${esc(l)}">${esc(l)}</a>`)));
       return `<p>${linked}</p>`;
     })
     .join("\n");
@@ -161,21 +178,36 @@ export async function processReminders(db: SupabaseClient, now = new Date()) {
     .returns<ReminderShow[]>();
   if (error) throw error;
 
-  for (const show of shows ?? []) {
+  const seriesIds = [...new Set((shows ?? []).map((s) => s.series_id))];
+  const { data: seriesRows, error: seriesError } = seriesIds.length
+    ? await db.from("ln_series").select(SERIES_COLUMNS).in("id", seriesIds).returns<SeriesRow[]>()
+    : { data: [] as SeriesRow[], error: null };
+  if (seriesError) throw seriesError;
+  const seriesById = new Map((seriesRows ?? []).map((s) => [s.id, s]));
+
+  for (const raw of shows ?? []) {
+    const series = seriesById.get(raw.series_id) ?? null;
+    // A series with reminders switched off cancels anything scheduled.
+    const show = series && !series.feat_reminder ? { ...raw, reminder_enabled: false } : raw;
     const record = (fields: Record<string, unknown>) => db.from("ln_events").update(fields).eq("id", show.id);
     try {
       const [artist, venue] = await Promise.all([publicArtist(db, show.artist_id), getVenue(db, show.venue_id)]);
       const fill: Fill = {
+        series: series?.name ?? "Ladies Night",
+        dj: show.dj_name ?? "",
         artist: artist?.display_name ?? "Tonight's artist",
         date: new Date(`${show.event_date}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" }),
         time: new Date(easternToUtcIso(show.event_date, show.event_start_time)).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" }),
         venue: venue ? (venue.address ? `${venue.name}, ${venue.address}` : venue.name) : "the venue",
-        link: `${siteUrl()}${ODE_PATH}`,
+        link: series ? `${siteUrl()}${seriesPath(series.slug)}` : siteUrl(),
+        live: series ? `${siteUrl()}${livePath(series.slug)}` : siteUrl(),
       };
-      const subject = fillText(show.reminder_subject || DEFAULT_SUBJECT, fill);
-      const html = bodyToHtml(show.reminder_body || DEFAULT_BODY, fill);
+      const defaults = defaultTemplate(series?.feat_voting ?? true);
+      const subject = fillText(show.reminder_subject || defaults.subject, fill);
+      const html = bodyToHtml(show.reminder_body || defaults.body, fill);
       const sendAt = sendAtFor(show);
-      const hash = hashOf([subject, html, sendAt, showTagName(show.event_date)]);
+      const tagName = showTagName(show.event_date, series);
+      const hash = hashOf([subject, html, sendAt, tagName]);
 
       const action = decide(show, now, hash);
       if (action.kind === "wait") result.waiting++;
@@ -191,7 +223,7 @@ export async function processReminders(db: SupabaseClient, now = new Date()) {
         result.cancelled++;
       }
       if (action.kind === "schedule") {
-        const tagId = await findTagId(showTagName(show.event_date));
+        const tagId = await findTagId(tagName);
         if (!tagId) {
           await record({ reminder_error: "No guests are tagged for this show in Kit yet. It'll schedule once they are." });
           result.waiting++;

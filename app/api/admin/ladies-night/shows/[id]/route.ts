@@ -2,16 +2,18 @@
 //
 // Admin-only.
 //
-// GET   -> { show, artist, songs }
+// GET   -> { show, artist, songs, recap }
 //   songs: the ballot in order, each with its current vote count.
+//   recap: RSVPs, Posh, tables, check-ins, VIP, live visits, winners.
 //
 // PATCH -> edit any show settings; changes go live right away.
 //   Body: any subset of the fields accepted on create, plus archived.
 //   - Changing the artist clears the old artist's draft songs (they were
 //     proposed for someone else's set). Not allowed once the ballot is
 //     published.
-//   - Title, description, date, and times are mirrored to the site's
-//     public Events page.
+//   - Title, description, date, times, venue, and series are mirrored to
+//     the site's public Events page.
+//   - Moving a show to another series is allowed until anyone has RSVP'd.
 //   200 { success: true, show, drafts_cleared }
 //   400 { error: "invalid", field, message }
 //   404 not_found
@@ -22,6 +24,8 @@ import { requireStaffUser, serviceClient, ARTIST_COLUMNS } from "../../../../../
 import { parseShowPatch } from "../../../../../lib/ln/show-rules";
 import { showStage } from "../../../../../lib/ln/show-status";
 import { SHOW_COLUMNS, ShowRow, checkBookableArtist, checkVenue, syncPublicEvent } from "../../../../../lib/ln/shows";
+import { getSeriesById } from "../../../../../lib/ln/series";
+import { showRecap } from "../../../../../lib/ln/recap";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +48,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  const [artistRes, songsRes, resultsRes] = await Promise.all([
+  const [artistRes, songsRes, resultsRes, recap] = await Promise.all([
     show.artist_id
       ? db.from("ln_artists").select(ARTIST_COLUMNS).eq("id", show.artist_id).maybeSingle()
       : Promise.resolve({ data: null, error: null }),
@@ -54,6 +58,10 @@ export async function GET(_req: NextRequest, { params }: Params) {
       .eq("event_id", id)
       .order("sort_order", { ascending: true }),
     db.from("ln_results").select("song_id, votes").eq("event_id", id),
+    showRecap(db, show).catch((e) => {
+      console.error("recap failed:", e);
+      return null;
+    }),
   ]);
   if (artistRes.error || songsRes.error || resultsRes.error) {
     console.error("show detail failed:", artistRes.error ?? songsRes.error ?? resultsRes.error);
@@ -63,7 +71,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const votes = new Map((resultsRes.data ?? []).map((r) => [r.song_id, r.votes as number]));
   const songs = (songsRes.data ?? []).map((s) => ({ ...s, votes: votes.get(s.song_id) ?? 0 }));
 
-  return NextResponse.json({ show: { ...show, stage: showStage(show) }, artist: artistRes.data, songs });
+  const voting = (await getSeriesById(db, show.series_id))?.feat_voting ?? true;
+  return NextResponse.json({ show: { ...show, stage: showStage(show, undefined, voting) }, artist: artistRes.data, songs, recap });
 }
 
 export async function PATCH(req: NextRequest, { params }: Params) {
@@ -105,6 +114,22 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       { error: "invalid", field: "voting_closes_at", message: "Voting has to close after it opens." },
       { status: 400 }
     );
+  }
+
+  if (patch.series_id && patch.series_id !== current.series_id) {
+    const target = await getSeriesById(db, patch.series_id);
+    if (!target) return NextResponse.json({ error: "invalid", field: "series_id", message: "Pick a series." }, { status: 400 });
+    const { count, error: rsvpError } = await db.from("ln_rsvps").select("id", { count: "exact", head: true }).eq("event_id", id);
+    if (rsvpError) {
+      console.error("rsvp count failed:", rsvpError);
+      return NextResponse.json({ error: "server_error" }, { status: 500 });
+    }
+    if (count) {
+      return NextResponse.json(
+        { error: "invalid", field: "series_id", message: "Guests have already RSVP'd to this show, so it can't move to another series." },
+        { status: 400 }
+      );
+    }
   }
 
   if (patch.venue_id && patch.venue_id !== current.venue_id) {
@@ -161,8 +186,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (clearError) console.error("clearing old artist drafts failed:", clearError);
   }
 
-  const mirrored = ["title", "gate_description", "event_date", "event_start_time", "event_end_time", "venue_id"];
+  const mirrored = ["title", "gate_description", "event_date", "event_start_time", "event_end_time", "venue_id", "series_id"];
   if (mirrored.some((k) => k in patch)) await syncPublicEvent(db, show);
 
-  return NextResponse.json({ success: true, show: { ...show, stage: showStage(show) }, drafts_cleared: draftsCleared });
+  const voting = (await getSeriesById(db, show.series_id))?.feat_voting ?? true;
+  return NextResponse.json({ success: true, show: { ...show, stage: showStage(show, undefined, voting) }, drafts_cleared: draftsCleared });
 }

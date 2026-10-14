@@ -34,9 +34,9 @@ export default function StaffHeader({
         borderBottom: "0.5px solid rgba(255,255,255,0.1)",
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", flexShrink: 0 }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", flexShrink: 1, minWidth: 0 }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/gyaldem_red_wl_transparent.png" alt="Gyal Dem" style={{ height: compact ? 44 : 60, objectFit: "contain" }} />
+        <img src="/gyaldem_red_wl_transparent.png" alt="Gyal Dem" style={{ height: compact ? 44 : 60, objectFit: "contain", flexShrink: 0 }} />
         <span
           style={{
             color: "rgba(255,255,255,0.35)",
@@ -45,12 +45,16 @@ export default function StaffHeader({
             textTransform: "uppercase",
             fontFamily: "sans-serif",
             margin: "-4px 0 0 4px",
+            maxWidth: "100%",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
           }}
         >
           {label}
         </span>
       </div>
-      <div style={{ display: "flex", gap: 8, alignItems: "center", minWidth: 0 }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
         {right}
         {showHelp && (
           // Opens in a new tab so the dashboard, door list, or bingo game

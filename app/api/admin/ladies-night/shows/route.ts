@@ -2,20 +2,23 @@
 //
 // Admin-only.
 //
-// GET  -> { shows, suggestion }
+// GET  -> { shows, series, suggestion }
 //   shows: every show, upcoming first (soonest at top), then past and
-//   archived, each with its artist, stage, and ballot counts.
+//   archived, each with its series, artist, stage, and ballot counts.
+//   series: every series (for the picker and the show form).
 //   suggestion: a default date and voting window for the next show
 //   (two weeks after the latest one), or null if there are no shows yet.
 //
 // POST -> create a show
-//   Body: { event_date (required), title?, event_start_time?,
+//   Body: { series_id (required), event_date (required), title?, event_start_time?,
 //           event_end_time?, artist_id?, gate_headline?, gate_description?,
 //           rsvp_opens_at?, voting_opens_at?, voting_closes_at?,
 //           opentable_widget?, vip_enabled?, vip_price_cents?, vip_perks?,
-//           vip_cap? }
-//   Voting window defaults to the suggested one when left out. The gate
-//   description starts blank: no copy carries over from another show.
+//           vip_cap?, dj_name?, theme_name?, bingo_deck_id?, running_order?,
+//           gallery_url?, vip_closes_at? }
+//   Voting window defaults to the suggested one when left out. The venue
+//   defaults to the series' venue. The gate description starts blank: no
+//   copy carries over from another show. One show per series per date.
 //   200 { success: true, show }
 //   400 { error: "invalid", field, message }
 
@@ -26,6 +29,9 @@ import { showStage } from "../../../../lib/ln/show-status";
 import { SHOW_COLUMNS, ShowRow, checkBookableArtist, checkVenue, syncPublicEvent } from "../../../../lib/ln/shows";
 import { todayEastern } from "../../../../lib/ln/dates";
 import { stripeMode } from "../../../../lib/ln/stripe";
+import { SERIES_COLUMNS, SeriesRow, getSeriesById, seriesPath } from "../../../../lib/ln/series";
+import { siteUrl } from "../../../../lib/ln/site";
+import { getVenue } from "../../../../lib/ln/venues";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +58,17 @@ export async function GET() {
 
   const showIds = (shows ?? []).map((s) => s.id);
   const artistIds = [...new Set((shows ?? []).flatMap((s) => (s.artist_id ? [s.artist_id] : [])))];
+
+  const { data: seriesList, error: seriesError } = await db
+    .from("ln_series")
+    .select(SERIES_COLUMNS)
+    .order("sort_order", { ascending: true })
+    .returns<SeriesRow[]>();
+  if (seriesError) {
+    console.error("series list failed:", seriesError);
+    return NextResponse.json({ error: "server_error" }, { status: 500 });
+  }
+  const seriesById = new Map((seriesList ?? []).map((s) => [s.id, s]));
 
   const venueIds = [...new Set((shows ?? []).flatMap((s) => (s.venue_id ? [s.venue_id] : [])))];
   const venuesRes = venueIds.length
@@ -86,7 +103,8 @@ export async function GET() {
     ...s,
     artist: s.artist_id ? artistById.get(s.artist_id) ?? null : null,
     venue: s.venue_id ? venueById.get(s.venue_id) ?? null : null,
-    stage: showStage(s),
+    series: seriesById.has(s.series_id) ? { id: s.series_id, name: seriesById.get(s.series_id)!.name, slug: seriesById.get(s.series_id)!.slug } : null,
+    stage: showStage(s, undefined, seriesById.get(s.series_id)?.feat_voting ?? true),
     ballot: counts.get(s.id) ?? { draft: 0, published: 0 },
   }));
   const upcoming = list.filter((s) => !s.archived && s.event_date >= today);
@@ -109,7 +127,7 @@ export async function GET() {
     };
   }
 
-  return NextResponse.json({ shows: [...upcoming, ...rest], suggestion, payments_mode: stripeMode() });
+  return NextResponse.json({ shows: [...upcoming, ...rest], series: seriesList ?? [], suggestion, payments_mode: stripeMode() });
 }
 
 export async function POST(req: NextRequest) {
@@ -136,6 +154,29 @@ export async function POST(req: NextRequest) {
 
   const db = serviceClient();
 
+  if (!v.series_id) {
+    return NextResponse.json({ error: "invalid", field: "series_id", message: "Pick a series." }, { status: 400 });
+  }
+  const series = await getSeriesById(db, v.series_id);
+  if (!series) return NextResponse.json({ error: "invalid", field: "series_id", message: "Pick a series." }, { status: 400 });
+
+  const { data: sameDay, error: sameDayError } = await db
+    .from("ln_events")
+    .select("id")
+    .eq("series_id", series.id)
+    .eq("event_date", v.event_date)
+    .eq("archived", false)
+    .limit(1);
+  if (sameDayError) {
+    console.error("same-day check failed:", sameDayError);
+    return NextResponse.json({ error: "server_error" }, { status: 500 });
+  }
+  if (sameDay?.length) {
+    return NextResponse.json({ error: "invalid", field: "event_date", message: `${series.name} already has a show on that date.` }, { status: 400 });
+  }
+  const venueId = v.venue_id === undefined ? series.default_venue_id : v.venue_id;
+  const venue = venueId ? await getVenue(db, venueId).catch(() => null) : null;
+
   if (v.artist_id) {
     const check = await checkBookableArtist(db, v.artist_id);
     if (check === "error") return NextResponse.json({ error: "server_error" }, { status: 500 });
@@ -147,8 +188,8 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  if (v.venue_id) {
-    const check = await checkVenue(db, v.venue_id);
+  if (venueId) {
+    const check = await checkVenue(db, venueId);
     if (check === "error") return NextResponse.json({ error: "server_error" }, { status: 500 });
     if (check !== "ok") {
       return NextResponse.json({ error: "invalid", field: "venue_id", message: "That venue isn't available." }, { status: 400 });
@@ -160,8 +201,11 @@ export async function POST(req: NextRequest) {
   const rpcArgs: Record<string, unknown> = {
     p_event_date: v.event_date,
     p_description: v.gate_description ?? null,
+    p_slug: `${series.slug}-${v.event_date}`,
+    p_rsvp_link: `${siteUrl()}${seriesPath(series.slug)}`,
+    p_title: v.title ?? (series.feat_voting ? "Ladies Night: An Ode To Her" : series.name),
+    ...(venue && { p_location: venue.name }),
   };
-  if (v.title) rpcArgs.p_title = v.title;
   if (v.voting_opens_at) rpcArgs.p_voting_opens_at = v.voting_opens_at;
   if (v.voting_closes_at) rpcArgs.p_voting_closes_at = v.voting_closes_at;
   if (v.event_start_time) rpcArgs.p_start_time = v.event_start_time;
@@ -181,13 +225,20 @@ export async function POST(req: NextRequest) {
   }
 
   const extras = {
-    artist_id: v.artist_id ?? null,
-    venue_id: v.venue_id ?? null,
+    series_id: series.id,
+    artist_id: series.feat_voting ? v.artist_id ?? null : null,
+    venue_id: venueId ?? null,
+    dj_name: v.dj_name ?? null,
+    theme_name: v.theme_name ?? null,
+    bingo_deck_id: v.bingo_deck_id ?? null,
+    gallery_url: v.gallery_url ?? null,
+    ...(v.running_order !== undefined && { running_order: v.running_order }),
+    ...(v.vip_closes_at !== undefined && { vip_closes_at: v.vip_closes_at }),
     gate_headline: v.gate_headline ?? null,
     gate_description: v.gate_description ?? null,
     rsvp_opens_at: v.rsvp_opens_at ?? null,
     opentable_widget: v.opentable_widget ?? null,
-    ...(v.vip_enabled !== undefined && { vip_enabled: v.vip_enabled }),
+    ...(v.vip_enabled !== undefined && { vip_enabled: series.feat_vip && v.vip_enabled }),
     ...(v.vip_price_cents !== undefined && { vip_price_cents: v.vip_price_cents }),
     ...(v.vip_cap !== undefined && { vip_cap: v.vip_cap }),
     vip_perks: v.vip_perks ?? null,
@@ -209,6 +260,6 @@ export async function POST(req: NextRequest) {
   }
 
   await syncPublicEvent(db, show);
-  return NextResponse.json({ success: true, show: { ...show, stage: showStage(show) } });
+  return NextResponse.json({ success: true, show: { ...show, stage: showStage(show, undefined, series?.feat_voting ?? true) } });
 }
 

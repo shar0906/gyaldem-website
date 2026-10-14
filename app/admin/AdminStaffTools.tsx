@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const overlayStyle: React.CSSProperties = { position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 };
 const modalStyle: React.CSSProperties = { backgroundColor: "white", width: "100%", maxWidth: "440px", padding: "28px", fontFamily: "sans-serif" };
@@ -22,7 +22,7 @@ const ROLE_HELP: Record<Role, string> = {
   admin: "Shows, artists, guests, results, events, and The Room. Can invite artist, door, and host logins.",
   artist: "Their own Propose, Profile, and Results. Creates their artist profile.",
   door: "Only the check-in screen on show night.",
-  host: "Only the bingo caller on show night.",
+  host: "The host console on show night: going live, the bingo caller, announcements, winners, running order, and the guest list.",
 };
 const INVITE_ERRORS: Record<string, string> = {
   bad_email: "Check the email address.",
@@ -33,6 +33,7 @@ const INVITE_ERRORS: Record<string, string> = {
   protected_account: "That email belongs to an admin. Only a super admin can change it.",
   own_role: "You can't change your own role.",
   last_super_admin: "That's the last super admin, so their role can't change.",
+  bad_series: "Pick a series from the list.",
 };
 
 export default function AdminStaffTools({ onClose, isSuper = false }: { onClose: () => void; isSuper?: boolean }) {
@@ -42,6 +43,15 @@ export default function AdminStaffTools({ onClose, isSuper = false }: { onClose:
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState<Role>("artist");
+  const [seriesId, setSeriesId] = useState("");
+  const [seriesList, setSeriesList] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    fetch("/api/admin/ladies-night/series")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setSeriesList(d.series ?? []))
+      .catch(() => {});
+  }, []);
   const [inviteMessage, setInviteMessage] = useState<string | null>(null);
   const [inviting, setInviting] = useState(false);
 
@@ -74,7 +84,7 @@ export default function AdminStaffTools({ onClose, isSuper = false }: { onClose:
       const res = await fetch("/api/admin/staff/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), name: name.trim(), role }),
+        body: JSON.stringify({ email: email.trim(), name: name.trim(), role, series_id: role === "host" || role === "door" ? seriesId || null : null }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -88,6 +98,7 @@ export default function AdminStaffTools({ onClose, isSuper = false }: { onClose:
         setEmail("");
         setName("");
         setRole("artist");
+        setSeriesId("");
       }
     } catch {
       setInviteMessage("Request failed — check your connection.");
@@ -129,11 +140,26 @@ export default function AdminStaffTools({ onClose, isSuper = false }: { onClose:
           <select value={role} onChange={(e) => setRole(e.target.value as Role)} style={{ ...inputStyle, cursor: "pointer", marginBottom: "6px" }}>
             <option value="artist">Artist</option>
             <option value="door">Door (check-in only)</option>
-            <option value="host">Host (bingo only)</option>
+            <option value="host">Host (show-night console)</option>
             {isSuper && <option value="admin">Admin</option>}
             {isSuper && <option value="super_admin">Super admin</option>}
           </select>
           <p style={{ fontSize: "12px", color: "rgba(10,10,10,0.5)", margin: "0 0 14px" }}>{ROLE_HELP[role]}</p>
+
+          {(role === "host" || role === "door") && (
+            <>
+              <label style={labelStyle}>Series</label>
+              <select value={seriesId} onChange={(e) => setSeriesId(e.target.value)} style={{ ...inputStyle, cursor: "pointer", marginBottom: "6px" }}>
+                <option value="">Every series</option>
+                {seriesList.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name} only</option>
+                ))}
+              </select>
+              <p style={{ fontSize: "12px", color: "rgba(10,10,10,0.5)", margin: "0 0 14px" }}>
+                Limit a client&apos;s login to their own series. They only ever see that series&apos; shows.
+              </p>
+            </>
+          )}
 
           <button onClick={sendInvite} disabled={inviting} style={btnPrimary}>
             {inviting ? "Sending…" : "Send Invite"}

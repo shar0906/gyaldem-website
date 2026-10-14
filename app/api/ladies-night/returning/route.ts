@@ -1,7 +1,7 @@
 // app/api/ladies-night/returning/route.ts
 //
 // POST /api/ladies-night/returning
-// Body: { email, door?: string }
+// Body: { series?, email, door?: string }
 // Public. "Already RSVP'd?": looks the guest up by email for the current
 // show. Found: remembers this device and returns their state (and checks
 // them in when it comes through the door QR). Not found: the page opens
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   // Tighter than the gate: this one answers "is this email on the list?"
   if (limited(req, "returning", 6)) return tooMany();
 
-  const body = (await req.json().catch(() => null)) as { email?: unknown; door?: unknown } | null;
+  const body = (await req.json().catch(() => null)) as { series?: unknown; email?: unknown; door?: unknown } | null;
   const email = parseEmail(body?.email);
   if (!email) {
     return NextResponse.json({ error: "invalid", field: "email", message: "Check your email address." }, { status: 400 });
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
   const db = serviceClient();
   try {
-    const open = await loadOpenShow(db, body?.door);
+    const open = await loadOpenShow(db, body?.series, body?.door);
     if (!open.ok) return open.response;
     const { show, door } = open.value;
 

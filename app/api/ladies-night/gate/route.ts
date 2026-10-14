@@ -1,7 +1,7 @@
 // app/api/ladies-night/gate/route.ts
 //
 // POST /api/ladies-night/gate
-// Body: { first_name, last_name, email, consent: true,
+// Body: { series?, first_name, last_name, email, consent: true,
 //         share_with_artist?: boolean, door?: string }
 // Public. The gate's "Let Me In". Pressing it is the guest's consent
 // (the consent line sits under the button), so consent must be true.
@@ -34,15 +34,15 @@ export async function POST(req: NextRequest) {
 
   const db = serviceClient();
   try {
-    const open = await loadOpenShow(db, body.door);
+    const open = await loadOpenShow(db, body.series, body.door);
     if (!open.ok) return open.response;
-    const { show, door } = open.value;
+    const { show, series, door } = open.value;
 
     const { voterId } = await upsertGuestRsvp(db, {
       showId: show.id,
       guest: parsed.value,
       source: door ? "door_qr" : "gate",
-      shareWithArtist: body.share_with_artist === true,
+      shareWithArtist: series.feat_voting && body.share_with_artist === true,
       checkIn: door ? { by: "door_qr" } : null,
     });
 

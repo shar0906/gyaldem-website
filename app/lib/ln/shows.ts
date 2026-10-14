@@ -4,12 +4,18 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getVenue } from "./venues";
+import { getSeriesById, seriesPath } from "./series";
+import { siteUrl } from "./site";
 
 export const SHOW_COLUMNS =
   "id, slug, title, event_date, event_start_time, event_end_time, artist_id, venue_id, gate_headline, gate_description, " +
   "rsvp_opens_at, voting_opens_at, voting_closes_at, opentable_widget, vip_enabled, vip_price_cents, vip_perks, " +
   "vip_cap, archived, public_event_id, door_code, results_emailed_at, results_email_error, reminder_enabled, reminder_send_at, " +
-  "reminder_subject, reminder_body, reminder_broadcast_id, reminder_scheduled_at, reminder_error, created_at";
+  "reminder_subject, reminder_body, reminder_broadcast_id, reminder_scheduled_at, reminder_error, created_at, " +
+  "series_id, dj_name, theme_name, bingo_deck_id, live_started_at, live_ended_at, running_order, run_now, gallery_url, " +
+  "vip_closes_at, live_views, recap_emailed_at, recap_email_error";
+
+export type RunItem = { label: string; time: string | null };
 
 export type ShowRow = {
   id: string;
@@ -43,6 +49,19 @@ export type ShowRow = {
   reminder_scheduled_at: string | null;
   reminder_error: string | null;
   created_at: string;
+  series_id: string;
+  dj_name: string | null;
+  theme_name: string | null;
+  bingo_deck_id: string | null;
+  live_started_at: string | null;
+  live_ended_at: string | null;
+  running_order: RunItem[];
+  run_now: number | null;
+  gallery_url: string | null;
+  vip_closes_at: string | null;
+  live_views: number;
+  recap_emailed_at: string | null;
+  recap_email_error: string | null;
 };
 
 // An artist can be booked if they exist and are active. They don't need
@@ -71,15 +90,19 @@ export async function checkVenue(db: SupabaseClient, venueId: string): Promise<"
 }
 
 // The public events table (the site's Events page) mirrors each show.
-// Keeps its name, description, location, and times in step with show
-// edits. Not fatal on failure: the show itself is already saved.
+// Keeps its name, description, location, times, and RSVP link (the
+// series page) in step with show edits. Not fatal on failure: the show itself is already saved.
 export async function syncPublicEvent(db: SupabaseClient, show: ShowRow): Promise<void> {
   if (!show.public_event_id) return;
-  const venue = await getVenue(db, show.venue_id).catch(() => null);
+  const [venue, series] = await Promise.all([
+    getVenue(db, show.venue_id).catch(() => null),
+    getSeriesById(db, show.series_id).catch(() => null),
+  ]);
   const { error } = await db
     .from("events")
     .update({
       ...(venue && { location: venue.name }),
+      ...(series && { rsvp_link: `${siteUrl()}${seriesPath(series.slug)}` }),
       name: show.title,
       description: show.gate_description,
       date: `${show.event_date}T12:00:00.000Z`,

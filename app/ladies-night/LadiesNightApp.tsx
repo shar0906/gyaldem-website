@@ -1,13 +1,16 @@
 // ladies-night/LadiesNightApp.tsx
 //
-// Decides which screen a guest sees, based on the show's stage and what
-// they've already done:
-//   none / coming soon -> countdown
+// Decides which screen a guest sees on a series page, based on the show's
+// stage and what they've already done:
+//   none / coming soon -> countdown (and the last show's recap)
 //   not in yet          -> gate (prefilled if this device knows them)
 //   door QR             -> checked in
-//   voting open, no vote-> ballot
+//   voting open, no vote-> ballot (voting series)
 //   then                -> VIP offer (fresh visits, when available)
-//   always ends at      -> summary (table, calendar, picks, VIP)
+//   always ends at      -> summary (Posh, table, calendar, picks, VIP,
+//                          countdown to the night)
+//   show night          -> the live view, on its own, once the host taps
+//                          We're live (and the recap after the wrap)
 // Also handles coming back from Stripe checkout.
 
 "use client";
@@ -19,10 +22,19 @@ import ComingSoon from "./ComingSoon";
 import Gate from "./Gate";
 import Summary from "./Summary";
 import VipStep from "./VipStep";
-import { CREAM, Current, Guest, OpenCurrent, Prefill, SANS, cta, post } from "./shared";
+import LiveView from "./LiveView";
+import { CREAM, Current, Guest, OpenCurrent, Prefill, SANS, cta, post, seriesQuery, setActiveSeries, textLink } from "./shared";
 import { ballotTheme } from "../lib/ln/theme";
 
-type Step = "loading" | "error" | "none" | "coming_soon" | "gate" | "checked_in" | "ballot" | "vip" | "summary";
+type Step = "loading" | "error" | "none" | "coming_soon" | "gate" | "checked_in" | "ballot" | "vip" | "summary" | "live";
+
+// How often a guest's page checks whether the host has gone live, on show
+// night.
+const LIVE_CHECK_MS = 20_000;
+
+function liveNow(current: OpenCurrent): boolean {
+  return current.live?.state === "live" || current.live?.state === "after";
+}
 
 function canVote(current: OpenCurrent, guest: Guest): boolean {
   return current.stage === "voting_open" && current.songs.length > 0 && !guest.voted;
@@ -39,7 +51,9 @@ async function getJson<T>(url: string): Promise<T> {
   return res.json();
 }
 
-export default function LadiesNightApp() {
+export default function LadiesNightApp({ series }: { series: string }) {
+  // Every guest API call on this page is for this series.
+  setActiveSeries(series);
   const [step, setStep] = useState<Step>("loading");
   const [current, setCurrent] = useState<Current | null>(null);
   const [guest, setGuest] = useState<Guest | null>(null);
@@ -71,7 +85,7 @@ export default function LadiesNightApp() {
         }
         if (paid?.status !== "paid") await new Promise((r) => setTimeout(r, 1500));
       }
-      const fresh = await getJson<{ guest: Guest | null }>("/api/ladies-night/me").catch(() => null);
+      const fresh = await getJson<{ guest: Guest | null }>(`/api/ladies-night/me${seriesQuery()}`).catch(() => null);
       if (fresh?.guest) setGuest(fresh.guest);
       setNotice(
         paid?.status === "paid"
@@ -91,8 +105,8 @@ export default function LadiesNightApp() {
     setDoorCode(door);
     try {
       const [cur, me] = await Promise.all([
-        getJson<Current>(`/api/ladies-night/current${door ? `?door=${encodeURIComponent(door)}` : ""}`),
-        getJson<{ guest: Guest | null; prefill?: Prefill }>("/api/ladies-night/me"),
+        getJson<Current>(`/api/ladies-night/current${seriesQuery({ door })}`),
+        getJson<{ guest: Guest | null; prefill?: Prefill }>(`/api/ladies-night/me${seriesQuery()}`),
       ]);
       setCurrent(cur);
       if (cur.stage === "none") return setStep("none");
@@ -116,6 +130,7 @@ export default function LadiesNightApp() {
       // Back from Stripe.
       if (params.get("vip")) return finishVipReturn();
 
+      if (liveNow(cur as OpenCurrent)) return setStep("live");
       setStep(canVote(cur as OpenCurrent, me.guest) ? "ballot" : "summary");
     } catch {
       setStep("error");
@@ -128,6 +143,25 @@ export default function LadiesNightApp() {
 
   const open = current && "show" in current ? (current as OpenCurrent) : null;
 
+  // Show night: while a guest sits on their summary, notice when the host
+  // goes live and switch to the live view.
+  const showDay = open?.show.event_date;
+  const liveEnabled = !!open?.live;
+  useEffect(() => {
+    if (step !== "summary" || !liveEnabled || !showDay) return;
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+    if (showDay !== today) return;
+    const t = setInterval(async () => {
+      if (document.visibilityState !== "visible") return;
+      const cur = await getJson<Current>(`/api/ladies-night/current${seriesQuery()}`).catch(() => null);
+      if (cur && "show" in cur) {
+        setCurrent(cur);
+        if (liveNow(cur as OpenCurrent)) setStep("live");
+      }
+    }, LIVE_CHECK_MS);
+    return () => clearInterval(t);
+  }, [step, liveEnabled, showDay]);
+
   function afterGate(g: Guest) {
     setGuest(g);
     setWelcome(false);
@@ -138,6 +172,7 @@ export default function LadiesNightApp() {
       return;
     }
     if (open.door) return setStep("checked_in");
+    if (liveNow(open)) return setStep("live");
     if (canVote(open, g)) return setStep("ballot");
     if (vipOpen(open, g)) return setStep("vip");
     setStep("summary");
@@ -166,7 +201,11 @@ export default function LadiesNightApp() {
     setStep("gate");
   }
 
-  const theme = ballotTheme(open?.artist?.primary_color, open?.artist?.accent_color);
+  // Voting series wear the artist's colors; others the series' own.
+  const seriesInfo = current?.series ?? null;
+  const theme = open?.series.features.voting && open.artist
+    ? ballotTheme(open.artist.primary_color, open.artist.accent_color)
+    : ballotTheme(seriesInfo?.primary_color, seriesInfo?.accent_color);
   const vars = {
     "--ln-primary": theme.primary,
     "--ln-deep": theme.deep,
@@ -196,8 +235,24 @@ export default function LadiesNightApp() {
             <button onClick={load} style={{ ...cta(), maxWidth: 240 }}>Try again</button>
           </div>
         )}
-        {(step === "none" || step === "coming_soon") && (
-          <ComingSoon opensAt={current && "rsvp_opens_at" in current ? current.rsvp_opens_at : null} onOpen={load} />
+        {(step === "none" || step === "coming_soon") && current && (
+          <ComingSoon
+            series={current.series}
+            opensAt={"rsvp_opens_at" in current ? current.rsvp_opens_at : null}
+            showDate={"show_date" in current ? current.show_date : null}
+            last={"last" in current ? current.last : null}
+            onOpen={load}
+          />
+        )}
+        {step === "live" && open && (
+          <>
+            <LiveView slug={open.series.slug} />
+            {guest && (
+              <div style={{ display: "flex", justifyContent: "center", marginTop: -14, paddingBottom: 24 }}>
+                <button onClick={() => setStep("summary")} style={textLink}>Your RSVP and table</button>
+              </div>
+            )}
+          </>
         )}
         {step === "gate" && open && <Gate current={open} prefill={prefill} doorCode={doorCode} onEntered={afterGate} />}
         {step === "checked_in" && open && guest && <CheckedIn current={open} guest={guest} />}

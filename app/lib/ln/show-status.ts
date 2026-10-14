@@ -21,12 +21,14 @@ export type StageInput = {
   voting_closes_at: string;
 };
 
-export function showStage(show: StageInput, now: Date = new Date()): ShowStage {
+// Series without voting never show a voting stage: once RSVP opens they
+// stay "rsvp_open" until the night is over.
+export function showStage(show: StageInput, now: Date = new Date(), voting = true): ShowStage {
   if (show.archived) return "archived";
   if (show.event_date < todayEastern(now)) return "past";
   const t = now.getTime();
   if (!show.rsvp_opens_at || t < new Date(show.rsvp_opens_at).getTime()) return "coming_soon";
-  if (t < new Date(show.voting_opens_at).getTime()) return "rsvp_open";
+  if (!voting || t < new Date(show.voting_opens_at).getTime()) return "rsvp_open";
   if (t < new Date(show.voting_closes_at).getTime()) return "voting_open";
   return "voting_closed";
 }

@@ -22,6 +22,7 @@ export default function CheckedIn({ current, guest }: { current: OpenCurrent; gu
         </h1>
       </div>
 
+      {current.series.features.voting && (<>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: CREAM, color: INK, borderRadius: 14, padding: "14px 16px", fontSize: 15 }}>
         <b style={{ fontFamily: SERIF, fontStyle: "italic", fontSize: 17 }}>People&apos;s Choice</b>
         <span style={{ background: V.accent, color: CREAM, fontWeight: 700, fontSize: 12, padding: "5px 11px", borderRadius: 999 }}>
@@ -33,17 +34,20 @@ export default function CheckedIn({ current, guest }: { current: OpenCurrent; gu
           ? "Voting is still open, so there's time to pick your songs."
           : `Tonight's set was picked by the guests who voted.${artist ? ` ${artist.display_name} takes the stage tonight.` : ""}`}
       </p>
+      </>)}
 
       <section style={{ ...card, display: "flex", flexDirection: "column", gap: 10 }}>
         <Glow />
         <span style={{ fontSize: 10.5, letterSpacing: "0.16em", textTransform: "uppercase", color: GOLD }}>About the series</span>
-        <h2 style={{ margin: 0, fontFamily: SERIF, fontStyle: "italic", fontWeight: 700, fontSize: 22, lineHeight: 1.15 }}>A new artist every show, and a set the audience picks.</h2>
+        <h2 style={{ margin: 0, fontFamily: SERIF, fontStyle: "italic", fontWeight: 700, fontSize: 22, lineHeight: 1.15 }}>
+          {current.series.features.voting ? "A new artist every show, and a set the audience picks." : current.series.tagline ?? current.series.name}
+        </h2>
         <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: "rgba(251,243,236,0.8)" }}>
-          Ladies Night is a recurring night of live music{current.venue ? ` at ${current.venue.name}` : ""}. You&apos;re on the list, so you&apos;ll hear about the next one first.
+          {current.series.name} is a recurring night{current.venue ? ` at ${current.venue.name}` : ""}. You&apos;re on the list, so you&apos;ll hear about the next one first.
         </p>
       </section>
       <div style={{ flex: 1 }} />
-      <Footer venue={current.venue} artist={artist} />
+      <Footer venue={current.venue} artist={current.series.features.voting ? artist : null} client={current.series.client} />
     </main>
   );
 }

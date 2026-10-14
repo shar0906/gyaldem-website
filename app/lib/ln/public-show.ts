@@ -11,11 +11,13 @@ import { ShowStage, showStage } from "./show-status";
 
 export const VIP_CLOSE_HOURS = 48;
 
-// The show the ballot page is about: the soonest one today or later.
-export async function getCurrentShow(db: SupabaseClient): Promise<ShowRow | null> {
+// The show a series page is about: the series' soonest show today or
+// later.
+export async function getCurrentShow(db: SupabaseClient, seriesId: string): Promise<ShowRow | null> {
   const { data, error } = await db
     .from("ln_events")
     .select(SHOW_COLUMNS)
+    .eq("series_id", seriesId)
     .eq("archived", false)
     .gte("event_date", todayEastern())
     .order("event_date", { ascending: true })
@@ -36,6 +38,7 @@ export function rsvpOpen(stage: ShowStage): boolean {
 }
 
 export function vipClosesAt(show: ShowRow): Date {
+  if (show.vip_closes_at) return new Date(show.vip_closes_at);
   const start = new Date(easternToUtcIso(show.event_date, show.event_start_time));
   return new Date(start.getTime() - VIP_CLOSE_HOURS * 3600 * 1000);
 }
@@ -111,6 +114,40 @@ export async function publishedSongs(db: SupabaseClient, showId: string) {
   return (data ?? []).flatMap((s) =>
     s.ln_repertoire ? [{ song_id: s.song_id, title: s.ln_repertoire.title, artist: s.ln_repertoire.artist, artwork_url: s.ln_repertoire.artwork_url }] : []
   );
+}
+
+// The stage guests see. Series without People's Choice never show a
+// voting stage: once RSVP opens it stays open until the show.
+export function guestStage(show: ShowRow, feat_voting: boolean, now: Date = new Date()): ShowStage {
+  const stage = showStage(show, now);
+  if (!feat_voting && (stage === "voting_open" || stage === "voting_closed")) return "rsvp_open";
+  return stage;
+}
+
+// Show night: before the host taps We're live, live, or wrapped up.
+export type LiveState = "before" | "live" | "after";
+
+export function liveState(show: Pick<ShowRow, "event_date" | "live_started_at" | "live_ended_at">, now: Date = new Date()): LiveState {
+  const today = todayEastern(now);
+  if (show.event_date < today || show.live_ended_at) return "after";
+  if (show.event_date === today && show.live_started_at) return "live";
+  return "before";
+}
+
+// The most recent show of a series that's already happened (for the
+// recap between shows).
+export async function getLastShow(db: SupabaseClient, seriesId: string): Promise<ShowRow | null> {
+  const { data, error } = await db
+    .from("ln_events")
+    .select(SHOW_COLUMNS)
+    .eq("series_id", seriesId)
+    .eq("archived", false)
+    .lt("event_date", todayEastern())
+    .order("event_date", { ascending: false })
+    .limit(1)
+    .maybeSingle<ShowRow>();
+  if (error) throw error;
+  return data;
 }
 
 export { showStage };

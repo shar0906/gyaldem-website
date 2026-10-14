@@ -12,7 +12,10 @@
 //            door, and host logins only
 //   artist - Propose, Profile, Results for their own shows only
 //   door   - check-in screen only
-//   host   - bingo caller only
+//   host   - the host console: going live, bingo caller, announcements,
+//            winners, running order, and tonight's guest list
+// Door and host logins can be limited to one series (series_id), e.g. a
+// client's own login only ever sees that client's nights.
 //
 // Env: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
 //      SUPABASE_SERVICE_ROLE_KEY (server-only, never NEXT_PUBLIC_)
@@ -23,7 +26,7 @@ import { createClient } from "@supabase/supabase-js";
 
 export const STAFF_ROLES = ["super_admin", "admin", "artist", "door", "host"] as const;
 export type StaffRole = (typeof STAFF_ROLES)[number];
-export type StaffUser = { email: string; role: StaffRole; name: string | null };
+export type StaffUser = { email: string; role: StaffRole; name: string | null; series_id: string | null };
 
 export type ArtistRow = {
   id: string;
@@ -94,7 +97,7 @@ export async function requireStaffUser(
 
   const { data: row, error } = await serviceClient()
     .from("ln_staff")
-    .select("role, name")
+    .select("role, name, series_id")
     .eq("email", email)
     .maybeSingle();
 
@@ -105,7 +108,13 @@ export async function requireStaffUser(
 
   if (!row || !isStaffRole(row.role)) return null;
   if (!roleAllows(row.role, allowed)) return null;
-  return { email, role: row.role, name: row.name };
+  return { email, role: row.role, name: row.name, series_id: row.series_id ?? null };
+}
+
+// The series a show-night login is limited to; null means every series.
+// Admins are never limited.
+export function seriesScope(user: StaffUser): string | null {
+  return user.role === "admin" || user.role === "super_admin" ? null : user.series_id;
 }
 
 // For artist-only routes: the signed-in artist plus their artist row.

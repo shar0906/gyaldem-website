@@ -1,6 +1,6 @@
 // app/api/ladies-night/me/route.ts
 //
-// GET /api/ladies-night/me
+// GET /api/ladies-night/me?series=<slug>
 // Public. The remembered device: who this browser belongs to, and their
 // state for the current show.
 //   { guest: null }                        not remembered (show the gate)
@@ -13,7 +13,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { serviceClient } from "../../../lib/admin/staff-auth";
 import { readGuestId } from "../../../lib/ln/guest-session";
 import { guestState } from "../../../lib/ln/guests";
-import { getCurrentShow } from "../../../lib/ln/public-show";
+import { loadSeriesShow } from "../../../lib/ln/public-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -23,8 +23,9 @@ export async function GET(req: NextRequest) {
 
   const db = serviceClient();
   try {
-    const show = await getCurrentShow(db);
-    if (!show) return NextResponse.json({ guest: null }, { headers: { "Cache-Control": "no-store" } });
+    const loaded = await loadSeriesShow(db, req.nextUrl.searchParams.get("series"));
+    if (!loaded.ok) return NextResponse.json({ guest: null }, { headers: { "Cache-Control": "no-store" } });
+    const { show } = loaded;
 
     const guest = await guestState(db, voterId, show.id);
     let prefill = null;

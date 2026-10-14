@@ -2,9 +2,11 @@
 //
 // Staff management. Super admins only.
 //
-// GET    -> { staff: [{ email, name, role, last_sign_in_at, invited }], me }
+// GET    -> { staff: [{ email, name, role, series_id, last_sign_in_at, invited }], me }
 //           invited: has a login but hasn't signed in yet
-// PATCH  { email, role }  change someone's role
+// PATCH  { email, role, series_id? }  change someone's role. series_id
+//           (host and door only) limits them to one series; null or
+//           missing keeps it as is, "" clears it.
 // DELETE { email }        remove their access (their login stops opening
 //                         any staff screen right away; artists are also
 //                         deactivated so they can't be booked)
@@ -47,7 +49,7 @@ export async function GET() {
   const db = serviceClient();
   try {
     const [{ data: rows, error }, auth] = await Promise.all([
-      db.from("ln_staff").select("email, name, role"),
+      db.from("ln_staff").select("email, name, role, series_id"),
       authUsersByEmail(db),
     ]);
     if (error) throw error;
@@ -59,6 +61,7 @@ export async function GET() {
           email: r.email as string,
           name: (r.name as string | null) ?? null,
           role: r.role as string,
+          series_id: (r.series_id as string | null) ?? null,
           last_sign_in_at: a?.last_sign_in_at ?? null,
           invited: !!a && !a.last_sign_in_at,
           has_login: !!a,
@@ -76,14 +79,23 @@ export async function PATCH(req: NextRequest) {
   const user = await requireStaffUser(["super_admin"]);
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 403 });
 
-  const body = (await req.json().catch(() => null)) as { email?: unknown; role?: unknown } | null;
+  const body = (await req.json().catch(() => null)) as { email?: unknown; role?: unknown; series_id?: unknown } | null;
   const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
   if (!EMAIL.test(email) || !isStaffRole(body?.role)) return NextResponse.json({ error: "missing_fields" }, { status: 400 });
   const role = body!.role as string;
   if (email === user.email) return NextResponse.json({ error: "own_account" }, { status: 403 });
 
   const db = serviceClient();
-  const { data, error } = await db.from("ln_staff").update({ role }).eq("email", email).select("email, name").maybeSingle();
+  const scoped = role === "host" || role === "door";
+  const update: Record<string, unknown> = { role };
+  if (!scoped) update.series_id = null;
+  else if (body?.series_id === "") update.series_id = null;
+  else if (typeof body?.series_id === "string") {
+    const { data: series } = await db.from("ln_series").select("id").eq("id", body.series_id).maybeSingle();
+    if (!series) return NextResponse.json({ error: "bad_series" }, { status: 400 });
+    update.series_id = series.id;
+  }
+  const { data, error } = await db.from("ln_staff").update(update).eq("email", email).select("email, name").maybeSingle();
   if (lastSuperAdmin(error)) return NextResponse.json({ error: "last_super_admin" }, { status: 409 });
   if (error) {
     console.error("role change failed:", error);

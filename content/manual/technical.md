@@ -60,7 +60,7 @@ Two hourly jobs run in Supabase (Integrations → Cron):
 | Job | When | Does |
 |---|---|---|
 | `ln-kit-worker` | Top of each hour | Tags new guests in Kit, then schedules or updates show reminders |
-| `ln-results-mail` | 5 past each hour | Emails results for shows whose voting just closed (looks back 2 weeks) |
+| `ln-results-mail` | 5 past each hour | Emails results for shows whose voting just closed, and the recap for shows that ended yesterday (looks back 2 weeks) |
 
 **Run one now:** Supabase → Integrations → Cron → the job → **Run now**. Useful right before a Kit broadcast so the latest RSVPs are tagged.
 
@@ -74,12 +74,14 @@ select status_code, content, created from net._http_response order by created de
 
 ## Kit
 
-Every RSVP gets three tags, so you can email exactly the right people:
+Every RSVP gets these tags, so you can email exactly the right people:
 
 | Tag | Who |
 |---|---|
 | `Ladies Night` | Everyone who's ever RSVP'd |
-| `Ladies Night 2026-11-04` | That show's guests (the reminder goes here) |
+| `Ladies Night: Please! A Ladies Night` | That series' audience |
+| `Ladies Night: Please! A Ladies Night 2026-10-29` | That show's guests (the reminder goes here) |
+| `Ladies Night 2026-11-04` | An Ode To Her show's guests (it keeps its original tag name) |
 | `Ladies Night artist: Kayland` | That artist's audience |
 
 Tags are added within the hour. Failed sends retry with growing waits for about a day.
@@ -99,8 +101,9 @@ Reminder emails are created in Kit as scheduled broadcasts; you'll see them unde
 7. `2026-10-06_ln_phase5_opentable_details.sql`
 8. `2026-10-05_ln_cron_schedule_v2.sql` (needs pg_cron and pg_net turned on under Database → Extensions)
 9. `2026-10-08_ln_phase6_super_admin.sql` (with your login email filled in)
+10. `2026-10-14_ln_phase7_series.sql` (series, clients, bingo decks, live page, Posh)
 
-**Photo storage:** artist photos and logos in the `artist-photos` bucket; venue logos in `ln-brand`. Both are public to read; uploads only go through the site.
+**Photo storage:** artist photos and logos in the `artist-photos` bucket; venue, series, and client logos and series cover photos in `ln-brand`. Both are public to read; uploads only go through the site.
 
 **Security:** every Ladies Night table is locked to the server. The public key can't read guests, votes, or orders.
 
@@ -129,7 +132,7 @@ The `www` DNS record must be **Proxied** (orange cloud) for the rule to run.
 ## OpenTable
 
 - The restaurant ID sits inside the venue's OpenTable widget code (`rid=…`). The site reads it from there.
-- Booking opens OpenTable's own booking page over `/ladies-night`, pre-set to the show's date, start time, and party size.
+- Booking opens OpenTable's own booking page over the series page, pre-set to the show's date, start time, and party size.
 - When a guest books, OpenTable tells the page (a `reservation-made` message with the confirmation number, party size, and time). The site trusts it only from opentable.com, for the venue's restaurant ID, and on the show's date.
 - An OpenTable "Access Denied" page comes from their bot protection, usually after many searches in a short time. It clears on its own. Guests can always use **Open OpenTable instead**.
 
@@ -137,9 +140,12 @@ The `www` DNS record must be **Proxied** (orange cloud) for the rule to run.
 
 | Problem | Likely cause | Fix |
 |---|---|---|
-| `/ladies-night` shows "coming soon" | No RSVP opens time, or it's in the future | Set it in Shows |
+| A series page shows "coming soon" | No RSVP opens time, or it's in the future | Set it in Shows |
+| Series page is a 404 | Wrong link, or **Live on the site** unchecked | Check it in Series |
+| Posh step missing | Posh step off, or no Posh link | Set both in Series |
+| No Bingo tab for the host | The show has no bingo deck | Pick one in Shows |
 | No ballot while voting is open | Ballot not published | Publish it in Shows |
-| VIP missing | Within 48 hours of the show, sold out, or Offer VIP off | Expected; or check the show's VIP settings |
+| VIP missing | Past the sales close time (48 hours before by default), sold out, Offer VIP off, or VIP off for the series | Expected; or check the show's VIP settings |
 | VIP order stuck on pending | Stripe webhook not reaching the site | Stripe → Webhooks → the endpoint → Event deliveries; fix the URL or secret, then Resend |
 | Guest back on the sign-in page after paying | Paid on a different address (www vs bare) | Signing in with "Already RSVP'd?" finishes it; keep the www redirect in place |
 | Reminder not scheduled | More than a week out, no guests tagged yet, or `KIT_API_KEY_V4` missing | Read the status line in Shows |

@@ -1,26 +1,27 @@
 // app/api/admin/ladies-night/checkin/qr/route.ts
 //
-// GET -> the door QR code for tonight's show, as an SVG image. Admin or
-// door logins only, so the code itself never appears on a public page.
-// Scanning it opens /ladies-night/an-ode-to-her in door mode, which RSVPs and checks
-// the guest in. It only works on the night of the show.
+// GET ?show=<id> -> the door QR code for tonight's show, as an SVG image.
+// Admin or door logins only, so the code itself never appears on a public
+// page. Scanning it opens the series page in door mode, which RSVPs and
+// checks the guest in. It only works on the night of the show.
 
 import QRCode from "qrcode";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireStaffUser, serviceClient } from "../../../../../lib/admin/staff-auth";
-import { doorUrl, getTonightShow } from "../../../../../lib/ln/tonight";
+import { doorUrl } from "../../../../../lib/ln/tonight";
+import { staffTonight } from "../../../../../lib/ln/staff-show";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const user = await requireStaffUser(["admin", "door"]);
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 403 });
 
   try {
-    const show = await getTonightShow(serviceClient());
-    if (!show) return NextResponse.json({ error: "no_show_tonight" }, { status: 404 });
+    const { current } = await staffTonight(serviceClient(), user, req.nextUrl.searchParams.get("show"));
+    if (!current) return NextResponse.json({ error: "no_show_tonight" }, { status: 404 });
 
-    const svg = await QRCode.toString(doorUrl(show), {
+    const svg = await QRCode.toString(doorUrl(current.show, current.series), {
       type: "svg",
       errorCorrectionLevel: "M",
       margin: 2,

@@ -1,7 +1,7 @@
 // app/api/ladies-night/door/route.ts
 //
 // POST /api/ladies-night/door
-// Body: { door: string }
+// Body: { series?, door: string }
 // Public. A remembered guest who scans the door QR on show night: checks
 // them in with one tap, no typing. RSVPs them first if they somehow
 // aren't on tonight's list.
@@ -14,21 +14,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { serviceClient } from "../../../lib/admin/staff-auth";
 import { readGuestId } from "../../../lib/ln/guest-session";
 import { ensureRsvp, enqueueKit, guestState } from "../../../lib/ln/guests";
-import { getCurrentShow, isValidDoorCode } from "../../../lib/ln/public-show";
-import { limited, tooMany } from "../../../lib/ln/public-guard";
+import { doorCodeValid, limited, loadSeriesShow, tooMany } from "../../../lib/ln/public-guard";
 
 export async function POST(req: NextRequest) {
   if (limited(req, "door", 10)) return tooMany();
   const voterId = readGuestId(req);
   if (!voterId) return NextResponse.json({ error: "not_signed_in" }, { status: 401 });
 
-  const body = (await req.json().catch(() => null)) as { door?: unknown } | null;
+  const body = (await req.json().catch(() => null)) as { series?: unknown; door?: unknown } | null;
   const db = serviceClient();
   try {
-    const show = await getCurrentShow(db);
-    if (!show || !isValidDoorCode(show, typeof body?.door === "string" ? body.door : null)) {
+    const loaded = await loadSeriesShow(db, body?.series);
+    if (!loaded.ok || !doorCodeValid(loaded.series, loaded.show, body?.door)) {
       return NextResponse.json({ error: "rsvp_closed" }, { status: 409 });
     }
+    const { show } = loaded;
     const { data: voter, error } = await db.from("ln_voters").select("id").eq("id", voterId).maybeSingle();
     if (error) throw error;
     if (!voter) return NextResponse.json({ error: "not_signed_in" }, { status: 401 });

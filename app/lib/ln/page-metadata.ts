@@ -1,21 +1,24 @@
 // lib/ln/page-metadata.ts
 //
-// Share previews for the An Ode To Her guest page: title and description
-// come from the current show and artist. Used by /ladies-night and
-// /ladies-night/an-ode-to-her, which show the same page.
+// Share previews for a series page: title and description come from the
+// series' current show (and artist, for voting series).
 
 import type { Metadata, Viewport } from "next";
 import { currentShareData } from "./share-data";
-import { ODE_PATH } from "./paths";
+import { seriesPath } from "./series";
+import { siteUrl } from "./site";
 
-export async function odeMetadata(): Promise<Metadata> {
-  const d = await currentShareData();
+export async function seriesMetadata(slug: string): Promise<Metadata> {
+  const d = await currentShareData(slug);
   const title = d.artistName ? `${d.title} with ${d.artistName}` : d.title;
   const where = d.venueName ? ` at ${d.venueName}` : "";
+  const voting = d.cta.includes("Vote");
   const description = d.dateText
-    ? `${d.dateText}${where}. RSVP, vote the set list, and reserve your table.`
-    : `RSVP, vote the artist's set list, and reserve your table for Ladies Night${where}.`;
-  const url = `https://gyaldemsocialclub.com${ODE_PATH}`;
+    ? `${d.dateText}${where}. ${voting ? "RSVP, vote the set list, and reserve your table." : "RSVP and reserve your table."}`
+    : voting
+      ? `RSVP, vote the artist's set list, and reserve your table for Ladies Night${where}.`
+      : `RSVP for ${d.title}${where}.`;
+  const url = `${siteUrl()}${seriesPath(slug)}`;
   return {
     title: `${title} | Gyal Dem Social Club`,
     description,
@@ -25,7 +28,7 @@ export async function odeMetadata(): Promise<Metadata> {
   };
 }
 
-export const odeViewport: Viewport = {
+export const ladiesNightViewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

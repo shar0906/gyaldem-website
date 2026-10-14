@@ -1,15 +1,16 @@
 // admin/ladies-night/ShowsSection.tsx
 //
-// Shows: the list on the left, the editor in the middle, and a live
-// preview of the gate on the right. Every setting can change at any
-// time; saves go live right away.
+// Shows: the list on the left (filtered by series), the editor in the
+// middle, and a live preview of the gate on the right (People's Choice
+// series). The editor only shows the parts the show's series uses.
+// Every setting can change at any time; saves go live right away.
 
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { GatePreview } from "../../components/ln/PhonePreview";
 import { easternInputToIso, isoToEasternInput } from "../../lib/ln/dates";
-import { DEFAULT_BODY, DEFAULT_SUBJECT, defaultSendAt } from "../../lib/ln/reminder-template";
+import { defaultSendAt, defaultTemplate } from "../../lib/ln/reminder-template";
 import { formatDateTime } from "../artist/ui";
 import {
   FAINT,
@@ -67,10 +68,34 @@ type ShowRow = {
   reminder_broadcast_id: number | null;
   reminder_scheduled_at: string | null;
   reminder_error: string | null;
+  series_id: string;
+  dj_name: string | null;
+  theme_name: string | null;
+  bingo_deck_id: string | null;
+  running_order: RunItem[];
+  gallery_url: string | null;
+  vip_closes_at: string | null;
+  recap_emailed_at: string | null;
+  series?: { id: string; name: string; slug: string } | null;
   stage: string;
   artist?: Artist | null;
   ballot?: { draft: number; published: number };
 };
+type SeriesOpt = {
+  id: string;
+  slug: string;
+  name: string;
+  default_venue_id: string | null;
+  feat_voting: boolean;
+  feat_vip: boolean;
+  feat_opentable: boolean;
+  feat_reminder: boolean;
+  feat_live: boolean;
+  active: boolean;
+};
+type DeckOpt = { id: string; name: string; kind: string; lines: number; active: boolean };
+type RunItem = { label: string; time: string | null };
+type Recap = { rsvps: number; posh_opened: number; posh_confirmed: number; tables: number; checked_in: number; vip_passes: number; vip_revenue_cents: number; live_views: number; winners: string[] };
 type BallotSong = {
   song_id: string;
   status: "draft" | "published";
@@ -98,7 +123,29 @@ type Form = {
   reminder_send_at: string;
   reminder_subject: string;
   reminder_body: string;
+  series_id: string;
+  dj_name: string;
+  theme_name: string;
+  bingo_deck_id: string;
+  running_order: string; // one per line: "21:30 Bingo, round 1"
+  gallery_url: string;
+  vip_closes_at: string;
 };
+
+function runToText(items: RunItem[]): string {
+  return (items ?? []).map((i) => `${i.time ? `${i.time} ` : ""}${i.label}`).join("\n");
+}
+
+function textToRun(text: string): RunItem[] {
+  return text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((l) => {
+      const m = l.match(/^([01]?\d|2[0-3]):([0-5]\d)\s+(.+)$/);
+      return m ? { time: `${m[1].padStart(2, "0")}:${m[2]}`, label: m[3].trim() } : { time: null, label: l };
+    });
+}
 
 const MIN_SONGS = 10;
 const DEFAULT_TITLE = "Ladies Night: An Ode To Her";
@@ -109,7 +156,8 @@ const PUBLISH_ERRORS: Record<string, string> = {
   show_closed: "This show is archived or already past.",
 };
 
-function toForm(s: ShowRow): Form {
+function toForm(s: ShowRow, featVoting: boolean): Form {
+  const t = defaultTemplate(featVoting);
   return {
     title: s.title,
     event_date: s.event_date,
@@ -129,20 +177,33 @@ function toForm(s: ShowRow): Form {
     vip_perks: s.vip_perks ?? "",
     reminder_enabled: s.reminder_enabled,
     reminder_send_at: isoToEasternInput(s.reminder_send_at),
-    reminder_subject: s.reminder_subject ?? DEFAULT_SUBJECT,
-    reminder_body: s.reminder_body ?? DEFAULT_BODY,
+    reminder_subject: s.reminder_subject ?? t.subject,
+    reminder_body: s.reminder_body ?? t.body,
+    series_id: s.series_id,
+    dj_name: s.dj_name ?? "",
+    theme_name: s.theme_name ?? "",
+    bingo_deck_id: s.bingo_deck_id ?? "",
+    running_order: runToText(s.running_order),
+    gallery_url: s.gallery_url ?? "",
+    vip_closes_at: isoToEasternInput(s.vip_closes_at),
   };
 }
 
-function blankForm(suggestion: { event_date: string; voting_opens_at: string | null; voting_closes_at: string | null } | null): Form {
+function blankForm(
+  suggestion: { event_date: string; voting_opens_at: string | null; voting_closes_at: string | null } | null,
+  series: SeriesOpt | null
+): Form {
+  const voting = series?.feat_voting ?? true;
+  const t = defaultTemplate(voting);
+  const title = voting ? DEFAULT_TITLE : series?.name ?? DEFAULT_TITLE;
   return {
-    title: DEFAULT_TITLE,
+    title,
     event_date: suggestion?.event_date ?? "",
-    event_start_time: "18:00",
-    event_end_time: "22:00",
+    event_start_time: voting ? "18:00" : "20:00",
+    event_end_time: voting ? "22:00" : "00:00",
     artist_id: "",
-    venue_id: "",
-    gate_headline: DEFAULT_TITLE,
+    venue_id: series?.default_venue_id ?? "",
+    gate_headline: voting ? DEFAULT_TITLE : "",
     gate_description: "",
     rsvp_opens_at: "",
     voting_opens_at: isoToEasternInput(suggestion?.voting_opens_at),
@@ -154,12 +215,20 @@ function blankForm(suggestion: { event_date: string; voting_opens_at: string | n
     vip_perks: "Wristband, skip the line, gift bag",
     reminder_enabled: true,
     reminder_send_at: "",
-    reminder_subject: DEFAULT_SUBJECT,
-    reminder_body: DEFAULT_BODY,
+    reminder_subject: t.subject,
+    reminder_body: t.body,
+    series_id: series?.id ?? "",
+    dj_name: "",
+    theme_name: "",
+    bingo_deck_id: "",
+    running_order: "",
+    gallery_url: "",
+    vip_closes_at: "",
   };
 }
 
-function toBody(f: Form) {
+function toBody(f: Form, featVoting: boolean) {
+  const t = defaultTemplate(featVoting);
   const price = Math.round(Number(f.vip_price) * 100);
   const body: Record<string, unknown> = {
     title: f.title,
@@ -178,8 +247,15 @@ function toBody(f: Form) {
     // Blank time means the default (6 PM the evening before); unchanged
     // template text is stored as "use the default."
     reminder_send_at: easternInputToIso(f.reminder_send_at),
-    reminder_subject: f.reminder_subject.trim() === DEFAULT_SUBJECT ? null : f.reminder_subject || null,
-    reminder_body: f.reminder_body.trim() === DEFAULT_BODY.trim() ? null : f.reminder_body || null,
+    reminder_subject: f.reminder_subject.trim() === t.subject ? null : f.reminder_subject || null,
+    reminder_body: f.reminder_body.trim() === t.body.trim() ? null : f.reminder_body || null,
+    series_id: f.series_id,
+    dj_name: f.dj_name || null,
+    theme_name: f.theme_name || null,
+    bingo_deck_id: f.bingo_deck_id || null,
+    running_order: textToRun(f.running_order),
+    gallery_url: f.gallery_url || null,
+    vip_closes_at: easternInputToIso(f.vip_closes_at),
   };
   // VIP numbers only go out when filled in; a blank price on a show
   // without VIP shouldn't block saving.
@@ -207,18 +283,29 @@ export default function ShowsSection() {
   const [defaultVenue, setDefaultVenue] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ tone: "ok" | "error"; text: string; field?: string } | null>(null);
+  const [seriesList, setSeriesList] = useState<SeriesOpt[]>([]);
+  const [decks, setDecks] = useState<DeckOpt[]>([]);
+  const [filter, setFilter] = useState<string>("all");
+  const [recap, setRecap] = useState<Recap | null>(null);
+  // openShow reads the latest series list without re-creating itself.
+  const seriesRef = useRef<SeriesOpt[]>([]);
+  const seriesOf = (id: string | null | undefined) => seriesList.find((x) => x.id === id) ?? null;
 
   const loadList = useCallback(async () => {
-    const [list, people, places] = await Promise.all([
-      api<{ shows: ShowRow[]; suggestion: typeof suggestion; payments_mode?: "test" | "live" | null; error?: string }>("/api/admin/ladies-night/shows"),
+    const [list, people, places, deckRes] = await Promise.all([
+      api<{ shows: ShowRow[]; series: SeriesOpt[]; suggestion: typeof suggestion; payments_mode?: "test" | "live" | null; error?: string }>("/api/admin/ladies-night/shows"),
       api<{ artists: ArtistFull[] }>("/api/admin/ladies-night/artists"),
       api<{ venues: { id: string; name: string; active: boolean; opentable_widget: string | null }[] }>("/api/admin/ladies-night/venues"),
+      api<{ decks: DeckOpt[] }>("/api/admin/ladies-night/bingo/decks"),
     ]);
+    if (deckRes.ok) setDecks(deckRes.data.decks);
     if (!list.ok) {
       setLoadError(errorText(list.data));
       return null;
     }
     setShows(list.data.shows);
+    setSeriesList(list.data.series ?? []);
+    seriesRef.current = list.data.series ?? [];
     setSuggestion(list.data.suggestion);
     setPaymentsMode(list.data.payments_mode ?? null);
     if (people.ok) setArtists(people.data.artists);
@@ -234,15 +321,17 @@ export default function ShowsSection() {
   const openShow = useCallback(async (id: string) => {
     setSelected(id);
     setNotice(null);
-    const res = await api<{ show: ShowRow; songs: BallotSong[] }>(`/api/admin/ladies-night/shows/${id}`);
+    const res = await api<{ show: ShowRow; songs: BallotSong[]; recap: Recap | null }>(`/api/admin/ladies-night/shows/${id}`);
     if (!res.ok) {
       setNotice({ tone: "error", text: errorText(res.data as { error?: string }) });
       return;
     }
     setShow(res.data.show);
     setSongs(res.data.songs);
-    setForm(toForm(res.data.show));
+    setRecap(res.data.recap);
+    setForm(toForm(res.data.show, seriesRef.current.find((x) => x.id === res.data.show.series_id)?.feat_voting ?? true));
   }, []);
+
 
   useEffect(() => {
     loadList().then((list) => {
@@ -252,11 +341,25 @@ export default function ShowsSection() {
   }, [loadList, openShow]);
 
   const startNew = () => {
+    const series = seriesList.find((x) => x.id === filter) ?? seriesList.find((x) => x.active) ?? null;
+    const f = blankForm(series?.feat_voting ? suggestion : null, series);
     setSelected("new");
     setShow(null);
     setSongs([]);
-    setForm({ ...blankForm(suggestion), venue_id: defaultVenue });
+    setRecap(null);
+    setForm({ ...f, venue_id: f.venue_id || defaultVenue });
     setNotice(null);
+  };
+
+  // Switching a new show's series resets the parts that depend on it.
+  const changeSeries = (id: string) => {
+    const series = seriesList.find((x) => x.id === id) ?? null;
+    setForm((f) => {
+      if (!f) return f;
+      if (selected !== "new") return { ...f, series_id: id };
+      const fresh = blankForm(series?.feat_voting ? suggestion : null, series);
+      return { ...fresh, event_date: f.event_date || fresh.event_date, venue_id: fresh.venue_id || defaultVenue };
+    });
   };
 
   const set = <K extends keyof Form>(key: K, value: Form[K]) => {
@@ -266,7 +369,7 @@ export default function ShowsSection() {
 
   async function save() {
     if (!form) return;
-    const body = toBody(form);
+    const body = toBody(form, seriesOf(form.series_id)?.feat_voting ?? true);
     if (selected !== "new" && show && form.artist_id !== (show.artist_id ?? "") && songs.some((s) => s.status === "draft")) {
       if (!confirm("Changing the artist removes the songs the current artist proposed for this show. Continue?")) return;
     }
@@ -347,6 +450,11 @@ export default function ShowsSection() {
   const drafts = songs.filter((s) => s.status === "draft").length;
   const canPublish = !!show && !published && drafts >= MIN_SONGS && !!selectedArtist?.approved_at && show.artist_id === form?.artist_id;
   const fieldErr = (f: string) => (notice?.tone === "error" && notice.field === f ? <Notice tone="error">{notice.text}</Notice> : null);
+  const formSeries = seriesOf(form?.series_id);
+  const voting = formSeries?.feat_voting ?? true;
+  const tpl = defaultTemplate(voting);
+  const visibleShows = filter === "all" ? shows : shows.filter((x) => x.series_id === filter);
+  const money = (c: number) => `$${(c / 100).toFixed(2).replace(/\.00$/, "")}`;
 
   return (
     <div>
@@ -358,11 +466,26 @@ export default function ShowsSection() {
         @media (max-width: 760px){ .ln-shows{ grid-template-columns:1fr; } .ln-grid-3{ grid-template-columns:1fr; } .ln-vip-grid{ grid-template-columns:1fr 1fr; } .ln-vip-grid > :last-child{ grid-column:1 / -1; } }
       `}</style>
       <H1 action={<button onClick={startNew} style={button("primary")}>+ New show</button>}>Shows</H1>
+      {seriesList.length > 1 && (
+        <div role="tablist" aria-label="Series" style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "-6px 0 18px" }}>
+          {[{ id: "all", name: "All series" }, ...seriesList].map((x) => (
+            <button
+              key={x.id}
+              role="tab"
+              aria-selected={filter === x.id}
+              onClick={() => setFilter(x.id)}
+              style={{ ...button(filter === x.id ? "primary" : "secondary"), padding: "8px 12px" }}
+            >
+              {x.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="ln-shows">
         <nav aria-label="Shows" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {shows.length === 0 && <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>No shows yet. Create the first one.</p>}
-          {shows.map((s) => {
+          {visibleShows.length === 0 && <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>No shows yet. Create the first one.</p>}
+          {visibleShows.map((s) => {
             const active = s.id === selected;
             return (
               <button
@@ -374,8 +497,15 @@ export default function ShowsSection() {
                 aria-current={active}
                 style={{ ...PANEL, border: active ? `1px solid ${RED}` : PANEL.border, padding: "12px 14px", textAlign: "left", display: "flex", flexDirection: "column", gap: 6, cursor: "pointer", opacity: s.archived ? 0.6 : 1, fontFamily: "sans-serif", color: INK }}
               >
-                <span style={{ fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: MUTED }}>{showLabel({ event_date: s.event_date, artist: null }).split(" · ")[0]}</span>
-                <span style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: 18, color: s.artist ? INK : FAINT }}>{s.artist?.display_name ?? "No artist yet"}</span>
+                <span style={{ fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: MUTED }}>
+                  {showLabel({ event_date: s.event_date, artist: null }).split(" · ")[0]}
+                  {s.series && seriesList.length > 1 ? ` · ${s.series.name}` : ""}
+                </span>
+                {seriesOf(s.series_id)?.feat_voting ?? true ? (
+                  <span style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: 18, color: s.artist ? INK : FAINT }}>{s.artist?.display_name ?? "No artist yet"}</span>
+                ) : (
+                  <span style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: 18, color: INK }}>{s.theme_name ?? s.series?.name ?? s.title}</span>
+                )}
                 <StageChip stage={s.stage} />
               </button>
             );
@@ -392,6 +522,17 @@ export default function ShowsSection() {
                 <p style={sectionLabel}>The show</p>
                 {show && <StageChip stage={show.stage} />}
               </div>
+              <Field id="s-series" label="Series" hint={selected !== "new" ? "A show can move to another series until someone RSVPs." : undefined}>
+                <select id="s-series" value={form.series_id} onChange={(e) => changeSeries(e.target.value)} style={selectStyle}>
+                  {seriesList
+                    .filter((x) => x.active || x.id === form.series_id)
+                    .map((x) => (
+                      <option key={x.id} value={x.id}>{x.name}</option>
+                    ))}
+                </select>
+              </Field>
+              {fieldErr("series_id")}
+              {voting && (<>
               <Field id="s-artist" label="Artist" hint={selectedArtist && !selectedArtist.approved_at ? "This artist's profile isn't approved yet. You can book them, but publishing waits for approval." : undefined}>
                 <select id="s-artist" value={form.artist_id} onChange={(e) => set("artist_id", e.target.value)} style={selectStyle}>
                   <option value="">Leave unassigned</option>
@@ -405,6 +546,7 @@ export default function ShowsSection() {
                 </select>
               </Field>
               {fieldErr("artist_id")}
+              </>)}
               <Field id="s-venue" label="Venue" hint={venues.length === 0 ? "Add venues under Ladies Night, Venues." : undefined}>
                 <select id="s-venue" value={form.venue_id} onChange={(e) => set("venue_id", e.target.value)} style={selectStyle}>
                   <option value="">No venue yet</option>
@@ -431,6 +573,16 @@ export default function ShowsSection() {
                 </Field>
               </div>
               {fieldErr("event_date")}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+                <Field id="s-dj" label="DJ / music by (optional)" hint="Shows as “Music by …” on the page.">
+                  <input id="s-dj" value={form.dj_name} maxLength={80} onChange={(e) => set("dj_name", e.target.value)} placeholder="YouKnowMeAsDubzz" style={inputStyle} />
+                </Field>
+                <Field id="s-theme" label="Theme (optional)" hint="Like “Spooky Szn”. Shows on the page and the hub.">
+                  <input id="s-theme" value={form.theme_name} maxLength={60} onChange={(e) => set("theme_name", e.target.value)} style={inputStyle} />
+                </Field>
+              </div>
+              {fieldErr("dj_name")}
+              {fieldErr("theme_name")}
             </section>
 
             <section style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 20, borderTop: LINE }}>
@@ -451,21 +603,49 @@ export default function ShowsSection() {
                 <Field id="s-rsvp" label="RSVP opens">
                   <input id="s-rsvp" type="datetime-local" value={form.rsvp_opens_at} onChange={(e) => set("rsvp_opens_at", e.target.value)} style={inputStyle} />
                 </Field>
+                {voting && (<>
                 <Field id="s-vo" label="Voting opens">
                   <input id="s-vo" type="datetime-local" value={form.voting_opens_at} onChange={(e) => set("voting_opens_at", e.target.value)} style={inputStyle} />
                 </Field>
                 <Field id="s-vc" label="Voting closes">
                   <input id="s-vc" type="datetime-local" value={form.voting_closes_at} onChange={(e) => set("voting_closes_at", e.target.value)} style={inputStyle} />
                 </Field>
+                </>)}
               </div>
               <span style={{ fontSize: 12, color: MUTED }}>
-                Until RSVP opens, /ladies-night shows a countdown. {selected === "new" && "Leave voting blank to use the suggested window."}
+                Until RSVP opens, the series page shows a countdown. {selected === "new" && voting && "Leave voting blank to use the suggested window."}
               </span>
               {fieldErr("rsvp_opens_at")}
               {fieldErr("voting_opens_at")}
               {fieldErr("voting_closes_at")}
             </section>
 
+            <section style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 20, borderTop: LINE }}>
+              <p style={sectionLabel}>Show night</p>
+              <Field id="s-deck" label="Bingo deck" hint={form.bingo_deck_id ? "The host calls from this deck. 3 rounds, any line." : "No bingo tonight. Pick a deck to switch it on."}>
+                <select id="s-deck" value={form.bingo_deck_id} onChange={(e) => set("bingo_deck_id", e.target.value)} style={selectStyle}>
+                  <option value="">No bingo</option>
+                  {decks
+                    .filter((d) => d.active || d.id === form.bingo_deck_id)
+                    .map((d) => (
+                      <option key={d.id} value={d.id}>{d.name} · {d.lines} lines</option>
+                    ))}
+                </select>
+              </Field>
+              {fieldErr("bingo_deck_id")}
+              {(formSeries?.feat_live ?? true) && (
+                <Field id="s-run" label="Running order (optional)" hint="One per line, with a time if you like: “21:30 Bingo, round 1”. The host can change it and mark what's on now from the console.">
+                  <textarea id="s-run" rows={4} value={form.running_order} onChange={(e) => set("running_order", e.target.value)} placeholder={"20:00 Doors and dinner\n21:30 Bingo\n22:30 DJ set"} style={{ ...inputStyle, lineHeight: 1.45, resize: "vertical" }} />
+                </Field>
+              )}
+              {fieldErr("running_order")}
+              <Field id="s-gallery" label="Photo gallery link (optional)" hint="Shows on the recap after the night.">
+                <input id="s-gallery" value={form.gallery_url} maxLength={500} onChange={(e) => set("gallery_url", e.target.value.trim())} placeholder="https://" style={inputStyle} />
+              </Field>
+              {fieldErr("gallery_url")}
+            </section>
+
+            {(formSeries?.feat_opentable ?? true) && (
             <section style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 20, borderTop: LINE }}>
               <p style={sectionLabel}>OpenTable</p>
               <Field
@@ -485,7 +665,9 @@ export default function ShowsSection() {
               </Field>
               {fieldErr("opentable_widget")}
             </section>
+            )}
 
+            {(formSeries?.feat_vip ?? true) && (
             <section style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 20, borderTop: LINE }}>
               <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
                 <input type="checkbox" checked={form.vip_enabled} onChange={(e) => set("vip_enabled", e.target.checked)} style={{ width: 18, height: 18, accentColor: RED }} />
@@ -504,7 +686,10 @@ export default function ShowsSection() {
                       <input id="s-perks" value={form.vip_perks} maxLength={300} onChange={(e) => set("vip_perks", e.target.value)} style={inputStyle} />
                     </Field>
                   </div>
-                  <span style={{ fontSize: 12, color: MUTED }}>Up to 5 per guest. Sales close 48 hours before the show or at the cap, whichever comes first.</span>
+                  <Field id="s-vip-close" label="Sales close (Eastern)" hint="Leave blank for 48 hours before the show.">
+                    <input id="s-vip-close" type="datetime-local" value={form.vip_closes_at} onChange={(e) => set("vip_closes_at", e.target.value)} style={{ ...inputStyle, maxWidth: 280 }} />
+                  </Field>
+                  <span style={{ fontSize: 12, color: MUTED }}>Up to 5 per guest. Sales close at the time above or at the cap, whichever comes first. Payments go to Gyal Dem&apos;s Stripe.</span>
                   {paymentsMode === "test" && (
                     <Notice tone="error">Stripe is in test mode: guests can&apos;t really pay. Set STRIPE_MODE to live in Railway before sharing the link.</Notice>
                   )}
@@ -517,8 +702,11 @@ export default function ShowsSection() {
               {fieldErr("vip_price_cents")}
               {fieldErr("vip_cap")}
               {fieldErr("vip_perks")}
+              {fieldErr("vip_closes_at")}
             </section>
+            )}
 
+            {(formSeries?.feat_reminder ?? true) && (
             <section style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 20, borderTop: LINE }}>
               <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
                 <input type="checkbox" checked={form.reminder_enabled} onChange={(e) => set("reminder_enabled", e.target.checked)} style={{ width: 18, height: 18, accentColor: RED }} />
@@ -546,13 +734,13 @@ export default function ShowsSection() {
                   <Field
                     id="s-rem-body"
                     label="Message"
-                    hint="{artist}, {date}, {time}, {venue}, and {link} fill in from the show. Leave a blank line between paragraphs."
+                    hint="{series}, {artist}, {dj}, {date}, {time}, {venue}, {link} (the series page), and {live} (the live page) fill in from the show. Leave a blank line between paragraphs."
                   >
                     <textarea id="s-rem-body" rows={10} maxLength={5000} value={form.reminder_body} onChange={(e) => set("reminder_body", e.target.value)} style={{ ...inputStyle, lineHeight: 1.5, resize: "vertical" }} />
                   </Field>
-                  {(form.reminder_subject !== DEFAULT_SUBJECT || form.reminder_body.trim() !== DEFAULT_BODY.trim()) && (
+                  {(form.reminder_subject !== tpl.subject || form.reminder_body.trim() !== tpl.body.trim()) && (
                     <button
-                      onClick={() => setForm((f) => (f ? { ...f, reminder_subject: DEFAULT_SUBJECT, reminder_body: DEFAULT_BODY } : f))}
+                      onClick={() => setForm((f) => (f ? { ...f, reminder_subject: tpl.subject, reminder_body: tpl.body } : f))}
                       style={{ ...button("quiet"), alignSelf: "flex-start", padding: "4px 0" }}
                     >
                       Reset to the default template
@@ -564,6 +752,7 @@ export default function ShowsSection() {
               {fieldErr("reminder_subject")}
               {fieldErr("reminder_body")}
             </section>
+            )}
 
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", paddingTop: 20, borderTop: LINE }}>
               <button onClick={save} disabled={busy !== null} style={button("primary", busy === null)}>
@@ -577,7 +766,30 @@ export default function ShowsSection() {
             </div>
             {notice && !notice.field && <Notice tone={notice.tone}>{notice.text}</Notice>}
 
-            {show && (
+            {show && recap && (
+              <section style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 20, borderTop: LINE }}>
+                <p style={sectionLabel}>Recap {show.recap_emailed_at ? `(emailed ${formatDateTime(show.recap_emailed_at)})` : "(emailed to the client the day after)"}</p>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8, fontSize: 13 }}>
+                  {[
+                    ["RSVPs", recap.rsvps],
+                    ...(formSeries?.feat_vip ?? true ? [["VIP passes", `${recap.vip_passes}${recap.vip_passes ? ` (${money(recap.vip_revenue_cents)})` : ""}`]] : []),
+                    ["Tables booked", recap.tables],
+                    ["Posh opened", recap.posh_opened],
+                    ["Posh confirmed", recap.posh_confirmed],
+                    ["Checked in", recap.checked_in],
+                    ["Live page visits", recap.live_views],
+                  ].map(([k, v]) => (
+                    <div key={k as string} style={{ border: LINE, padding: "8px 10px" }}>
+                      <div style={{ color: MUTED, fontSize: 11 }}>{k}</div>
+                      <div style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: 20 }}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+                {recap.winners.length > 0 && <span style={{ fontSize: 13 }}>Winners: {recap.winners.join(" · ")}</span>}
+              </section>
+            )}
+
+            {show && voting && (
               <section style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 20, borderTop: LINE }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                   <p style={sectionLabel}>Ballot {published ? "(published)" : `(${drafts} proposed, ${MIN_SONGS} needed)`}</p>
@@ -632,7 +844,15 @@ export default function ShowsSection() {
           </div>
         )}
 
-        {form && (
+        {form && !voting && formSeries && (
+          <aside className="ln-shows-preview" style={{ ...PANEL, padding: 18, display: "flex", flexDirection: "column", gap: 10 }}>
+            <span style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: MUTED }}>{formSeries.name}</span>
+            <span style={{ fontSize: 13, color: MUTED, lineHeight: 1.5 }}>The page uses the series&apos; logos, cover photo, and colors (set under Series), with this show&apos;s date, theme, and DJ.</span>
+            <a href={`/ladies-night/${formSeries.slug}`} target="_blank" rel="noopener" style={button("secondary")}>Open the page ↗</a>
+            <a href={`/ladies-night/${formSeries.slug}/live`} target="_blank" rel="noopener" style={button("quiet")}>Open the live page ↗</a>
+          </aside>
+        )}
+        {form && voting && (
           <aside className="ln-shows-preview" style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "center" }}>
             <span style={{ alignSelf: "flex-start", fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: MUTED }}>Live preview · sign-in page</span>
             <GatePreview

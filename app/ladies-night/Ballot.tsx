@@ -160,7 +160,7 @@ export default function Ballot({
             );
           })}
         </div>
-        <Footer venue={current.venue} artist={artist} />
+        <Footer venue={current.venue} artist={artist} client={current.series.client} />
       </main>
       <div style={{ position: "sticky", bottom: 0, padding: "12px 16px calc(22px + env(safe-area-inset-bottom))", background: `linear-gradient(180deg, transparent, ${V.deep} 40%)` }}>
         <div style={{ maxWidth: 408, margin: "0 auto", display: "flex", flexDirection: "column", gap: 8 }}>

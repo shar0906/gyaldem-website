@@ -3,13 +3,15 @@
 // The door on show night. Search tonight's RSVPs by first name, last
 // name, or email; tap Check in (tap again to undo). Live counts at the
 // top. Walk-ins scan the QR on their own phone, or the door types them
-// in. Every door phone sees the others' check-ins within seconds.
+// in. Every door phone sees the others' check-ins within seconds. With
+// more than one show tonight (and a login that can see them), a picker at
+// the top switches between them.
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLiveData } from "./useLiveData";
-import { CREAM, Centered, GREEN, LINE, MUTED, RED, Reconnecting, SOFT_RED, TopBar, screen } from "./ui";
+import { CREAM, Centered, GREEN, LINE, MUTED, RED, Reconnecting, SOFT_RED, ShowPicker, TopBar, fieldInput, saveShow, savedShow, screen } from "./ui";
 
 type Guest = {
   rsvp_id: string;
@@ -22,21 +24,10 @@ type Guest = {
   checked_in_at: string | null;
 };
 type CheckinData = {
-  show: { id: string; title: string; event_date: string; event_start_time: string; artist_name: string | null; venue_name: string | null } | null;
+  show: { id: string; title: string; event_date: string; event_start_time: string; artist_name: string | null; venue_name: string | null; series_name?: string } | null;
+  shows?: { id: string; label: string }[];
   counts?: { rsvps: number; checked_in: number; vip_passes: number; vip_passes_in: number };
   guests?: Guest[];
-};
-
-const fieldInput = {
-  height: 46,
-  boxSizing: "border-box" as const,
-  padding: "0 12px",
-  border: "1px solid rgba(245,240,232,0.2)",
-  background: "#1A1717",
-  color: CREAM,
-  fontSize: 16,
-  fontFamily: "inherit",
-  width: "100%",
 };
 
 function timeOf(iso: string) {
@@ -44,7 +35,14 @@ function timeOf(iso: string) {
 }
 
 export default function DoorCheckIn({ onLogout }: { onLogout?: () => void }) {
-  const { data, online, authError, refresh } = useLiveData<CheckinData>("/api/admin/ladies-night/checkin");
+  const [showId, setShowId] = useState<string | null>(null);
+  useEffect(() => setShowId(savedShow()), []);
+  const { data, online, authError, refresh } = useLiveData<CheckinData>(`/api/admin/ladies-night/checkin${showId ? `?show=${showId}` : ""}`);
+  const currentShow = data?.show?.id ?? null;
+  const pick = (id: string) => {
+    saveShow(id);
+    setShowId(id);
+  };
   const [query, setQuery] = useState("");
   const [pending, setPending] = useState<Record<string, boolean>>({});
   const [view, setView] = useState<"list" | "walkin">("list");
@@ -79,7 +77,7 @@ export default function DoorCheckIn({ onLogout }: { onLogout?: () => void }) {
       const res = await fetch("/api/admin/ladies-night/checkin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rsvp_id: g.rsvp_id, checked_in: next }),
+        body: JSON.stringify({ show_id: currentShow, rsvp_id: g.rsvp_id, checked_in: next }),
       });
       if (!res.ok) throw new Error();
       await refresh();
@@ -127,6 +125,7 @@ export default function DoorCheckIn({ onLogout }: { onLogout?: () => void }) {
   if (view === "walkin") {
     return (
       <WalkIn
+        showId={currentShow}
         artist={data.show.artist_name}
         onBack={() => setView("list")}
         onDone={(name) => {
@@ -147,6 +146,7 @@ export default function DoorCheckIn({ onLogout }: { onLogout?: () => void }) {
     <div style={{ ...screen, height: "100dvh" }}>
       <TopBar label="Door check-in" onLogout={onLogout} />
       <Reconnecting online={online} />
+      <ShowPicker shows={data.shows ?? []} value={currentShow} onChange={pick} />
       <div style={{ padding: "18px 20px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
         <span style={{ fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase", color: "#c86b6b" }}>Tonight</span>
         <h1 style={{ margin: 0, fontFamily: "Georgia, serif", fontStyle: "italic", fontWeight: 400, fontSize: 26, lineHeight: 1.15 }}>{data.show.title}</h1>
@@ -161,7 +161,7 @@ export default function DoorCheckIn({ onLogout }: { onLogout?: () => void }) {
       </div>
       <div style={{ padding: "0 20px 12px" }}>
         <label htmlFor="door-search" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Search guests</label>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, height: 48, padding: "0 14px", background: "#1A1717", border: "1px solid rgba(245,240,232,0.16)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, height: 48, padding: "0 14px", background: "#17120F", border: "1px solid rgba(251,243,236,0.16)", borderRadius: 12 }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={MUTED} strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
           <input
             id="door-search"
@@ -197,7 +197,7 @@ export default function DoorCheckIn({ onLogout }: { onLogout?: () => void }) {
                   onClick={() => toggle(g)}
                   disabled={busy}
                   aria-label={`${name} checked in at ${timeOf(g.checked_in_at)}. Tap to undo.`}
-                  style={{ flex: "none", width: 116, height: 44, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: `1px solid ${GREEN}`, background: "transparent", color: GREEN, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}
+                  style={{ flex: "none", width: 116, height: 44, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: `1px solid ${GREEN}`, background: "transparent", color: GREEN, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={GREEN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
                   {timeOf(g.checked_in_at)}
@@ -207,7 +207,7 @@ export default function DoorCheckIn({ onLogout }: { onLogout?: () => void }) {
                   onClick={() => toggle(g)}
                   disabled={busy}
                   aria-label={`Check in ${name}`}
-                  style={{ flex: "none", width: 116, height: 44, border: 0, background: RED, color: CREAM, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+                  style={{ flex: "none", width: 116, height: 44, borderRadius: 10, border: 0, background: RED, color: CREAM, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
                 >
                   Check in
                 </button>
@@ -223,7 +223,7 @@ export default function DoorCheckIn({ onLogout }: { onLogout?: () => void }) {
         )}
       </div>
       <div style={{ padding: "14px 20px calc(18px + env(safe-area-inset-bottom))", borderTop: LINE }}>
-        <button onClick={() => setView("walkin")} style={{ width: "100%", height: 52, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, border: `1px solid ${CREAM}`, background: "transparent", color: CREAM, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+        <button onClick={() => setView("walkin")} style={{ width: "100%", height: 52, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, border: `1px solid ${CREAM}`, background: "transparent", color: CREAM, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
           <span aria-hidden="true" style={{ fontSize: 20, lineHeight: 1 }}>+</span> Add walk-in
         </button>
       </div>
@@ -233,7 +233,7 @@ export default function DoorCheckIn({ onLogout }: { onLogout?: () => void }) {
 
 function Count({ name, value, of }: { name: string; value: number; of: number }) {
   return (
-    <div style={{ border: "1px solid rgba(245,240,232,0.16)", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 2 }}>
+    <div style={{ border: "1px solid rgba(251,243,236,0.16)", borderRadius: 12, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 2 }}>
       <span style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: MUTED }}>{name}</span>
       <span style={{ fontSize: 24, fontWeight: 600 }}>
         {value}
@@ -248,6 +248,7 @@ function bigButton(enabled: boolean) {
     height: 52,
     width: "100%",
     border: 0,
+    borderRadius: 12,
     background: enabled ? RED : "rgba(245,240,232,0.1)",
     color: enabled ? CREAM : MUTED,
     fontSize: 15,
@@ -257,7 +258,7 @@ function bigButton(enabled: boolean) {
   } as const;
 }
 
-function WalkIn({ artist, onBack, onDone }: { artist: string | null; onBack: () => void; onDone: (name: string) => void }) {
+function WalkIn({ showId, artist, onBack, onDone }: { showId: string | null; artist: string | null; onBack: () => void; onDone: (name: string) => void }) {
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");
   const [email, setEmail] = useState("");
@@ -275,7 +276,7 @@ function WalkIn({ artist, onBack, onDone }: { artist: string | null; onBack: () 
       const res = await fetch("/api/admin/ladies-night/checkin/walk-in", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ first_name: first, last_name: last, email, consent }),
+        body: JSON.stringify({ show_id: showId, first_name: first, last_name: last, email, consent }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -306,7 +307,7 @@ function WalkIn({ artist, onBack, onDone }: { artist: string | null; onBack: () 
               <span style={{ color: "#4A4640", fontSize: 13, textAlign: "center", padding: 12 }}>Couldn&apos;t load the QR code. Use the form below.</span>
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src="/api/admin/ladies-night/checkin/qr" alt="QR code for tonight's walk-in sign-up" width={220} height={220} onError={() => setQrFailed(true)} />
+              <img src={`/api/admin/ladies-night/checkin/qr${showId ? `?show=${showId}` : ""}`} alt="QR code for tonight's walk-in sign-up" width={220} height={220} onError={() => setQrFailed(true)} />
             )}
           </div>
           <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: 4 }}>

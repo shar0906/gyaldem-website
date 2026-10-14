@@ -2,16 +2,15 @@
 //
 // Sends queued Ladies Night guests to Kit (formerly ConvertKit), using
 // the same v3 API the site's newsletter signup already uses. Each guest
-// gets three tags, so you can email exactly the right people:
-//   "Ladies Night"                     everyone who's ever RSVP'd
-//   "Ladies Night 2026-11-14"          everyone for that show (the
-//                                      day-before reminder goes here)
-//   "Ladies Night artist: Kay"         that artist's audience
+// gets tagged so you can email exactly the right people (see kit-tags.ts):
+// everyone, the series, the show (the reminder goes here), and the
+// show's artist when there is one.
 //
 // Env: KIT_API_KEY (already set for the newsletter), KIT_API_SECRET
 //      (Kit -> Settings -> Advanced -> API; needed to create new tags).
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { ALL_TAG, artistTagName, seriesTagName, showTagName } from "./kit-tags";
 
 const KIT = "https://api.convertkit.com/v3";
 const MAX_ATTEMPTS = 8;
@@ -68,7 +67,11 @@ type QueueRow = {
   id: number;
   attempts: number;
   ln_voters: { email: string; first_name: string | null; name: string } | null;
-  ln_events: { event_date: string; ln_artists: { display_name: string } | null } | null;
+  ln_events: {
+    event_date: string;
+    ln_artists: { display_name: string } | null;
+    ln_series: { slug: string; name: string } | null;
+  } | null;
 };
 
 // Processes up to `limit` due rows. Claims them first so two overlapping
@@ -95,7 +98,7 @@ export async function processKitQueue(db: SupabaseClient, limit = 25) {
     .in("id", due.map((d) => d.id))
     .eq("status", "pending")
     .lte("next_attempt_at", now.toISOString())
-    .select("id, attempts, ln_voters(email, first_name, name), ln_events(event_date, ln_artists(display_name))")
+    .select("id, attempts, ln_voters(email, first_name, name), ln_events(event_date, ln_artists(display_name), ln_series(slug, name))")
     .returns<QueueRow[]>();
   if (claimError) throw claimError;
 
@@ -109,8 +112,9 @@ export async function processKitQueue(db: SupabaseClient, limit = 25) {
       if (!voter || !show) throw new Error("guest or show no longer exists");
       const first = voter.first_name ?? voter.name.split(" ")[0] ?? null;
 
-      const tags = ["Ladies Night", `Ladies Night ${show.event_date}`];
-      if (show.ln_artists?.display_name) tags.push(`Ladies Night artist: ${show.ln_artists.display_name}`);
+      const tags = [ALL_TAG, showTagName(show.event_date, show.ln_series)];
+      if (show.ln_series) tags.push(seriesTagName(show.ln_series.name));
+      if (show.ln_artists?.display_name) tags.push(artistTagName(show.ln_artists.display_name));
       for (const tag of tags) await tagSubscriber(tag, voter.email, first);
 
       await db.from("ln_kit_queue").update({ status: "done", last_error: null }).eq("id", row.id);

@@ -4,6 +4,8 @@
 // field is optional so the same parser serves create (where the route
 // checks required fields) and partial edits.
 
+import type { RunItem } from "./shows";
+
 export type ShowPatch = Partial<{
   title: string;
   event_date: string; // YYYY-MM-DD
@@ -26,9 +28,35 @@ export type ShowPatch = Partial<{
   reminder_send_at: string | null;
   reminder_subject: string | null;
   reminder_body: string | null;
+  series_id: string;
+  dj_name: string | null;
+  theme_name: string | null;
+  bingo_deck_id: string | null;
+  running_order: RunItem[];
+  gallery_url: string | null;
+  vip_closes_at: string | null;
 }>;
 
 type Result = { ok: true; value: ShowPatch } | { ok: false; field: string; error: string };
+
+const RUN_TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+// The night's running order: up to 20 items, each a name and an optional
+// start time ("21:30").
+export function parseRunningOrder(items: unknown): RunItem[] | string {
+  if (!Array.isArray(items)) return "Send the running order as a list.";
+  if (items.length > 20) return "Keep the running order to 20 items.";
+  const out: RunItem[] = [];
+  for (const raw of items) {
+    const r = raw as { label?: unknown; time?: unknown };
+    const label = typeof r?.label === "string" ? r.label.trim() : "";
+    const time = typeof r?.time === "string" && r.time.trim() ? r.time.trim().slice(0, 5) : null;
+    if (!label || label.length > 80) return "Each item needs a name under 80 characters.";
+    if (time && !RUN_TIME.test(time)) return "Use times like 21:30.";
+    out.push({ label, time });
+  }
+  return out;
+}
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;
@@ -185,6 +213,41 @@ export function parseShowPatch(body: Record<string, unknown>): Result {
     if (body.reminder_body === null || body.reminder_body === "") out.reminder_body = null;
     else if (typeof body.reminder_body === "string" && body.reminder_body.length <= 5000) out.reminder_body = body.reminder_body.trim();
     else return { ok: false, field: "reminder_body", error: "Keep the message under 5,000 characters." };
+  }
+  for (const key of ["series_id", "bingo_deck_id"] as const) {
+    if (key in body) {
+      const v = body[key];
+      if (key === "bingo_deck_id" && (v === null || v === "")) out.bingo_deck_id = null;
+      else if (typeof v === "string" && UUID.test(v)) out[key] = v;
+      else return { ok: false, field: key, error: key === "series_id" ? "Pick a series." : "Pick a deck from the list." };
+    }
+  }
+  if ("dj_name" in body) {
+    const v = text(body.dj_name, 80);
+    if (v === undefined) return { ok: false, field: "dj_name", error: "Keep the DJ name under 80 characters." };
+    out.dj_name = v;
+  }
+  if ("theme_name" in body) {
+    const v = text(body.theme_name, 60);
+    if (v === undefined) return { ok: false, field: "theme_name", error: "Keep the theme under 60 characters." };
+    out.theme_name = v;
+  }
+  if ("gallery_url" in body) {
+    const v = text(body.gallery_url, 500);
+    if (v === undefined || (v && !/^https:\/\/\S+\.\S+/.test(v))) {
+      return { ok: false, field: "gallery_url", error: "Use a full link starting with https://" };
+    }
+    out.gallery_url = v;
+  }
+  if ("vip_closes_at" in body) {
+    const v = isoTimestamp(body.vip_closes_at);
+    if (v === undefined) return { ok: false, field: "vip_closes_at", error: "Pick when VIP sales close." };
+    out.vip_closes_at = v;
+  }
+  if ("running_order" in body) {
+    const v = parseRunningOrder(body.running_order);
+    if (typeof v === "string") return { ok: false, field: "running_order", error: v };
+    out.running_order = v;
   }
   if ("archived" in body) {
     if (typeof body.archived !== "boolean") return { ok: false, field: "archived", error: "Invalid archive setting." };

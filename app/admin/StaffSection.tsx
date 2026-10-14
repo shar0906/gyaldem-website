@@ -14,6 +14,7 @@ type Member = {
   email: string;
   name: string | null;
   role: string;
+  series_id: string | null;
   last_sign_in_at: string | null;
   invited: boolean;
   has_login: boolean;
@@ -24,13 +25,14 @@ const ROLES: { value: string; label: string; help: string }[] = [
   { value: "admin", label: "Admin", help: "Everything except technical tools and staff management" },
   { value: "artist", label: "Artist", help: "Their own Propose, Profile, and Results" },
   { value: "door", label: "Door", help: "Check-in on show night" },
-  { value: "host", label: "Host", help: "Bingo caller on show night" },
+  { value: "host", label: "Host", help: "Host console on show night: going live, bingo, posts, guest list" },
 ];
 const LABEL = Object.fromEntries(ROLES.map((r) => [r.value, r.label]));
 
 const ERRORS: Record<string, string> = {
   last_super_admin: "That's the only super admin. Make someone else a super admin first.",
   own_account: "You can't change or remove your own account.",
+  bad_series: "That series doesn't exist anymore. Refresh the page.",
 };
 
 export default function StaffSection() {
@@ -39,13 +41,28 @@ export default function StaffSection() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
+  const [seriesList, setSeriesList] = useState<{ id: string; name: string }[]>([]);
 
   const load = useCallback(async () => {
     const res = await api<{ staff: Member[]; me: string; error?: string }>("/api/admin/staff/members");
     if (!res.ok) return setLoadError(errorText(res.data));
     setStaff(res.data.staff);
     setMe(res.data.me);
+    const s = await api<{ series: { id: string; name: string }[] }>("/api/admin/ladies-night/series");
+    if (s.ok) setSeriesList(s.data.series);
   }, []);
+
+  async function changeSeries(m: Member, seriesId: string) {
+    const who = m.name ?? m.email;
+    const name = seriesList.find((s) => s.id === seriesId)?.name;
+    setBusy(m.email);
+    setNotice(null);
+    const res = await api<{ error?: string }>("/api/admin/staff/members", { method: "PATCH", body: { email: m.email, role: m.role, series_id: seriesId } });
+    setBusy(null);
+    if (!res.ok) return setNotice({ tone: "error", text: ERRORS[res.data.error ?? ""] ?? errorText(res.data) });
+    setNotice({ tone: "ok", text: name ? `${who} now only sees ${name}.` : `${who} now sees every series.` });
+    load();
+  }
 
   useEffect(() => {
     load();
@@ -132,6 +149,23 @@ export default function StaffSection() {
                       <option key={r.value} value={r.value}>{r.label}</option>
                     ))}
                   </select>
+                  {(m.role === "host" || m.role === "door") && (
+                    <>
+                      <label htmlFor={`series-${m.email}`} style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Series for {m.email}</label>
+                      <select
+                        id={`series-${m.email}`}
+                        value={m.series_id ?? ""}
+                        disabled={busy !== null}
+                        onChange={(e) => changeSeries(m, e.target.value)}
+                        style={{ ...selectStyle, marginTop: 6, fontSize: 13 }}
+                      >
+                        <option value="">Every series</option>
+                        {seriesList.map((s) => (
+                          <option key={s.id} value={s.id}>{s.name} only</option>
+                        ))}
+                      </select>
+                    </>
+                  )}
                 </span>
                 <span style={{ fontSize: 13 }}>
                   {m.last_sign_in_at ? (

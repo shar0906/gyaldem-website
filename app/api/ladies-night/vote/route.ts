@@ -1,7 +1,7 @@
 // app/api/ladies-night/vote/route.ts
 //
 // POST /api/ladies-night/vote
-// Body: { song_ids: string[] }   1 to 5 published songs
+// Body: { series?, song_ids: string[] }   1 to 5 published songs
 // Public, remembered guests only, and they must be RSVP'd to the show.
 // Submitting again replaces their picks, until voting closes.
 //
@@ -15,8 +15,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { serviceClient } from "../../../lib/admin/staff-auth";
 import { readGuestId } from "../../../lib/ln/guest-session";
 import { guestState } from "../../../lib/ln/guests";
-import { getCurrentShow } from "../../../lib/ln/public-show";
-import { limited, tooMany } from "../../../lib/ln/public-guard";
+import { limited, loadSeriesShow, tooMany } from "../../../lib/ln/public-guard";
 
 const KNOWN_ERRORS: Record<string, number> = {
   voting_closed: 409,
@@ -31,14 +30,15 @@ export async function POST(req: NextRequest) {
   const voterId = readGuestId(req);
   if (!voterId) return NextResponse.json({ error: "not_signed_in" }, { status: 401 });
 
-  const body = (await req.json().catch(() => null)) as { song_ids?: unknown } | null;
+  const body = (await req.json().catch(() => null)) as { series?: unknown; song_ids?: unknown } | null;
   const ids = Array.isArray(body?.song_ids) ? body.song_ids.filter((x): x is string => typeof x === "string") : [];
   if (ids.length < 1 || ids.length > 5) return NextResponse.json({ error: "invalid_pick_count" }, { status: 400 });
 
   const db = serviceClient();
   try {
-    const show = await getCurrentShow(db);
-    if (!show) return NextResponse.json({ error: "voting_closed" }, { status: 409 });
+    const loaded = await loadSeriesShow(db, body?.series);
+    if (!loaded.ok || !loaded.series.feat_voting) return NextResponse.json({ error: "voting_closed" }, { status: 409 });
+    const { show } = loaded;
 
     const [{ data: voter, error: voterError }, { data: rsvp, error: rsvpError }] = await Promise.all([
       db.from("ln_voters").select("email").eq("id", voterId).maybeSingle(),

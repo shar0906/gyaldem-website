@@ -1,21 +1,24 @@
 // admin/ladies-night/LadiesNightAdmin.tsx
 //
 // The Ladies Night tab in the admin dashboard, with its own menu:
-// Shows, Approvals, Artists, Guests, Results, Bingo deck.
+// Shows, Series, Clients, Approvals, Artists, Venues, Guests, Results,
+// Bingo decks.
 
 "use client";
 
 import { useState } from "react";
 import ApprovalsSection from "./ApprovalsSection";
 import ArtistsSection from "./ArtistsSection";
-import BingoDeckSection from "./BingoDeckSection";
+import BingoDecksSection from "./BingoDecksSection";
+import ClientsSection from "./ClientsSection";
+import SeriesSection from "./SeriesSection";
 import GuestsSection from "./GuestsSection";
 import ResultsSection from "./ResultsSection";
 import ShowsSection from "./ShowsSection";
 import VenuesSection from "./VenuesSection";
 import { INK, LINE, RED } from "./kit";
 
-const SECTIONS = ["Shows", "Approvals", "Artists", "Venues", "Guests", "Results", "Bingo deck"] as const;
+const SECTIONS = ["Shows", "Series", "Clients", "Approvals", "Artists", "Venues", "Guests", "Results", "Bingo decks"] as const;
 type Section = (typeof SECTIONS)[number];
 
 export default function LadiesNightAdmin({ pending, onPendingChange }: { pending: number; onPendingChange: () => void }) {
@@ -50,7 +53,7 @@ export default function LadiesNightAdmin({ pending, onPendingChange }: { pending
         <span style={{ flex: 1 }} />
         {[
           { href: "/admin?screen=checkin", label: "Door check-in ↗" },
-          { href: "/admin?screen=bingo", label: "Bingo caller ↗" },
+          { href: "/admin?screen=bingo", label: "Host console ↗" },
         ].map((l) => (
           <a
             key={l.href}
@@ -65,12 +68,14 @@ export default function LadiesNightAdmin({ pending, onPendingChange }: { pending
       </nav>
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "28px 20px 48px" }}>
         {section === "Shows" && <ShowsSection />}
+        {section === "Series" && <SeriesSection />}
+        {section === "Clients" && <ClientsSection />}
         {section === "Approvals" && <ApprovalsSection onChange={onPendingChange} />}
         {section === "Artists" && <ArtistsSection onReviewChanges={() => setSection("Approvals")} />}
         {section === "Venues" && <VenuesSection />}
         {section === "Guests" && <GuestsSection />}
         {section === "Results" && <ResultsSection />}
-        {section === "Bingo deck" && <BingoDeckSection />}
+        {section === "Bingo decks" && <BingoDecksSection />}
       </div>
     </div>
   );

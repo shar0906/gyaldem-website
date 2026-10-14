@@ -1,14 +1,16 @@
 // ladies-night/Summary.tsx
 //
-// Where every path lands: the reserve-your-table step, "You're all set,"
-// and the remembered-device welcome back, depending on what the guest
-// has already done. Chips show only what's true for them. Add to Calendar
-// is always here.
+// Where every path lands: the Posh step (series that use Posh), the
+// reserve-your-table step, "You're all set," and the remembered-device
+// welcome back, depending on what the guest has already done. Chips show
+// only what's true for them. Add to Calendar and the countdown to the
+// night are always here.
 
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import OpenTableSheet, { OpenTableBooking } from "./OpenTableInline";
+import { Countdown, easternMs } from "./LiveView";
 import {
   CREAM,
   CREAM_DIM,
@@ -34,6 +36,7 @@ import {
   post,
   prettyDate,
   prettyTime,
+  seriesQuery,
   sub,
   tableTime,
   textLink,
@@ -58,7 +61,17 @@ export default function Summary({
   onVip: () => void;
   onNotYou: () => void;
 }) {
-  const { show, artist, songs, vip, stage } = current;
+  const { show, artist, songs, vip, stage, series } = current;
+  const client = series.client;
+  const posh = guest.rsvp?.posh ?? { clicked: false, confirmed: false };
+  const [poshOpened, setPoshOpened] = useState(posh.clicked);
+  const [poshBusy, setPoshBusy] = useState(false);
+  const startMs = easternMs(show.event_date, show.event_start_time.slice(0, 5));
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(t);
+  }, []);
   const reserved = !!guest.rsvp?.table_reserved;
   const passes = guest.rsvp?.vip_passes ?? 0;
   const [showReserve, setShowReserve] = useState(!reserved);
@@ -93,6 +106,20 @@ export default function Summary({
     onGuest(res.data.guest);
     setShowReserve(false);
     setWidgetOpen(false);
+  }
+
+  async function openPosh() {
+    setPoshOpened(true);
+    // Record the click without holding up the new tab.
+    post<{ guest: Guest }>("/api/ladies-night/posh", { action: "click" }).then((res) => res.ok && onGuest(res.data.guest));
+  }
+
+  async function confirmPosh() {
+    setPoshBusy(true);
+    const res = await post<{ guest: Guest }>("/api/ladies-night/posh", { action: "done" });
+    setPoshBusy(false);
+    if (res.ok) onGuest(res.data.guest);
+    else setError(errorFor(res.data));
   }
 
   async function markReserved() {
@@ -138,7 +165,36 @@ export default function Summary({
         )}
       </div>
 
-      {showReserve && (
+      {series.features.posh && show.posh_url && (
+        <section style={{ ...card, display: "flex", flexDirection: "column", gap: 12 }} aria-label="Confirm on Posh">
+          <Glow />
+          <span style={{ fontSize: 10.5, letterSpacing: "0.16em", textTransform: "uppercase", color: GOLD }}>
+            {posh.confirmed ? "On the list" : "One more step"}
+          </span>
+          {posh.confirmed ? (
+            <h2 style={{ margin: 0, fontFamily: SERIF, fontStyle: "italic", fontWeight: 700, fontSize: 22, lineHeight: 1.2, display: "flex", alignItems: "center", gap: 8 }}>
+              <CheckIcon color={GOLD} size={20} /> You&apos;re on {client ? `${client.name}'s` : "the"} Posh list.
+            </h2>
+          ) : (
+            <>
+              <h2 style={{ margin: 0, fontFamily: SERIF, fontStyle: "italic", fontWeight: 700, fontSize: 24, lineHeight: 1.15 }}>Confirm your spot on Posh.</h2>
+              <p style={{ ...sub, fontSize: 13.5 }}>
+                {client ? `${client.name}'s` : "The"} guest list lives on Posh. RSVP there too so you&apos;re on the list at the door. It opens in a new tab; come back here after.
+              </p>
+              <a href={show.posh_url} target="_blank" rel="noopener noreferrer" onClick={openPosh} style={cta()}>
+                Confirm on Posh ↗
+              </a>
+              {poshOpened && (
+                <button onClick={confirmPosh} disabled={poshBusy} style={outlineButton}>
+                  <CheckIcon /> {poshBusy ? "Saving…" : "I'm on Posh"}
+                </button>
+              )}
+            </>
+          )}
+        </section>
+      )}
+
+      {showReserve && series.features.opentable && (
         <section style={{ ...card, display: "flex", flexDirection: "column", gap: 12 }} aria-label="Reserve your table">
           <Glow />
           <span style={{ fontSize: 10.5, letterSpacing: "0.16em", textTransform: "uppercase", color: GOLD }}>Save your seat</span>
@@ -227,6 +283,8 @@ export default function Summary({
           ["When", `${prettyDate(show.event_date)} · ${prettyTime(show.event_start_time)}`],
           ...(current.venue ? [["Where", current.venue.name]] : []),
           ...(artist ? [["Artist", artist.display_name]] : []),
+          ...(show.dj_name ? [["Music", show.dj_name]] : []),
+          ...(show.theme_name ? [["Theme", show.theme_name]] : []),
           ...(guest.rsvp?.table ? [["OpenTable confirmation", `#${guest.rsvp.table.confirmation}`]] : []),
         ].map(([k, v], i) => (
           <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "12px 0", borderTop: i ? "1px solid #EBD9CE" : "none", fontSize: 14 }}>
@@ -256,14 +314,27 @@ export default function Summary({
         </button>
       )}
 
-      <a href="/api/ladies-night/calendar" style={reserved ? { ...cta(), display: "flex", alignItems: "center", justifyContent: "center", gap: 8 } : { ...outlineButton, background: CREAM, color: INK, border: "none" }}>
+      <section style={{ ...card, display: "flex", flexDirection: "column", gap: 12, textAlign: "center" }} aria-label="Countdown">
+        <Glow />
+        <span style={{ fontSize: 10.5, letterSpacing: "0.16em", textTransform: "uppercase", color: GOLD }}>{now >= startMs ? "Tonight" : "Until the night"}</span>
+        {now < startMs ? (
+          <Countdown targetMs={startMs} label={`Starts ${prettyDate(show.event_date)}`} />
+        ) : (
+          <h2 style={{ margin: 0, fontFamily: SERIF, fontStyle: "italic", fontWeight: 700, fontSize: 26 }}>Starting soon</h2>
+        )}
+        {current.live && (
+          <span style={{ fontSize: 12.5, color: "rgba(251,243,236,0.7)" }}>On the night, this page switches to the live view: bingo calls, updates, and winners.</span>
+        )}
+      </section>
+
+      <a href={`/api/ladies-night/calendar${seriesQuery()}`} style={reserved ? { ...cta(), display: "flex", alignItems: "center", justifyContent: "center", gap: 8 } : { ...outlineButton, background: CREAM, color: INK, border: "none" }}>
         <CalendarIcon color={reserved ? CREAM : INK} /> Add to calendar
       </a>
-      {reserved && !showReserve && (
+      {reserved && !showReserve && series.features.opentable && (
         <button onClick={() => setShowReserve(true)} style={textLink}>Still need your table?</button>
       )}
       <div style={{ flex: 1 }} />
-      <Footer venue={current.venue} artist={artist} />
+      <Footer venue={current.venue} artist={series.features.voting ? artist : null} client={client} />
     </main>
   );
 }

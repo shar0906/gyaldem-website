@@ -1,8 +1,9 @@
 // ladies-night/shared.tsx
 //
-// Types, styles, and small pieces shared by the public /ladies-night
-// screens. The look follows the People's Choice mockup: cream cards on the
-// artist's deep color, Georgia italic headings, gold details.
+// Types, styles, and small pieces shared by the public Ladies Night
+// screens (every series uses the same layout). The look follows the
+// People's Choice mockup: cream cards on the series' (or artist's) deep
+// color, Georgia italic headings, gold details.
 
 "use client";
 
@@ -27,16 +28,38 @@ export type Venue = {
   website_url: string | null;
   instagram_handle: string | null;
 };
+export type Client = {
+  name: string;
+  instagram_handle: string | null;
+  website_url: string | null;
+  logo_url: string | null;
+};
+export type Series = {
+  slug: string;
+  name: string;
+  title_logo_url: string | null;
+  presents_logo_url: string | null;
+  cover_url: string | null;
+  primary_color: string | null;
+  accent_color: string | null;
+  tagline: string | null;
+  schedule_note: string | null;
+  features: { voting: boolean; vip: boolean; opentable: boolean; door: boolean; posh: boolean; live: boolean };
+  client: Client | null;
+};
+export type LastShow = { event_date: string; theme_name: string | null; gallery_url: string | null; winners: string[] } | null;
 export type Vip =
   | { enabled: false }
   | { enabled: true; price_cents: number; perks: string | null; closes_at: string; closed: boolean; sold_out: boolean };
 export type Song = { song_id: string; title: string; artist: string; artwork_url: string | null };
+export type LiveState = "before" | "live" | "after";
 export type Current =
-  | { stage: "none" }
-  | { stage: "coming_soon"; rsvp_opens_at: string | null }
+  | { stage: "none"; series: Series; last: LastShow }
+  | { stage: "coming_soon"; series: Series; rsvp_opens_at: string | null; show_date: string; last: LastShow }
   | {
       stage: "rsvp_open" | "voting_open" | "voting_closed" | "coming_soon";
       door: boolean;
+      series: Series;
       show: {
         id: string;
         title: string;
@@ -47,12 +70,17 @@ export type Current =
         gate_description: string | null;
         voting_opens_at: string;
         voting_closes_at: string;
+        dj_name: string | null;
+        theme_name: string | null;
+        has_bingo: boolean;
         opentable_url: string | null;
+        posh_url: string | null;
       };
       venue: Venue | null;
       artist: Artist | null;
       songs: Song[];
       vip: Vip;
+      live: { state: LiveState; started_at: string | null } | null;
     };
 export type OpenCurrent = Extract<Current, { show: unknown }>;
 export type Guest = {
@@ -63,6 +91,7 @@ export type Guest = {
     table: { party_size: number | null; reserved_for: string | null; confirmation: string } | null;
     checked_in: boolean;
     vip_passes: number;
+    posh?: { clicked: boolean; confirmed: boolean };
   } | null;
   voted: boolean;
   picks: string[];
@@ -169,10 +198,11 @@ function linkFor(website: string | null, instagram: string | null): string | nul
   return null;
 }
 
-// Venue, artist, and Gyal Dem, each linking to their own site. Venue and
-// artist appear when known; without a logo they show their name instead.
-export function Footer({ venue, artist }: { venue?: Venue | null; artist?: Artist | null }) {
+// Brand logos: the series' client, the venue, the artist, and Gyal Dem,
+// each linking to their own site. Without a logo they show their name.
+export function Footer({ venue, artist, client }: { venue?: Venue | null; artist?: Artist | null; client?: Client | null }) {
   const items: { key: string; name: string; logo: string | null; href: string | null; external: boolean }[] = [];
+  if (client) items.push({ key: "client", name: client.name, logo: client.logo_url, href: linkFor(client.website_url, client.instagram_handle), external: true });
   if (venue) items.push({ key: "venue", name: venue.name, logo: venue.logo_url, href: linkFor(venue.website_url, venue.instagram_handle), external: true });
   if (artist) items.push({ key: "artist", name: artist.display_name, logo: artist.logo_url, href: linkFor(artist.website_url, artist.instagram_handle), external: true });
   items.push({ key: "gyaldem", name: "Gyal Dem Social Club", logo: "/gyaldem_red_wl_transparent.png", href: "https://gyaldemsocialclub.com", external: false });
@@ -182,7 +212,7 @@ export function Footer({ venue, artist }: { venue?: Venue | null; artist?: Artis
       {items.map((it) => {
         const mark = it.logo ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={it.logo} alt={it.name} style={{ maxWidth: 96, objectFit: "contain", display: "block" }} />
+          <img src={it.logo} alt={it.name} style={{ maxWidth: 96, maxHeight: 44, objectFit: "contain", display: "block" }} />
         ) : (
           <span style={{ fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(251,243,236,0.7)" }}>{it.name}</span>
         );
@@ -248,7 +278,26 @@ export function prettyDateTime(iso: string): string {
   return new Date(iso).toLocaleString("en-US", { month: "long", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
 }
 
-export async function post<T>(url: string, body?: unknown): Promise<{ ok: boolean; status: number; data: T & { error?: string; message?: string; field?: string } }> {
+// The series this page is for. Every guest API call carries it, so each
+// series' page talks about its own show.
+let activeSeries = "an-ode-to-her";
+export function setActiveSeries(slug: string) {
+  activeSeries = slug;
+}
+export function currentSeries(): string {
+  return activeSeries;
+}
+export function seriesQuery(extra?: Record<string, string | null | undefined>): string {
+  const p = new URLSearchParams({ series: activeSeries });
+  for (const [k, v] of Object.entries(extra ?? {})) if (v) p.set(k, v);
+  return `?${p.toString()}`;
+}
+
+export async function post<T>(url: string, rawBody?: unknown): Promise<{ ok: boolean; status: number; data: T & { error?: string; message?: string; field?: string } }> {
+  const body =
+    url.startsWith("/api/ladies-night/") && !url.endsWith("/forget") && (rawBody === undefined || (typeof rawBody === "object" && rawBody !== null))
+      ? { series: activeSeries, ...((rawBody as Record<string, unknown>) ?? {}) }
+      : rawBody;
   try {
     const res = await fetch(url, {
       method: "POST",
@@ -265,6 +314,7 @@ export const ERRORS: Record<string, string> = {
   network: "Couldn't connect. Check your signal and try again.",
   too_many_requests: "Too many tries. Wait a minute and try again.",
   rsvp_closed: "RSVP isn't open right now.",
+  no_series: "We couldn't find this Ladies Night. Check the link.",
   not_configured: "Something's not set up on our end. Please let a host know.",
   server_error: "Something went wrong on our end. Try again in a moment.",
   voting_closed: "Voting has closed.",

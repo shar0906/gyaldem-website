@@ -1,7 +1,7 @@
 // app/api/ladies-night/vip/checkout/route.ts
 //
 // POST /api/ladies-night/vip/checkout
-// Body: { quantity: 1-5 }
+// Body: { series?, quantity: 1-5 }
 // Public, remembered guests who've RSVP'd. Holds the passes (cap, 5 per
 // RSVP, 48-hour cutoff, all enforced in the database), then opens a
 // Stripe Checkout page with their email filled in. The hold lasts as
@@ -16,11 +16,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { serviceClient } from "../../../../lib/admin/staff-auth";
 import { readGuestId } from "../../../../lib/ln/guest-session";
-import { getCurrentShow, publicArtist } from "../../../../lib/ln/public-show";
-import { limited, tooMany } from "../../../../lib/ln/public-guard";
+import { publicArtist } from "../../../../lib/ln/public-show";
+import { limited, loadSeriesShow, tooMany } from "../../../../lib/ln/public-guard";
 import { stripe } from "../../../../lib/ln/stripe";
 import { returnOrigin } from "../../../../lib/ln/return-origin";
-import { ODE_PATH } from "../../../../lib/ln/paths";
+import { seriesPath } from "../../../../lib/ln/series";
 
 const RESERVE_ERRORS = ["vip_disabled", "vip_closed", "sold_out", "rsvp_limit", "invalid_quantity", "rsvp_not_found"];
 // Stripe's minimum checkout lifetime is 30 minutes; a little extra
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
   const voterId = readGuestId(req);
   if (!voterId) return NextResponse.json({ error: "not_signed_in" }, { status: 401 });
 
-  const body = (await req.json().catch(() => null)) as { quantity?: unknown } | null;
+  const body = (await req.json().catch(() => null)) as { series?: unknown; quantity?: unknown } | null;
   const quantity = body?.quantity;
   if (typeof quantity !== "number" || !Number.isInteger(quantity) || quantity < 1 || quantity > 5) {
     return NextResponse.json({ error: "invalid_quantity" }, { status: 400 });
@@ -47,8 +47,9 @@ export async function POST(req: NextRequest) {
 
   const db = serviceClient();
   try {
-    const show = await getCurrentShow(db);
-    if (!show) return NextResponse.json({ error: "vip_disabled" }, { status: 409 });
+    const loaded = await loadSeriesShow(db, body?.series);
+    if (!loaded.ok || !loaded.series.feat_vip) return NextResponse.json({ error: "vip_disabled" }, { status: 409 });
+    const { show, series } = loaded;
 
     const [{ data: voter, error: voterError }, { data: rsvp, error: rsvpError }] = await Promise.all([
       db.from("ln_voters").select("email").eq("id", voterId).maybeSingle(),
@@ -71,7 +72,8 @@ export async function POST(req: NextRequest) {
       throw reserveError;
     }
 
-    const artist = await publicArtist(db, show.artist_id);
+    const artist = series.feat_voting ? await publicArtist(db, show.artist_id) : null;
+    const path = seriesPath(series.slug);
     const expiresAt = Math.floor(Date.now() / 1000) + CHECKOUT_MINUTES * 60;
     // Back to the same address they paid from, so they stay remembered.
     const site = returnOrigin(req);
@@ -99,8 +101,8 @@ export async function POST(req: NextRequest) {
           ],
           metadata: { order_id: orderId as string, event_id: show.id, rsvp_id: rsvp.id },
           payment_intent_data: { metadata: { order_id: orderId as string, event_id: show.id } },
-          success_url: `${site}${ODE_PATH}?vip=success&session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${site}${ODE_PATH}?vip=cancelled`,
+          success_url: `${site}${path}?vip=success&session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${site}${path}?vip=cancelled`,
         },
         { idempotencyKey: `vip-order-${orderId}` }
       );

@@ -25,7 +25,6 @@ export default function AdminEventForm({
   const [flyerUrl, setFlyerUrl] = useState(event?.flyer_url || "");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [fetchingLuma, setFetchingLuma] = useState(false);
 
   const handleFlyerUpload = async (file: File) => {
     setUploading(true);
@@ -41,25 +40,6 @@ export default function AdminEventForm({
       setFlyerUrl(urlData.publicUrl);
     }
     setUploading(false);
-  };
-
-  const handleLumaFetch = async () => {
-    if (!rsvpLink.includes("lu.ma") && !rsvpLink.includes("luma.com")) return;
-    setFetchingLuma(true);
-    try {
-      const res = await fetch(`/api/admin/luma?url=${encodeURIComponent(rsvpLink)}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.name && !name) setName(data.name);
-        if (data.description && !description) setDescription(data.description);
-        if (data.location && !location) setLocation(data.location);
-        if (data.flyer_url && !flyerUrl) setFlyerUrl(data.flyer_url);
-        if (data.date && !date) setDate(data.date);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-    setFetchingLuma(false);
   };
 
   const handleSave = async () => {
@@ -114,12 +94,7 @@ export default function AdminEventForm({
 
           <div>
             <label style={labelStyle}>RSVP Link</label>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <input type="text" value={rsvpLink} onChange={(e) => setRsvpLink(e.target.value)} placeholder="https://lu.ma/..." style={{ ...inputStyle, flex: 1 }} />
-              <button onClick={handleLumaFetch} disabled={fetchingLuma} style={{ backgroundColor: "#8B1A1A", color: "white", border: "none", padding: "12px 16px", fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}>
-                {fetchingLuma ? "Fetching..." : "Pull from Luma"}
-              </button>
-            </div>
+            <input type="text" value={rsvpLink} onChange={(e) => setRsvpLink(e.target.value)} placeholder="https://..." style={inputStyle} />
           </div>
 
           <div>

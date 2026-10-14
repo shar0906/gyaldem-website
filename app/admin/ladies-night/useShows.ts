@@ -1,7 +1,7 @@
 // admin/ladies-night/useShows.ts
 //
-// The show list for pickers on Guests and Results, labeled by date and
-// artist. Starts on the soonest upcoming show, or the latest past one.
+// The show list for pickers on Guests and Results, labeled by date,
+// series, and artist (or theme). Starts on the soonest upcoming show, or the latest past one.
 
 "use client";
 
@@ -15,6 +15,8 @@ export type ShowOption = {
   stage: string;
   artist: { display_name: string } | null;
   venue?: { name: string } | null;
+  series?: { id: string; name: string; slug: string } | null;
+  theme_name?: string | null;
 };
 
 export function useShows() {
