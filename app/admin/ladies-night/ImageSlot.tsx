@@ -101,7 +101,7 @@ export default function ImageSlot({
             </button>
           )}
         </div>
-        {hint && <span style={{ fontSize: 12, color: MUTED }}>{hint}</span>}
+        {hint && <span style={{ fontSize: 12, color: MUTED, lineHeight: 1.45 }}>{hint}</span>}
         {error && <Notice tone="error">{error}</Notice>}
       </div>
     </div>

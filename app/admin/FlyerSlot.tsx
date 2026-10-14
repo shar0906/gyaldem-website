@@ -9,6 +9,7 @@
 
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
+import { button } from "./ladies-night/kit";
 
 export default function FlyerSlot({
   url,
@@ -39,33 +40,44 @@ export default function FlyerSlot({
     onChange(supabase.storage.from("event-flyers").getPublicUrl(data.path).data.publicUrl);
   }
 
-  const small = { fontSize: 12, fontFamily: "sans-serif" };
+  // Laid out exactly like the image slots in Ladies Night (label on top,
+  // the image, and the buttons and hint beside it), so they line up.
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <label htmlFor={id} style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(10,10,10,0.6)", fontFamily: "sans-serif" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, fontFamily: "sans-serif" }}>
+      <label htmlFor={id} style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(10,10,10,0.6)" }}>
         {label}
       </label>
-      <div style={{ display: "flex", gap: 14, alignItems: "flex-start", flexWrap: "wrap" }}>
-        <div style={{ width: 96, height: 120, background: url ? `center / cover no-repeat url("${url}")` : "#EFE8DC", border: "0.5px solid rgba(10,10,10,0.15)", display: "flex", alignItems: "center", justifyContent: "center", ...small, color: "rgba(10,10,10,0.4)", flex: "none" }}>
-          {!url && "No flyer"}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 14, flexWrap: "wrap" }}>
+        <div style={{ width: 96, height: 120, background: url ? `center / cover no-repeat url("${url}"), #2A1416` : "#EFE8DC", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "rgba(10,10,10,0.4)", flex: "none" }}>
+          {!url && "None yet"}
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            <label style={{ ...small, letterSpacing: "0.15em", textTransform: "uppercase", fontSize: 10, color: "#8B1A1A", border: "1px solid #8B1A1A", padding: "10px 14px", cursor: busy ? "default" : "pointer", opacity: busy ? 0.5 : 1 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0, flex: "1 1 180px" }}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+            <label style={{ ...button("secondary", !busy), cursor: busy ? "default" : "pointer", position: "relative" }}>
               {busy ? "Uploading…" : url ? "Replace" : "Upload"}
-              <input id={id} type="file" accept="image/jpeg,image/png,image/webp,image/gif" disabled={busy} onChange={(e) => upload(e.target.files?.[0])} style={{ display: "none" }} />
+              <input
+                id={id}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                disabled={busy}
+                onChange={(e) => {
+                  upload(e.target.files?.[0]);
+                  e.target.value = "";
+                }}
+                style={{ position: "absolute", width: 1, height: 1, opacity: 0, overflow: "hidden" }}
+              />
             </label>
             {url && (
               <>
-                <a href={url} target="_blank" rel="noopener" style={{ ...small, color: "rgba(10,10,10,0.55)" }}>View ↗</a>
-                <button type="button" onClick={() => onChange(null)} style={{ ...small, background: "none", border: 0, color: "rgba(10,10,10,0.55)", cursor: "pointer", textDecoration: "underline", padding: 0 }}>
+                <a href={url} target="_blank" rel="noopener" style={button("quiet")}>View ↗</a>
+                <button type="button" onClick={() => onChange(null)} disabled={busy} style={button("quiet", !busy)}>
                   Remove
                 </button>
               </>
             )}
-          </span>
-          {hint && <span style={{ ...small, color: "rgba(10,10,10,0.55)", maxWidth: 420, lineHeight: 1.45 }}>{hint}</span>}
-          {error && <span role="alert" style={{ ...small, color: "#8B1A1A" }}>{error}</span>}
+          </div>
+          {hint && <span style={{ fontSize: 12, color: "rgba(10,10,10,0.55)", lineHeight: 1.45 }}>{hint}</span>}
+          {error && <span role="alert" style={{ fontSize: 13, color: "#8B1A1A" }}>{error}</span>}
         </div>
       </div>
     </div>
