@@ -17,7 +17,7 @@ export const SERIES_COLUMNS =
   "id, slug, name, client_id, default_venue_id, title_logo_url, presents_logo_url, cover_url, primary_color, accent_color, " +
   "tagline, schedule_note, feat_voting, feat_vip, feat_opentable, feat_door, feat_live, feat_reminder, " +
   "call_delay_seconds, sort_order, active, created_at, " +
-  "default_running_order, default_start_time, default_end_time, default_bingo_deck_id";
+  "default_running_order, default_start_time, default_end_time, default_bingo_deck_id, cover_position";
 
 export type SeriesRow = {
   id: string;
@@ -47,6 +47,8 @@ export type SeriesRow = {
   default_start_time: string | null;
   default_end_time: string | null;
   default_bingo_deck_id: string | null;
+  // The cover's focal point, "50% 30%"; null is the default crop.
+  cover_position: string | null;
 };
 
 export const CLIENT_COLUMNS = "id, name, instagram_handle, website_url, logo_url, contact_email, active";
@@ -70,6 +72,7 @@ export type PublicSeries = {
   title_logo_url: string | null;
   presents_logo_url: string | null;
   cover_url: string | null;
+  cover_position: string | null;
   primary_color: string | null;
   accent_color: string | null;
   tagline: string | null;
@@ -135,6 +138,7 @@ export function publicSeries(s: SeriesRow, client: ClientRow | null): PublicSeri
     title_logo_url: s.title_logo_url,
     presents_logo_url: s.presents_logo_url,
     cover_url: s.cover_url,
+    cover_position: s.cover_position,
     primary_color: s.primary_color,
     accent_color: s.accent_color,
     tagline: s.tagline,
@@ -220,6 +224,12 @@ export function parseSeriesPatch(
     const v = text(body.schedule_note, 80);
     if (v === undefined) return { ok: false, field: "schedule_note", message: "Keep the schedule note under 80 characters." };
     out.schedule_note = v;
+  }
+  if ("cover_position" in body) {
+    const v = body.cover_position;
+    if (v === null || v === "") out.cover_position = null;
+    else if (typeof v === "string" && /^(100|[0-9]{1,2})% (100|[0-9]{1,2})%$/.test(v)) out.cover_position = v;
+    else return { ok: false, field: "cover_position", message: "Pick the focal point again." };
   }
   if ("default_running_order" in body) {
     const v = parseRunningOrder(body.default_running_order);

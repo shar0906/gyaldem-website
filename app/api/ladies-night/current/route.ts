@@ -77,6 +77,7 @@ function showDetails(show: ShowRow, opentable: string | null) {
     theme_name: show.theme_name,
     has_bingo: !!show.bingo_deck_id,
     cover_url: show.cover_url,
+    cover_position: show.cover_position,
     primary_color: show.primary_color,
     accent_color: show.accent_color,
     opentable_url: opentable,

@@ -40,6 +40,7 @@ export type Series = {
   title_logo_url: string | null;
   presents_logo_url: string | null;
   cover_url: string | null;
+  cover_position?: string | null;
   primary_color: string | null;
   accent_color: string | null;
   tagline: string | null;
@@ -74,6 +75,7 @@ export type Current =
         theme_name: string | null;
         has_bingo: boolean;
         cover_url?: string | null;
+        cover_position?: string | null;
         primary_color?: string | null;
         accent_color?: string | null;
         opentable_url: string | null;

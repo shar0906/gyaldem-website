@@ -21,6 +21,7 @@ type Series = {
   title_logo_url: string | null;
   presents_logo_url: string | null;
   cover_url: string | null;
+  cover_position: string | null;
   primary_color: string | null;
   accent_color: string | null;
   tagline: string | null;
@@ -51,7 +52,7 @@ const FEATURES: { key: keyof Series; label: string; help: string }[] = [
   { key: "feat_reminder", label: "Reminder email", help: "The day-before email through Kit." },
 ];
 
-type Form = Omit<Series, "id" | "title_logo_url" | "presents_logo_url" | "cover_url" | "upcoming_shows">;
+type Form = Omit<Series, "id" | "title_logo_url" | "presents_logo_url" | "cover_url" | "cover_position" | "upcoming_shows">;
 
 const blank: Form = {
   slug: "",
@@ -78,7 +79,7 @@ const blank: Form = {
 };
 
 function toForm(s: Series): Form {
-  const { id: _id, title_logo_url: _t, presents_logo_url: _p, cover_url: _c, upcoming_shows: _u, ...rest } = s;
+  const { id: _id, title_logo_url: _t, presents_logo_url: _p, cover_url: _c, cover_position: _cp, upcoming_shows: _u, ...rest } = s;
   return {
     ...rest,
     tagline: s.tagline ?? "",
@@ -202,6 +203,7 @@ function SeriesForm({
     title_logo_url: series?.title_logo_url ?? null,
     presents_logo_url: series?.presents_logo_url ?? null,
     cover_url: series?.cover_url ?? null,
+    cover_position: series?.cover_position ?? null,
   });
   const [runText, setRunText] = useState(runToText(series?.default_running_order));
   const [busy, setBusy] = useState(false);
@@ -375,7 +377,14 @@ function SeriesForm({
               kind="cover"
               photo
               hint="Full-bleed behind the RSVP form. Portrait works best."
-              onSaved={(u) => saveImage("cover_url", u)}
+              onSaved={async (u) => {
+                const ok = await saveImage("cover_url", u);
+                // A new photo starts from the default crop.
+                if (ok) await saveImage("cover_position", null);
+                return ok;
+              }}
+              position={images.cover_position}
+              onPosition={(p) => saveImage("cover_position", p)}
             />
           </>
         ) : (

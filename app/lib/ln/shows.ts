@@ -14,7 +14,7 @@ export const SHOW_COLUMNS =
   "vip_cap, archived, public_event_id, door_code, results_emailed_at, results_email_error, reminder_enabled, reminder_send_at, " +
   "reminder_subject, reminder_body, reminder_broadcast_id, reminder_scheduled_at, reminder_error, created_at, " +
   "series_id, dj_name, theme_name, bingo_deck_id, live_started_at, live_ended_at, running_order, run_now, gallery_url, " +
-  "vip_closes_at, live_views, recap_emailed_at, recap_email_error, has_bingo, cover_url, primary_color, accent_color";
+  "vip_closes_at, live_views, recap_emailed_at, recap_email_error, has_bingo, cover_url, cover_position, primary_color, accent_color";
 
 export type RunItem = { label: string; time: string | null };
 
@@ -56,6 +56,7 @@ export type ShowRow = {
   bingo_deck_id: string | null;
   has_bingo: boolean;
   cover_url: string | null;
+  cover_position: string | null;
   primary_color: string | null;
   accent_color: string | null;
   live_started_at: string | null;

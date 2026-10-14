@@ -37,6 +37,7 @@ export async function currentShareData(slug: string = DEFAULT_SERIES_SLUG): Prom
       ownerName: client?.active ? client.name : GYAL_DEM,
       title: series.name,
       coverUrl: series.cover_url,
+      coverPosition: series.cover_position,
       primary: series.primary_color,
       accent: series.accent_color,
       cta: series.feat_voting ? "RSVP · Vote the set list" : "RSVP",
@@ -61,6 +62,7 @@ export async function currentShareData(slug: string = DEFAULT_SERIES_SLUG): Prom
       venueName: venue?.name ?? null,
       dateText,
       coverUrl: show.cover_url ?? artist?.cover_url ?? series.cover_url,
+      coverPosition: show.cover_url ? show.cover_position : artist?.cover_url ? null : series.cover_position,
       ...(() => {
         const c = showColors(show, artist, series, series.feat_voting);
         return { primary: c.primary, accent: c.accent };

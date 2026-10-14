@@ -39,6 +39,7 @@ function when(n: NonNullable<HubSeries["next"]>): string {
 function SeriesCard({ s }: { s: HubSeries }) {
   const theme = ballotTheme(s.next?.primary_color ?? s.primary_color, s.next?.accent_color ?? s.accent_color);
   const cover = s.next?.cover_url ?? s.cover_url;
+  const position = (s.next?.cover_url ? s.next.cover_position : s.cover_position) ?? "center 25%";
   const presenter = s.client ? `${s.client.name} presents` : "Gyal Dem presents";
   return (
     <a
@@ -55,7 +56,7 @@ function SeriesCard({ s }: { s: HubSeries }) {
           justifyContent: "space-between",
           padding: "14px 16px",
           background: cover
-            ? `linear-gradient(180deg, rgba(0,0,0,0.1) 20%, ${theme.deep}EE), url("${cover}") center 25%/cover`
+            ? `linear-gradient(180deg, rgba(0,0,0,0.1) 20%, ${theme.deep}EE), url("${cover}") ${position}/cover`
             : `radial-gradient(circle at 75% 15%, rgba(216,182,103,0.22), transparent 55%), linear-gradient(160deg, ${theme.primary}, ${theme.deep})`,
         }}
       >

@@ -78,7 +78,7 @@ The same for every series, and it stays in view while you scroll the editor:
 
 The **Headline** and **Description** guests see on the sign-in page.
 
-- **Cover photo (this show):** a photo just for this show, behind the RSVP form. Empty uses the artist's cover (People's Choice) or the series' cover. Create the show first, then upload.
+- **Cover photo (this show):** a photo just for this show, behind the RSVP form. **Focal point** (like gallery covers) sets which part stays in view when it's cropped, with previews for the sign-in page, hub card, and link preview. Series covers have it too. Empty uses the artist's cover (People's Choice) or the series' cover. Create the show first, then upload.
 - **Colors:** uncheck **Use the series' colors** to give one show its own main and accent colors (orange and black for Spooky Szn, say). The sign-in page, live page, hub card, and link preview all use them.
 - **Flyer:** the same flyer as the show's Events page entry. Replacing it in either place replaces it in both. Saved with the show.
 

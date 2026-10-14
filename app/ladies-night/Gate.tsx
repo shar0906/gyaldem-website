@@ -87,7 +87,11 @@ export default function Gate({
 
   // This show's own cover first, then the artist's (People's Choice), then the series'.
   const cover = show.cover_url || (voting && artist?.cover_url) || series.cover_url;
-  const coverStyle = cover ? { backgroundImage: `url("${cover}")` } : { backgroundImage: "linear-gradient(180deg, #4A3A3D, #2B2224)" };
+  // The focal point set in admin for whichever cover is in use.
+  const position = show.cover_url ? show.cover_position : voting && artist?.cover_url ? null : series.cover_position;
+  const coverStyle = cover
+    ? { backgroundImage: `url("${cover}")`, ...(position && { backgroundPosition: position }) }
+    : { backgroundImage: "linear-gradient(180deg, #4A3A3D, #2B2224)" };
 
   // Without a title logo, the show's headline is the title.
   const textTitle = show.gate_headline || (voting ? show.title : series.name);

@@ -23,6 +23,7 @@ export type PanelSeries = {
   title_logo_url: string | null;
   presents_logo_url: string | null;
   cover_url: string | null;
+  cover_position?: string | null;
   primary_color: string | null;
   accent_color: string | null;
   tagline: string | null;
@@ -148,6 +149,7 @@ export function previewCurrent(o: {
   venue: PanelVenue | null;
   artist: PanelArtist | null;
   coverUrl?: string | null;
+  coverPosition?: string | null;
 }): OpenCurrent {
   const { draft, series, client, venue, artist } = o;
   return {
@@ -159,6 +161,7 @@ export function previewCurrent(o: {
       title_logo_url: series.title_logo_url,
       presents_logo_url: series.presents_logo_url,
       cover_url: series.cover_url,
+      cover_position: series.cover_position ?? null,
       primary_color: series.primary_color,
       accent_color: series.accent_color,
       tagline: series.tagline,
@@ -186,6 +189,7 @@ export function previewCurrent(o: {
       theme_name: draft.theme_name || null,
       has_bingo: draft.has_bingo,
       cover_url: o.coverUrl ?? null,
+      cover_position: o.coverPosition ?? null,
       primary_color: /^#[0-9A-Fa-f]{6}$/.test(draft.primary_color ?? "") ? draft.primary_color : null,
       accent_color: /^#[0-9A-Fa-f]{6}$/.test(draft.accent_color ?? "") ? draft.accent_color : null,
       opentable_url: null,
@@ -264,6 +268,7 @@ export default function ShowPanel(props: {
   paymentsMode: "test" | "live" | null | undefined;
   dirty: boolean;
   coverUrl?: string | null;
+  coverPosition?: string | null;
 }) {
   const { series, saved } = props;
   const [copied, setCopied] = useState(false);

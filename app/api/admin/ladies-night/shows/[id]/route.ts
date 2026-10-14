@@ -100,6 +100,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const v = body.cover_url;
     if (v === null || v === "") patch.cover_url = null;
     else if (typeof v === "string" && v.length <= 1000 && v.startsWith(brandFolderPublicUrl("shows", id))) patch.cover_url = v;
+    // A new photo starts from the default crop.
+    if (patch.cover_url !== undefined && !("cover_position" in body)) patch.cover_position = null;
     else return NextResponse.json({ error: "invalid", field: "cover_url", message: "Upload the cover photo from the show." }, { status: 400 });
   }
   // The flyer lives on the show's Events page entry, shared both ways.
