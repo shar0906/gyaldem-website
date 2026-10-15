@@ -17,7 +17,7 @@ export const SERIES_COLUMNS =
   "id, slug, name, client_id, default_venue_id, title_logo_url, presents_logo_url, cover_url, primary_color, accent_color, " +
   "tagline, schedule_note, feat_voting, feat_vip, feat_opentable, feat_door, feat_live, feat_reminder, " +
   "call_delay_seconds, sort_order, active, created_at, " +
-  "default_running_order, default_start_time, default_end_time, default_bingo_deck_id";
+  "default_running_order, default_start_time, default_end_time, default_bingo_deck_id, loader";
 
 export type SeriesRow = {
   id: string;
@@ -47,6 +47,8 @@ export type SeriesRow = {
   default_start_time: string | null;
   default_end_time: string | null;
   default_bingo_deck_id: string | null;
+  // The loading animation on the series' pages: the record or the rose.
+  loader: "record" | "rose";
 };
 
 export const CLIENT_COLUMNS = "id, name, instagram_handle, website_url, logo_url, contact_email, active";
@@ -233,6 +235,11 @@ export function parseSeriesPatch(
       else if (typeof v === "string" && /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(v)) out[key] = v.slice(0, 5);
       else return { ok: false, field: key, message: "Pick a time." };
     }
+  }
+  if ("loader" in body) {
+    const v = body.loader;
+    if (v !== "record" && v !== "rose") return { ok: false, field: "loader", message: "Pick the record or the rose." };
+    out.loader = v;
   }
   if ("call_delay_seconds" in body) {
     const v = body.call_delay_seconds;

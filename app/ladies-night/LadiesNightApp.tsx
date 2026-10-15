@@ -25,6 +25,11 @@ import VipStep from "./VipStep";
 import LiveView from "./LiveView";
 import { CREAM, Current, Guest, OpenCurrent, Prefill, SANS, cta, post, seriesQuery, setActiveSeries, textLink } from "./shared";
 import { ballotTheme, showColors } from "../lib/ln/theme";
+import { CurtainIntro, LnLoader, LoaderKind, shouldPlayCurtain } from "./Loaders";
+
+// What the page shows while it loads, from the server: the series'
+// loader and the next show's colors.
+export type LoadingLook = { kind: Exclude<LoaderKind, "bingo">; title: string; primary: string | null; accent: string | null };
 
 type Step = "loading" | "error" | "none" | "coming_soon" | "gate" | "checked_in" | "ballot" | "vip" | "summary" | "live";
 
@@ -51,7 +56,16 @@ async function getJson<T>(url: string): Promise<T> {
   return res.json();
 }
 
-export default function LadiesNightApp({ series }: { series: string }) {
+export default function LadiesNightApp({
+  series,
+  loading,
+  curtainTitle = null,
+}: {
+  series: string;
+  loading?: LoadingLook;
+  // Gyal Dem's own series: the curtain intro, once per visit.
+  curtainTitle?: string | null;
+}) {
   // Every guest API call on this page is for this series.
   setActiveSeries(series);
   const [step, setStep] = useState<Step>("loading");
@@ -63,6 +77,11 @@ export default function LadiesNightApp({ series }: { series: string }) {
   const [justVoted, setJustVoted] = useState(false);
   const [changing, setChanging] = useState(false);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
+  const [curtain, setCurtain] = useState(false);
+  useEffect(() => {
+    if (curtainTitle && shouldPlayCurtain(series)) setCurtain(true);
+  }, [curtainTitle, series]);
+  const endCurtain = useCallback(() => setCurtain(false), []);
 
   // Coming back from Stripe checkout: confirm the passes (asking Stripe
   // directly if the webhook hasn't landed yet), then show the summary.
@@ -204,7 +223,10 @@ export default function LadiesNightApp({ series }: { series: string }) {
   // Voting series wear the artist's colors; others the series' own.
   const seriesInfo = current?.series ?? null;
   // The show's own colors, else the artist's (People's Choice), else the series'.
-  const colors = showColors(open?.show, open?.artist, seriesInfo, !!open?.series.features.voting);
+  // Until the page loads, the colors the server sent.
+  const colors = current
+    ? showColors(open?.show, open?.artist, seriesInfo, !!open?.series.features.voting)
+    : { primary: loading?.primary ?? null, accent: loading?.accent ?? null };
   const theme = ballotTheme(colors.primary, colors.accent);
   const vars = {
     "--ln-primary": theme.primary,
@@ -226,9 +248,8 @@ export default function LadiesNightApp({ series }: { series: string }) {
         .ln-root input::placeholder { color: rgba(251,243,236,0.4); }
       `}</style>
       <div className="ln-root">
-        {step === "loading" && (
-          <div style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(251,243,236,0.6)" }}>Loading…</div>
-        )}
+        {curtain && curtainTitle && <CurtainIntro title={curtainTitle} ready={step !== "loading"} onDone={endCurtain} />}
+        {step === "loading" && <LnLoader kind={loading?.kind ?? "record"} title={loading?.title} delay={curtain ? 60_000 : undefined} />}
         {step === "error" && (
           <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: 24, textAlign: "center" }}>
             <p style={{ margin: 0 }}>We couldn&apos;t load Ladies Night just now.</p>
@@ -248,7 +269,7 @@ export default function LadiesNightApp({ series }: { series: string }) {
         )}
         {step === "live" && open && (
           <>
-            <LiveView slug={open.series.slug} />
+            <LiveView slug={open.series.slug} loader={open.show.has_bingo ? "bingo" : loading?.kind ?? "record"} seriesName={open.series.name} />
             {guest && (
               <div style={{ display: "flex", justifyContent: "center", marginTop: -14, paddingBottom: 24 }}>
                 <button onClick={() => setStep("summary")} style={textLink}>Your RSVP and table</button>

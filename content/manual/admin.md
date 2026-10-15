@@ -207,6 +207,7 @@ Each series has its own page at `/ladies-night/<link>` and its own live page at 
 - **What this series uses:** People's Choice + artist, VIP, OpenTable, Door check-in, Live page, Reminder email.
 - **Bingo call delay:** seconds between the host tapping Called and guests seeing the line (5 by default).
 - **Show defaults:** start and end times, bingo deck, and the **master run of show**. Every new show in the series starts with them; change them per show in Shows. A show with no run of show of its own uses the master on the live page.
+- **Loading animation:** what guests see while the series' pages load: the spinning record (default) or the rose. On bingo nights the live page uses the bingo balls instead, and the bingo card shows them while guests wait for the first call and between rounds. Gyal Dem's own series (no client) also open with a curtain intro the first time a guest visits: the Gyal Dem logo, "presents", then the show's title, fading into the sign-in page. A tap skips it.
 - **Order on the hub** and **Live on the site** (unchecked hides the series from the hub and its page).
 - **Title logo, "Presents" line, Cover photo:** save the series first, then upload. Logos white on transparent PNG.
 - **Print table placard ↗:** four QR placards per page, pointing at the series' live page.

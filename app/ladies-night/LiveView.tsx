@@ -13,6 +13,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Artist, CREAM, Footer, GOLD, INK, SANS, SERIF, Series, V, Venue, card, cta, eyebrow, outlineButton, prettyDate, prettyTime } from "./shared";
+import { BingoBalls, HopDots, LnLoader, LoaderStyles, type LoaderKind } from "./Loaders";
 
 type Call = { order: number; callout: string; answer: string | null; card: string | null };
 type Post = { id: string; kind: "announcement" | "winner"; body: string; round_number: number | null; created_at: string };
@@ -122,17 +123,41 @@ function BingoCard({ bingo }: { bingo: NonNullable<NonNullable<LiveData["live"]>
       : `Bingo · Round ${round.number} of ${bingo.rounds_per_night}${final ? " · Final round" : ""} · Any line`
     : `Bingo · ${bingo.rounds_per_night} rounds tonight · Any line`;
   const flashKey = latest ? `${round?.number}-${latest.order}` : "none";
+  // Waiting moments get the bingo balls: before a round's first call, and
+  // between rounds while more are to come.
+  const moreRounds = !!round?.ended && round.number < bingo.rounds_per_night;
+  const waitingFirst = !latest && !round?.ended;
+  const midRound = !!latest && !round?.ended;
 
   return (
     <section style={{ ...card, textAlign: "center", padding: "22px 18px 24px" }} aria-label="Bingo">
       <style>{`@keyframes ln-flash { from { transform: scale(.96); opacity: 0 } to { transform: none; opacity: 1 } } .ln-flash { animation: ln-flash .7s ease } @media (prefers-reduced-motion: reduce) { .ln-flash { animation: none } }`}</style>
+      <LoaderStyles />
       <div style={eyebrow}>{label}</div>
-      <div key={flashKey} className="ln-flash" aria-live="polite" style={{ fontFamily: SERIF, fontStyle: "italic", fontWeight: 700, fontSize: latest && latest.callout.length > 40 ? 26 : 34, lineHeight: 1.12, margin: "12px 0 8px", minHeight: 76, display: "grid", placeItems: "center", overflowWrap: "anywhere" }}>
-        {latest ? latest.callout : round?.ended ? "Hold tight for the next round" : "Waiting for the first call…"}
-      </div>
-      <div style={{ fontSize: 12.5, color: "rgba(251,243,236,0.65)" }}>
-        {latest && bingo.deck_kind === "callout_answer" && !round?.ended ? "The answer shows when the next one is called." : `${bingo.calls.length} called${round ? " this round" : ""}`}
-      </div>
+      {waitingFirst || moreRounds ? (
+        <div aria-live="polite" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, margin: "16px 0 4px" }}>
+          <BingoBalls size={32} motion="hop" />
+          <p style={{ margin: 0, fontFamily: SERIF, fontStyle: "italic", fontSize: 22, lineHeight: 1.3 }}>
+            {moreRounds ? `Clear your card. Round ${round!.number + 1} is up next.` : "Chips ready. First call's coming."}
+          </p>
+        </div>
+      ) : (
+        <div key={flashKey} className="ln-flash" aria-live="polite" style={{ fontFamily: SERIF, fontStyle: "italic", fontWeight: 700, fontSize: latest && latest.callout.length > 40 ? 26 : 34, lineHeight: 1.12, margin: "12px 0 8px", minHeight: 76, display: "grid", placeItems: "center", overflowWrap: "anywhere" }}>
+          {latest ? latest.callout : "That's bingo for tonight."}
+        </div>
+      )}
+      {!waitingFirst && !moreRounds && (
+        <div style={{ fontSize: 12.5, color: "rgba(251,243,236,0.65)", display: "flex", gap: 8, justifyContent: "center", alignItems: "center", flexWrap: "wrap" }}>
+          {midRound && <HopDots />}
+          <span>
+            {midRound
+              ? bingo.deck_kind === "callout_answer"
+                ? `Next call coming · the answer shows then · ${bingo.calls.length} called`
+                : `Next call coming · ${bingo.calls.length} called`
+              : `${bingo.calls.length} called${round ? " this round" : ""}`}
+          </span>
+        </div>
+      )}
     </section>
   );
 }
@@ -229,10 +254,14 @@ export default function LiveView({
   slug,
   embedded = false,
   onData,
+  loader = "record",
+  seriesName,
 }: {
   slug: string;
   embedded?: boolean;
   onData?: (d: LiveData) => void;
+  loader?: LoaderKind;
+  seriesName?: string;
 }) {
   const [data, setData] = useState<LiveData | null>(null);
   const [failed, setFailed] = useState(false);
@@ -304,9 +333,12 @@ export default function LiveView({
 
   if (!data) {
     return (
-      <div style={{ minHeight: embedded ? 200 : "100dvh", display: "grid", placeItems: "center", color: "rgba(251,243,236,0.6)", fontFamily: SANS }}>
-        {failed ? "Reconnecting…" : "Loading…"}
-      </div>
+      <LnLoader
+        kind={loader}
+        title={loader === "bingo" ? null : seriesName}
+        caption={failed ? "Reconnecting" : undefined}
+        minHeight={embedded ? 320 : "100dvh"}
+      />
     );
   }
 

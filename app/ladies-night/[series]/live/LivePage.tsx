@@ -8,8 +8,21 @@ import type { CSSProperties } from "react";
 import LiveView from "../../LiveView";
 import { CREAM, SANS } from "../../shared";
 import { ballotTheme } from "../../../lib/ln/theme";
+import type { LoaderKind } from "../../Loaders";
 
-export default function LivePage({ slug, primary, accent }: { slug: string; primary: string | null; accent: string | null }) {
+export default function LivePage({
+  slug,
+  primary,
+  accent,
+  loader,
+  seriesName,
+}: {
+  slug: string;
+  primary: string | null;
+  accent: string | null;
+  loader: LoaderKind;
+  seriesName: string;
+}) {
   const theme = ballotTheme(primary, accent);
   const vars = {
     "--ln-primary": theme.primary,
@@ -25,7 +38,7 @@ export default function LivePage({ slug, primary, accent }: { slug: string; prim
   return (
     <div style={vars}>
       <style>{`html, body { background: ${theme.deep} !important; }`}</style>
-      <LiveView slug={slug} />
+      <LiveView slug={slug} loader={loader} seriesName={seriesName} />
     </div>
   );
 }

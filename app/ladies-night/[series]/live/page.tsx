@@ -38,5 +38,7 @@ export default async function SeriesLivePage({ params }: Props) {
   const show = await getCurrentShow(db, row.id).catch(() => null);
   const artist = show && row.feat_voting ? await publicArtist(db, show.artist_id).catch(() => null) : null;
   const colors = showColors(show, artist, row, row.feat_voting);
-  return <LivePage slug={series} primary={colors.primary} accent={colors.accent} />;
+  // Bingo nights load with the bingo balls; other nights with the series' loader.
+  const loader = show?.has_bingo ? "bingo" : row.loader ?? "record";
+  return <LivePage slug={series} primary={colors.primary} accent={colors.accent} loader={loader} seriesName={row.name} />;
 }

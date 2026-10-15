@@ -39,6 +39,7 @@ type Series = {
   default_start_time: string | null;
   default_end_time: string | null;
   default_bingo_deck_id: string | null;
+  loader: "record" | "rose";
 };
 type Option = { id: string; name: string; active?: boolean };
 
@@ -75,6 +76,7 @@ const blank: Form = {
   default_start_time: "20:00",
   default_end_time: "00:00",
   default_bingo_deck_id: null,
+  loader: "record",
 };
 
 function toForm(s: Series): Form {
@@ -338,6 +340,12 @@ function SeriesForm({
         <Field id="sr-delay" label="Bingo call delay (seconds)" hint="How long after Called before guests see a line.">
           <input id="sr-delay" type="number" min={0} max={30} value={form.call_delay_seconds} onChange={(e) => set("call_delay_seconds", Number(e.target.value))} style={{ ...inputStyle, width: 120 }} />
         </Field>
+        <Field id="sr-loader" label="Loading animation" hint="While the series' pages load. Bingo nights use the bingo balls on the live page.">
+          <select id="sr-loader" value={form.loader ?? "record"} onChange={(e) => set("loader", e.target.value as Form["loader"])} style={{ ...inputStyle, width: 200 }}>
+            <option value="record">Spinning record</option>
+            <option value="rose">Rose</option>
+          </select>
+        </Field>
         <Field id="sr-sort" label="Order on the hub" hint="Lower numbers show first.">
           <input id="sr-sort" type="number" min={0} max={1000} value={form.sort_order} onChange={(e) => set("sort_order", Number(e.target.value))} style={{ ...inputStyle, width: 120 }} />
         </Field>
@@ -346,7 +354,7 @@ function SeriesForm({
           <span style={{ fontSize: 14 }}>Live on the site</span>
         </label>
       </div>
-      {err("call_delay_seconds")}{err("sort_order")}
+      {err("call_delay_seconds")}{err("loader")}{err("sort_order")}
 
       <section style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 16, borderTop: LINE }}>
         <p style={sectionLabel}>Event logos and photo</p>

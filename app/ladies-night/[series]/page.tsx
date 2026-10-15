@@ -14,6 +14,8 @@ import LadiesNightApp from "../LadiesNightApp";
 import { ladiesNightViewport, seriesMetadata } from "../../lib/ln/page-metadata";
 import { getSeriesBySlug, SLUG } from "../../lib/ln/series";
 import { serviceClient } from "../../lib/admin/staff-auth";
+import { getCurrentShow, publicArtist } from "../../lib/ln/public-show";
+import { showColors } from "../../lib/ln/theme";
 
 export const revalidate = 600;
 export const viewport = ladiesNightViewport;
@@ -28,7 +30,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function SeriesPage({ params }: Props) {
   const { series } = await params;
   if (!SLUG.test(series)) notFound();
-  const row = await getSeriesBySlug(serviceClient(), series).catch(() => null);
+  const db = serviceClient();
+  const row = await getSeriesBySlug(db, series).catch(() => null);
   if (!row) notFound();
-  return <LadiesNightApp series={series} />;
+  // What the page shows while it loads: the series' loader in the next
+  // show's colors, and the curtain intro on Gyal Dem's own series.
+  const show = await getCurrentShow(db, row.id).catch(() => null);
+  const artist = show && row.feat_voting ? await publicArtist(db, show.artist_id).catch(() => null) : null;
+  const colors = showColors(show, artist, row, row.feat_voting);
+  const title = show?.gate_headline || (row.feat_voting && show ? show.title : row.name);
+  return (
+    <LadiesNightApp
+      series={series}
+      loading={{ kind: row.loader ?? "record", title: row.name, primary: colors.primary, accent: colors.accent }}
+      curtainTitle={row.client_id ? null : title}
+    />
+  );
 }

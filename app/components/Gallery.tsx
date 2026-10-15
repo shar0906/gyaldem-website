@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import SiteLoader from "./SiteLoader";
 
 type Photo = {
   url: string;
@@ -178,12 +179,7 @@ const closeModal = () => {
               )}
 
               {modalLoading ? (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px", padding: "80px 0" }}>
-                  <div style={{ position: "relative", width: "40px", height: "40px" }}>
-                    <div style={{ position: "absolute", inset: 0, border: "2px solid rgba(255,255,255,0.1)", borderTop: "2px solid #8B1A1A", borderRadius: "50%", animation: "gd-spin 0.8s linear infinite" }} />
-                  </div>
-                  <p style={{ color: "rgba(255,255,255,0.3)", fontSize: "11px", letterSpacing: "0.3em", textTransform: "uppercase", fontFamily: "sans-serif", margin: 0 }}>Loading</p>
-                </div>
+                <SiteLoader tone="dark" minHeight={280} />
               ) : displayedCategory ? (
                 <div style={{ columns: "2 300px", gap: "12px" }}>
                   {displayedCategory.photos.map((photo, i) => (
@@ -245,7 +241,6 @@ const closeModal = () => {
       )}
 
       <style>{`
-        @keyframes gd-spin { to { transform: rotate(360deg); } }
         @media (max-width: 640px) {
           .gallery-grid { grid-template-columns: 1fr !important; }
         }
