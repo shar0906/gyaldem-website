@@ -128,7 +128,7 @@ One reminder per show, sent through Kit to everyone RSVP'd to that show.
 
 ### Recap
 
-Early the day after each show, the series' client gets a recap email (to the client's **Recap email**, copied to hello@gyaldemsocialclub.com): RSVPs, VIP passes, tables, check-ins, live page visits, and the bingo winners. The same numbers are at the bottom of the show in Shows. For Gyal Dem's own series it goes to hello@gyaldemsocialclub.com only.
+Early the day after each show, the series' client gets a recap email (to the client's **Recap email**, copied to hello@gyaldemsocialclub.com): page visits, RSVPs, VIP passes, tables, check-ins, live page visits, and the bingo winners. The same numbers are at the top of the show in Shows ("Current stats" until the night is over). **Page visits** counts each phone or computer that opened the series page while this was the upcoming show, once per device, so it's people rather than reloads; compare it with RSVPs to see how many visitors signed up. Visits from before Oct 15, 2026 weren't counted. For Gyal Dem's own series it goes to hello@gyaldemsocialclub.com only.
 
 ### Archive
 

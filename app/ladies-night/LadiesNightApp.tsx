@@ -50,6 +50,19 @@ function vipOpen(current: OpenCurrent, guest: Guest): boolean {
   return v.enabled && !v.closed && !v.sold_out && (guest.rsvp?.vip_passes ?? 0) < 5;
 }
 
+// Count one visit per device per show, for the show's stats and recap.
+const PAGE_VIEW_KEY = "ln_page_seen";
+function countPageView(showId: string) {
+  try {
+    const seen = JSON.parse(localStorage.getItem(PAGE_VIEW_KEY) ?? "[]") as string[];
+    if (seen.includes(showId)) return;
+    localStorage.setItem(PAGE_VIEW_KEY, JSON.stringify([...seen.slice(-20), showId]));
+  } catch {
+    /* private mode: count anyway */
+  }
+  fetch("/api/ladies-night/view", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ show_id: showId }) }).catch(() => {});
+}
+
 async function getJson<T>(url: string): Promise<T> {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error(String(res.status));
@@ -130,6 +143,7 @@ export default function LadiesNightApp({
       setCurrent(cur);
       if (cur.stage === "none") return setStep("none");
       if (!("show" in cur)) return setStep("coming_soon");
+      countPageView((cur as OpenCurrent).show.id);
 
       if (!me.guest || !me.guest.rsvp) {
         setPrefill(me.prefill ?? null);

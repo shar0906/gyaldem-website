@@ -20,10 +20,11 @@ export type Recap = {
   vip_passes: number;
   vip_revenue_cents: number;
   live_views: number;
+  page_views: number;
   winners: string[];
 };
 
-export async function showRecap(db: SupabaseClient, show: Pick<ShowRow, "id" | "live_views">): Promise<Recap> {
+export async function showRecap(db: SupabaseClient, show: Pick<ShowRow, "id" | "live_views" | "page_views">): Promise<Recap> {
   const [rsvpRes, vipRes, winnersRes] = await Promise.all([
     db.from("ln_rsvps").select("table_reserved_at, checked_in_at").eq("event_id", show.id),
     db.from("ln_vip_orders").select("quantity, amount_cents").eq("event_id", show.id).eq("status", "paid"),
@@ -44,6 +45,7 @@ export async function showRecap(db: SupabaseClient, show: Pick<ShowRow, "id" | "
     vip_passes: (vipRes.data ?? []).reduce((n, o) => n + (o.quantity as number), 0),
     vip_revenue_cents: (vipRes.data ?? []).reduce((n, o) => n + (o.amount_cents as number), 0),
     live_views: show.live_views ?? 0,
+    page_views: show.page_views ?? 0,
     winners: (winnersRes.data ?? []).map((w) => w.body as string),
   };
 }
@@ -68,7 +70,10 @@ export function buildRecapEmail(opts: {
   const { seriesName, eventDate, venueName, themeName, recap, features, pageLink } = opts;
   const date = new Date(`${eventDate}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
   const subject = `Recap: ${seriesName}, ${date}`;
-  const rows: [string, string][] = [["RSVPs", String(recap.rsvps)]];
+  const rows: [string, string][] = [
+    ["Page visits", String(recap.page_views)],
+    ["RSVPs", String(recap.rsvps)],
+  ];
   if (features.opentable) rows.push(["Tables booked", String(recap.tables)]);
   if (features.door) rows.push(["Checked in at the door", String(recap.checked_in)]);
   if (features.vip) rows.push(["VIP passes sold", `${recap.vip_passes}${recap.vip_passes ? ` (${money(recap.vip_revenue_cents)})` : ""}`]);
